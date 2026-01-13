@@ -218,7 +218,8 @@ agent = Agent(
     display_name="Code Helper",
     base_model="llama3:latest",
     system_prompt="You are a helpful coding assistant.",
-    temperature=0.7
+    temperature=0.7,
+    language="English"  # Language for responses (default: English)
 )
 manager.create_agent(agent)
 
@@ -383,6 +384,7 @@ Each agent is defined by:
 | `base_model` | Ollama model to use | `llama3:latest` |
 | `system_prompt` | Persona and behavior definition | `You are a friendly German tutor...` |
 | `temperature` | Response creativity (0.0-1.0) | `0.7` |
+| `language` | Language for agent responses | `English` |
 
 ### Example Agents
 
@@ -394,6 +396,7 @@ System Prompt: You are a friendly German language tutor. Help users learn
 German through conversation, correct their mistakes gently, and explain 
 grammar rules when asked.
 Temperature: 0.7
+Language: English
 ```
 
 **Code Reviewer**:
@@ -403,6 +406,7 @@ Base Model: llama3:latest
 System Prompt: You are an expert code reviewer. Analyze code for bugs, 
 security issues, and style violations. Provide constructive feedback.
 Temperature: 0.3
+Language: English
 ```
 
 ## Data Storage
@@ -639,6 +643,15 @@ make changelog
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for commit message guidelines.
+
+## Roadmap
+
+Future features under consideration:
+
+- **Web Search / Internet Access**: Enable agents to search the web for current information using Ollama's function calling capabilities
+- **RAG (Retrieval Augmented Generation)**: Allow agents to query external documents and knowledge bases
+- **Multi-agent Conversations**: Support conversations between multiple agents
+- **Export/Import Agents**: Share agent configurations between users
 
 ## License
 

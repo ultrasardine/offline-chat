@@ -14,7 +14,6 @@ from offline_chat.exceptions import (
     OfflineChatError,
     OllamaConnectionError,
 )
-from offline_chat.history import HistoryStore
 from offline_chat.manager import AgentManager
 from offline_chat.session import ChatSession
 
