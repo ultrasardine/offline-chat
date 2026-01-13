@@ -1,3 +1,23 @@
+## 1.0.0 (2026-01-13)
+
+### ⚠ BREAKING CHANGES
+
+* Initial release
+
+### Features
+
+* **cli:** add view history option and agent language field ([44ce31a](https://gitlab.com/eosts/internal/eosportugal/tools/offline_chat/commit/44ce31abc526048c6c20f9c9bfb456d148f7a220))
+* initial release of offline-chat application ([11b302b](https://gitlab.com/eosts/internal/eosportugal/tools/offline_chat/commit/11b302bec5adb0b7f7ac9494c0731ccf459d3e28))
+
+### Bug Fixes
+
+* improve context retention and fix flaky test ([cb0fdc1](https://gitlab.com/eosts/internal/eosportugal/tools/offline_chat/commit/cb0fdc12e8adfb813bd8bd956604cb807d904222))
+
+### Documentation
+
+* add roadmap section to README ([c472d67](https://gitlab.com/eosts/internal/eosportugal/tools/offline_chat/commit/c472d67eb296aa3128dd30e99226b042e8d30bdc))
+* improve README with CLI usage and library examples ([34a1565](https://gitlab.com/eosts/internal/eosportugal/tools/offline_chat/commit/34a15654290846d0018db130b1b46e7c744a37e8))
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
