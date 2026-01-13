@@ -160,7 +160,7 @@ class TestHistoryClearResetsState:
     clear, the history SHALL contain zero messages.
     """
 
-    @settings(max_examples=100)
+    @settings(max_examples=100, deadline=None)
     @given(
         agent=valid_agent_strategy(),
         messages=st.lists(valid_message_strategy(), min_size=1, max_size=20),

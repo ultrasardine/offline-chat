@@ -109,8 +109,9 @@ class ChatSession:
         )
         self.history.messages.append(user_message)
 
-        # Build messages list for Ollama
-        messages = [{"role": msg.role, "content": msg.content} for msg in self.history.messages]
+        # Build messages list for Ollama with system prompt
+        messages = [{"role": "system", "content": self.agent.system_prompt}]
+        messages.extend({"role": msg.role, "content": msg.content} for msg in self.history.messages)
 
         # Send to Ollama with streaming
         try:
