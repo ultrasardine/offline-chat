@@ -1,0 +1,13 @@
+{
+  "name": "offline-chat",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Terminal-based chatbot application using local Ollama models",
+  "devDependencies": {
+    "semantic-release": "^24.0.0",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/gitlab": "^13.0.0",
+    "conventional-changelog-conventionalcommits": "^8.0.0"
+  }
+}

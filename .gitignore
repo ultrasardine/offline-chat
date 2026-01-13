@@ -1,0 +1,23 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Runtime data
+data/
+
+# Test artifacts
+.pytest_cache/
+.hypothesis/
+.coverage
+htmlcov/
+
+# Node.js (semantic-release)
+node_modules/
+package-lock.json
