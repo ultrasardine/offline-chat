@@ -77,10 +77,8 @@ release:
   stage: release
   image: node:20
   before_script:
-    - npm install -g semantic-release @semantic-release/changelog @semantic-release/git @semantic-release/gitlab
+    - npm install -g semantic-release @semantic-release/changelog @semantic-release/git @semantic-release/gitlab conventional-changelog-conventionalcommits
   script:
     - semantic-release
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-      when: manual
-  allow_failure: false

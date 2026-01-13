@@ -55,26 +55,140 @@ uv add git+<repo-url>
 
 ### CLI Application
 
-```bash
-# Start the interactive CLI
-make run
+Start the interactive CLI:
 
-# Or directly with uv
-uv run python main.py
+```bash
+make run
 ```
 
-The CLI provides a menu-driven interface:
-- **Create agent**: Define a new AI agent with custom persona
-- **List agents**: View all created agents
-- **Chat with agent**: Start a conversation with an agent
-- **Delete agent**: Remove an agent and its history
+This opens the main menu:
 
-### Chat Commands
+```
+Offline Chat - Main Menu
 
-While chatting with an agent:
+1. Create new agent
+2. List agents
+3. Chat with agent
+4. Delete agent
+5. Exit
+
+Select option: 
+```
+
+### Creating an Agent
+
+Select option `1` from the main menu:
+
+```
+Create New Agent
+================
+
+Agent name (kebab-case): german-tutor
+Display name: German Language Tutor
+Base model [llama3:latest]: 
+System prompt: You are a friendly German language tutor. Help users learn 
+German through conversation, correct their mistakes gently, and explain 
+grammar rules when asked.
+Temperature (0.0-1.0) [0.7]: 
+
+Creating agent 'german-tutor'... Done!
+```
+
+- **Agent name**: Unique identifier using lowercase letters, numbers, and hyphens
+- **Display name**: Human-readable name shown in chat
+- **Base model**: Ollama model to use (press Enter for default)
+- **System prompt**: Define the agent's persona and behavior
+- **Temperature**: Controls creativity (0.0 = focused, 1.0 = creative)
+
+### Listing Agents
+
+Select option `2` to see all created agents:
+
+```
+Your Agents
+===========
+
+  german-tutor         German Language Tutor      (llama3:latest)
+  code-reviewer        Code Reviewer              (llama3:latest)
+
+Total: 2 agents
+```
+
+Or use the make target:
+
+```bash
+make agents
+```
+
+### Chatting with an Agent
+
+Select option `3`, then choose an agent:
+
+```
+Select an agent:
+  1. German Language Tutor (german-tutor)
+  2. Code Reviewer (code-reviewer)
+  0. Cancel
+
+Select agent: 1
+
+[German Language Tutor] - Commands: exit, clear
+================================================
+
+You: How do I say hello in German?
+
+German Language Tutor: In German, you say "Hallo" for a casual greeting, 
+or "Guten Tag" for a more formal hello...
+
+You: exit
+Saving conversation... Done!
+```
+
+**Chat commands:**
 - Type your message and press Enter to send
-- Type `exit` to save and return to the main menu
-- Type `clear` to reset conversation history
+- `exit` - Save conversation and return to main menu
+- `clear` - Reset conversation history (start fresh)
+- `Ctrl+C` - Emergency exit (saves pending data)
+
+### Deleting an Agent
+
+Select option `4`, choose the agent, and confirm:
+
+```
+Select an agent to delete:
+  1. German Language Tutor (german-tutor)
+  2. Code Reviewer (code-reviewer)
+  0. Cancel
+
+Select agent: 1
+
+Are you sure you want to delete 'German Language Tutor'? (y/N): y
+
+Deleting agent 'german-tutor'... Done!
+```
+
+This removes:
+- The Ollama model
+- Agent configuration files
+- All conversation history
+
+### Viewing Agent Information
+
+Use make targets to inspect agents without starting the CLI:
+
+```bash
+# List all agents
+make agents
+
+# List available Ollama models
+make models
+
+# View agent configuration
+make agent-info AGENT=german-tutor
+
+# View chat history
+make history AGENT=german-tutor
+```
 
 ### Library Usage
 
@@ -156,21 +270,75 @@ session = ChatSession(manager)
 # Start a session with an existing agent
 session.start("german-tutor")
 
-# Send a message and stream the response
+# Send a message - returns a generator that streams the response
+# Option 1: Stream response in real-time (prints as agent responds)
+print("Agent: ", end="")
 for chunk in session.send_message("Wie geht es dir?"):
     print(chunk, end="", flush=True)
 print()  # Newline after response
 
-# Access conversation history
-history = session.history
-for msg in history.messages:
-    print(f"[{msg.role}]: {msg.content}")
+# Option 2: Collect the full response as a string
+response = "".join(session.send_message("How do I say goodbye?"))
+print(f"Agent: {response}")
 
-# Clear conversation history
+# Access the full conversation history
+print("\n--- Conversation History ---")
+for msg in session.history.messages:
+    role = "You" if msg.role == "user" else "Agent"
+    print(f"[{msg.timestamp}] {role}: {msg.content}")
+
+# Get just the last message (the agent's most recent response)
+if session.history.messages:
+    last_msg = session.history.messages[-1]
+    print(f"\nLast response: {last_msg.content}")
+
+# Clear conversation history (start fresh)
 session.clear_history()
 
-# End session (automatically saves history)
+# End session (automatically saves history to disk)
 session.end()
+```
+
+#### Complete Chat Loop Example
+
+```python
+from offline_chat import AgentManager, ChatSession
+
+def chat_with_agent(agent_name: str):
+    """Interactive chat loop with an agent."""
+    manager = AgentManager()
+    session = ChatSession(manager)
+    
+    try:
+        session.start(agent_name)
+        print(f"Chatting with {session.get_display_name()}")
+        print("Type 'quit' to exit, 'history' to see conversation\n")
+        
+        while True:
+            user_input = input("You: ").strip()
+            
+            if user_input.lower() == "quit":
+                break
+            elif user_input.lower() == "history":
+                for msg in session.history.messages:
+                    role = "You" if msg.role == "user" else "Agent"
+                    print(f"  {role}: {msg.content[:50]}...")
+                continue
+            elif not user_input:
+                continue
+            
+            # Send message and stream response
+            print(f"{session.get_display_name()}: ", end="")
+            for chunk in session.send_message(user_input):
+                print(chunk, end="", flush=True)
+            print()
+    
+    finally:
+        session.end()
+        print("\nConversation saved!")
+
+# Usage
+chat_with_agent("german-tutor")
 ```
 
 #### Error Handling
@@ -328,6 +496,12 @@ Installation:
 Running:
   run                  Start the CLI application
 
+Agent Management:
+  agents               List all created agents
+  models               List available Ollama models
+  history              Show chat history (usage: make history AGENT=name)
+  agent-info           Show agent config (usage: make agent-info AGENT=name)
+
 Testing:
   test                 Run the test suite using pytest
   test-verbose         Run tests with verbose output
@@ -340,6 +514,12 @@ Code Quality:
   format               Format code using ruff
   format-check         Check code formatting without making changes
   check                Run all code quality checks (lint + format check)
+
+Versioning:
+  bump                 Bump version based on conventional commits (auto-detect)
+  bump-minor           Bump minor version (new features)
+  bump-major           Bump major version (breaking changes)
+  changelog            Generate/update CHANGELOG.md from commits
 
 Cleanup:
   clean                Remove Python caches and build artifacts

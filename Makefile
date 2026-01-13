@@ -5,7 +5,7 @@
 # Usage: make <target>
 # Run 'make help' to see all available targets
 
-.PHONY: help install install-dev run test test-verbose test-coverage lint lint-fix format format-check clean clean-all check all bump bump-minor bump-major changelog
+.PHONY: help install install-dev run test test-verbose test-coverage lint lint-fix format format-check clean clean-all check all bump bump-minor bump-major changelog agents models history agent-info
 
 .DEFAULT_GOAL := help
 
@@ -23,6 +23,9 @@ help: ## Display this help message with all available targets
 	@echo ""
 	@echo "Running:"
 	@grep -E '^(run):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@echo ""
+	@echo "Agent Management:"
+	@grep -E '^(agents|models|history|agent-info):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Testing:"
 	@grep -E '^(test|test-verbose|test-coverage|test-pbt):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -56,6 +59,47 @@ install-dev: ## Install project with dev dependencies (testing, linting)
 
 run: ## Start the CLI application
 	uv run python main.py
+
+# ============================================================================
+# Agent Management
+# ============================================================================
+
+agents: ## List all created agents
+	@uv run python -c "from offline_chat import AgentManager; m = AgentManager(); agents = m.list_agents(); \
+	print('\nCreated Agents:\n' + '='*50) if agents else print('\nNo agents created yet.'); \
+	[print(f'  {a.name:<20} {a.display_name:<25} ({a.base_model})') for a in agents]; \
+	print()"
+
+models: ## List available Ollama models
+	@echo "\nAvailable Ollama Models:"
+	@echo "========================"
+	@ollama list
+	@echo ""
+
+history: ## Show chat history for an agent (usage: make history AGENT=agent-name)
+	@if [ -z "$(AGENT)" ]; then \
+		echo "Usage: make history AGENT=agent-name"; \
+		echo ""; \
+		echo "Available agents:"; \
+		ls -1 ~/.offline-chat/history/ 2>/dev/null | sed 's/.json//' | sed 's/^/  /' || echo "  No agents found"; \
+	else \
+		cat ~/.offline-chat/history/$(AGENT).json 2>/dev/null | python -m json.tool || echo "No history found for agent '$(AGENT)'"; \
+	fi
+
+agent-info: ## Show agent configuration (usage: make agent-info AGENT=agent-name)
+	@if [ -z "$(AGENT)" ]; then \
+		echo "Usage: make agent-info AGENT=agent-name"; \
+		echo ""; \
+		echo "Available agents:"; \
+		ls -1 ~/.offline-chat/agents/ 2>/dev/null | sed 's/^/  /' || echo "  No agents found"; \
+	else \
+		echo "\nAgent Configuration:"; \
+		echo "===================="; \
+		cat ~/.offline-chat/agents/$(AGENT)/config.json 2>/dev/null | python -m json.tool || echo "Agent '$(AGENT)' not found"; \
+		echo "\nModelfile:"; \
+		echo "=========="; \
+		cat ~/.offline-chat/agents/$(AGENT)/Modelfile 2>/dev/null || echo "Modelfile not found"; \
+	fi
 
 # ============================================================================
 # Testing
