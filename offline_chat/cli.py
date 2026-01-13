@@ -14,6 +14,7 @@ from offline_chat.exceptions import (
     OfflineChatError,
     OllamaConnectionError,
 )
+from offline_chat.history import HistoryStore
 from offline_chat.manager import AgentManager
 from offline_chat.session import ChatSession
 
@@ -58,6 +59,7 @@ class CLI:
         "Create new agent",
         "List agents",
         "Chat with agent",
+        "View conversation history",
         "Delete agent",
         "Exit",
     ]
@@ -96,8 +98,10 @@ class CLI:
                 elif choice == 3:
                     self.chat_flow()
                 elif choice == 4:
-                    self.delete_agent_flow()
+                    self.view_history_flow()
                 elif choice == 5:
+                    self.delete_agent_flow()
+                elif choice == 6:
                     self._running = False
                     print("\nGoodbye!")
                 else:
@@ -176,6 +180,11 @@ class CLI:
             else:
                 temperature = 0.7
 
+            # Prompt for language with default
+            language = input("Response language [English]: ").strip()
+            if not language:
+                language = "English"
+
             # Create the agent
             agent = Agent(
                 name=name,
@@ -183,6 +192,7 @@ class CLI:
                 base_model=base_model,
                 system_prompt=system_prompt,
                 temperature=temperature,
+                language=language,
             )
 
             print("\nCreating agent...", end=" ", flush=True)
@@ -223,8 +233,41 @@ class CLI:
             print(f"\n  Name: {agent.name}")
             print(f"  Display: {agent.display_name}")
             print(f"  Model: {agent.base_model}")
+            print(f"  Language: {agent.language}")
             print(f"  Purpose: {purpose}")
             print()
+
+    def view_history_flow(self) -> None:
+        """Handle viewing conversation history workflow.
+
+        Allows user to select an agent and view its conversation history.
+        """
+        print("\n" + "=" * 40)
+        print("View Conversation History")
+        print("=" * 40)
+
+        agent = self._select_agent("Select agent to view history")
+        if agent is None:
+            return
+
+        history = self.manager.history_store.load(agent.name)
+
+        if not history.messages:
+            print(f"\nNo conversation history for '{agent.display_name}'.")
+            return
+
+        print(f"\n[{agent.display_name}] - {len(history.messages)} messages")
+        print(f"Last updated: {history.last_updated.strftime('%Y-%m-%d %H:%M')}")
+        print("-" * 40)
+
+        for msg in history.messages:
+            timestamp = msg.timestamp.strftime("%H:%M")
+            if msg.role == "user":
+                print(f"\n[{timestamp}] You: {msg.content}")
+            else:
+                print(f"\n[{timestamp}] {agent.display_name}: {msg.content}")
+
+        print("\n" + "-" * 40)
 
     def _select_agent(self, prompt: str = "Select agent") -> Optional[Agent]:
         """Display agent list and let user select one.

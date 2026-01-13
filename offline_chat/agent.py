@@ -19,6 +19,7 @@ class Agent:
         base_model: Ollama base model (e.g., "llama3:latest").
         system_prompt: Persona and purpose definition.
         temperature: Response creativity (0.0-1.0).
+        language: Language for agent responses (e.g., "English", "German").
         created_at: Timestamp when the agent was created.
     """
 
@@ -27,6 +28,7 @@ class Agent:
     base_model: str
     system_prompt: str
     temperature: float = 0.7
+    language: str = "English"
     created_at: datetime = field(default_factory=datetime.now)
 
     # Regex pattern for valid agent names: kebab-case
@@ -49,8 +51,13 @@ class Agent:
         Returns:
             String content for the Modelfile.
         """
+        # Build full system prompt with language instruction
+        full_prompt = self.system_prompt
+        if self.language and self.language.lower() != "english":
+            full_prompt = f"{self.system_prompt} Always respond in {self.language}."
+
         # Escape double quotes in system prompt for Modelfile format
-        escaped_prompt = self.system_prompt.replace("\\", "\\\\").replace('"', '\\"')
+        escaped_prompt = full_prompt.replace("\\", "\\\\").replace('"', '\\"')
         return f'''FROM {self.base_model}
 
 SYSTEM "{escaped_prompt}"
@@ -70,6 +77,7 @@ PARAMETER temperature {self.temperature}
             "base_model": self.base_model,
             "system_prompt": self.system_prompt,
             "temperature": self.temperature,
+            "language": self.language,
             "created_at": self.created_at.isoformat(),
         }
 
@@ -89,5 +97,6 @@ PARAMETER temperature {self.temperature}
             base_model=data["base_model"],
             system_prompt=data["system_prompt"],
             temperature=data.get("temperature", 0.7),
+            language=data.get("language", "English"),
             created_at=datetime.fromisoformat(data["created_at"]),
         )
