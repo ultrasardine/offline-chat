@@ -7,6 +7,8 @@ A terminal-based chatbot application that uses local Ollama models. Create perso
 - **Custom Agents**: Create AI agents with unique names, personas, and behaviors
 - **Persistent History**: Conversation history is saved and restored across sessions
 - **Local & Private**: All processing happens locally using Ollama - no data leaves your machine
+- **Web Search**: Enable agents to search the web and fetch pages for current information
+- **MCP Server Integration**: Connect agents to Model Context Protocol servers for extended tool capabilities
 - **Library Support**: Use as a CLI tool or import as a Python library
 
 ## Requirements
@@ -90,6 +92,8 @@ System prompt: You are a friendly German language tutor. Help users learn
 German through conversation, correct their mistakes gently, and explain 
 grammar rules when asked.
 Temperature (0.0-1.0) [0.7]: 
+Response language [English]: 
+Enable web search? (y/N): 
 
 Creating agent 'german-tutor'... Done!
 ```
@@ -99,6 +103,7 @@ Creating agent 'german-tutor'... Done!
 - **Base model**: Ollama model to use (press Enter for default)
 - **System prompt**: Define the agent's persona and behavior
 - **Temperature**: Controls creativity (0.0 = focused, 1.0 = creative)
+- **Web search**: Enable the agent to search the web and fetch pages (requires tool-capable model like llama3.1 or qwen3)
 
 ### Listing Agents
 
@@ -219,7 +224,8 @@ agent = Agent(
     base_model="llama3:latest",
     system_prompt="You are a helpful coding assistant.",
     temperature=0.7,
-    language="English"  # Language for responses (default: English)
+    language="English",  # Language for responses (default: English)
+    web_search_enabled=False  # Enable web search (default: False)
 )
 manager.create_agent(agent)
 
@@ -352,6 +358,7 @@ from offline_chat.exceptions import (
     InvalidAgentNameError,
     OllamaConnectionError,
     OllamaCommandError,
+    MCPConfigError,
 )
 
 manager = AgentManager()
@@ -371,6 +378,8 @@ except AgentExistsError:
     print("An agent with this name already exists")
 except OllamaCommandError as e:
     print(f"Ollama error: {e}")
+except MCPConfigError as e:
+    print(f"MCP configuration error: {e}")
 ```
 
 ## Agent Configuration
@@ -385,6 +394,8 @@ Each agent is defined by:
 | `system_prompt` | Persona and behavior definition | `You are a friendly German tutor...` |
 | `temperature` | Response creativity (0.0-1.0) | `0.7` |
 | `language` | Language for agent responses | `English` |
+| `web_search_enabled` | Enable web search and fetch tools | `False` |
+| `mcp_servers` | List of MCP server configurations | `[]` |
 
 ### Example Agents
 
@@ -421,6 +432,285 @@ Agent data is stored in `~/.offline-chat/` by default:
 │       └── Modelfile          # Ollama Modelfile
 └── history/                   # Conversation histories
     └── {agent_name}.json
+```
+
+## Web Search
+
+Agents can be enabled to search the web and fetch page content using Ollama's tool calling capabilities. For full functionality, use a tool-capable model like `llama3.1` or `qwen3`. If the model doesn't support tools, the agent will automatically fall back to regular chat without web search.
+
+### Creating a Web-Enabled Agent
+
+```python
+from offline_chat import Agent, AgentManager
+
+manager = AgentManager()
+
+agent = Agent(
+    name="research-assistant",
+    display_name="Research Assistant",
+    base_model="llama3.1:latest",  # Must be tool-capable
+    system_prompt="You are a research assistant that helps find current information.",
+    temperature=0.7,
+    web_search_enabled=True  # Enable web search
+)
+manager.create_agent(agent)
+```
+
+### Using Search and Fetch Tools Directly
+
+```python
+from offline_chat import DuckDuckGoProvider, WebSearchTool, WebFetchTool
+
+# Search the web
+provider = DuckDuckGoProvider(timeout=10)
+results = provider.search("Python 3.13 new features", max_results=5)
+for result in results:
+    print(f"{result.title}: {result.href}")
+
+# Or use the tool interface
+search_tool = WebSearchTool(provider)
+output = search_tool.execute(query="latest ollama release", max_results=3)
+print(output)
+
+# Fetch and extract content from a page
+fetch_tool = WebFetchTool(timeout=10)
+content = fetch_tool.execute(url="https://example.com", max_length=5000)
+print(content)
+```
+
+### Chat Indicators
+
+When chatting with a web-enabled agent, you'll see indicators when tools are used:
+
+```
+You: What's the latest version of Python?
+
+Searching...
+Fetching page...
+
+Research Assistant: Based on my search, the latest stable version of Python is...
+```
+
+## MCP Server Integration
+
+Agents can connect to [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) servers to access external tools like filesystem access, database queries, API integrations, and more. MCP servers run as separate processes and communicate via stdio transport.
+
+### Creating an Agent with MCP Servers
+
+#### Via CLI
+
+When creating an agent, you can select from pre-configured MCP servers:
+
+```
+Create New Agent
+================
+
+Agent name (kebab-case): file-assistant
+Display name: File Assistant
+Base model [llama3:latest]: llama3.1:latest
+System prompt: You are a helpful assistant that can read and manage files.
+Temperature (0.0-1.0) [0.7]: 
+Response language [English]: 
+Enable web search? (y/N): n
+
+Add MCP servers? (y/N): y
+
+----------------------------------------
+MCP Server Configuration
+----------------------------------------
+
+Available MCP servers:
+  1. fetch
+     Fetch and extract content from URLs
+     Command: uvx mcp-server-fetch
+  2. filesystem
+     Read/write files (configure path after selection)
+     Command: npx -y @modelcontextprotocol/server-filesystem ~
+  3. github
+     GitHub API integration (requires token)
+     Command: npx -y @modelcontextprotocol/server-github
+  4. memory
+     Persistent memory/knowledge graph
+     Command: npx -y @modelcontextprotocol/server-memory
+
+  5. Add custom MCP server
+  0. Done adding servers
+
+Select option: 1
+
+--- Configure 'fetch' ---
+Command: uvx mcp-server-fetch
+
+Add this server? (Y/n): y
+
+MCP server 'fetch' added.
+
+Available MCP servers:
+  1. fetch [added]
+     ...
+  2. filesystem
+     ...
+
+Select option: 0
+
+Creating agent 'file-assistant'... Done!
+```
+
+#### Via Library
+
+```python
+from offline_chat import Agent, AgentManager, MCPServerConfig
+
+manager = AgentManager()
+
+# Configure MCP servers
+mcp_servers = [
+    MCPServerConfig(
+        name="filesystem",
+        command="npx",
+        args=["-y", "@modelcontextprotocol/server-filesystem", "/Users/me/documents"],
+    ),
+    MCPServerConfig(
+        name="fetch",
+        command="uvx",
+        args=["mcp-server-fetch"],
+    ),
+]
+
+agent = Agent(
+    name="file-assistant",
+    display_name="File Assistant",
+    base_model="llama3.1:latest",
+    system_prompt="You are a helpful assistant that can read and manage files.",
+    temperature=0.7,
+    mcp_servers=mcp_servers,
+)
+manager.create_agent(agent)
+```
+
+### Using MCP Tools in Chat Sessions
+
+When an agent has MCP servers configured, the chat session automatically connects to them and makes their tools available:
+
+```python
+import asyncio
+from offline_chat import AgentManager, ChatSession
+
+async def chat_with_mcp_agent():
+    manager = AgentManager()
+    session = ChatSession(manager)
+    
+    # Use async methods for MCP-enabled agents
+    await session.start_async("file-assistant")
+    
+    try:
+        # The agent can now use MCP tools
+        for chunk in session.send_message("List the files in my documents folder"):
+            print(chunk, end="", flush=True)
+        print()
+    finally:
+        await session.end_async()
+
+asyncio.run(chat_with_mcp_agent())
+```
+
+### MCPServerConfig Options
+
+| Field | Type | Description | Default |
+|-------|------|-------------|---------|
+| `name` | str | Unique identifier for the server | Required |
+| `command` | str | Command to launch the server (e.g., `npx`, `uvx`, `python`) | Required |
+| `args` | list[str] | Arguments to pass to the command | `[]` |
+| `env` | dict[str, str] | Environment variables for the server process | `{}` |
+| `disabled` | bool | Whether to skip this server when connecting | `False` |
+
+### Popular MCP Servers
+
+Here are some commonly used MCP servers:
+
+| Server | Command | Description |
+|--------|---------|-------------|
+| [mcp-server-fetch](https://github.com/modelcontextprotocol/servers/tree/main/src/fetch) | `uvx mcp-server-fetch` | Fetch and extract content from URLs |
+| [server-filesystem](https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem) | `npx -y @modelcontextprotocol/server-filesystem /path` | Read/write files in specified directories |
+| [server-github](https://github.com/modelcontextprotocol/servers/tree/main/src/github) | `npx -y @modelcontextprotocol/server-github` | GitHub API integration |
+| [server-postgres](https://github.com/modelcontextprotocol/servers/tree/main/src/postgres) | `npx -y @modelcontextprotocol/server-postgres` | PostgreSQL database queries |
+| [server-memory](https://github.com/modelcontextprotocol/servers/tree/main/src/memory) | `npx -y @modelcontextprotocol/server-memory` | Persistent memory/knowledge graph |
+
+### Managing MCP Presets
+
+You can add custom MCP server presets that appear in the selection list when creating agents:
+
+```python
+from offline_chat import (
+    MCPServerConfig,
+    add_preset,
+    remove_preset,
+    load_presets,
+    get_all_available_presets,
+)
+
+# Add a custom preset
+custom_server = MCPServerConfig(
+    name="my-custom-server",
+    command="python",
+    args=["-m", "my_mcp_server"],
+    env={"API_KEY": "your-key"},
+)
+add_preset(custom_server)
+
+# List all available presets (built-in + custom)
+for config, description in get_all_available_presets():
+    print(f"{config.name}: {description}")
+
+# Load only user-defined presets
+user_presets = load_presets()
+
+# Remove a custom preset
+remove_preset("my-custom-server")
+```
+
+Presets are stored in `~/.offline-chat/mcp_presets.json`.
+
+### Error Handling
+
+MCP server connections are resilient - if a server fails to connect, the agent continues with the remaining servers:
+
+```python
+from offline_chat import MCPServerConfig, MCPConfigError
+
+# Validate configuration before creating agent
+config = MCPServerConfig(
+    name="my-server",
+    command="uvx",
+    args=["my-mcp-server"],
+)
+
+try:
+    config.validate()
+except MCPConfigError as e:
+    print(f"Invalid configuration: {e}")
+```
+
+### Combining MCP with Web Search
+
+MCP servers and built-in web search can be used together:
+
+```python
+agent = Agent(
+    name="research-assistant",
+    display_name="Research Assistant",
+    base_model="llama3.1:latest",
+    system_prompt="You are a research assistant with file and web access.",
+    temperature=0.7,
+    web_search_enabled=True,  # Built-in web search
+    mcp_servers=[
+        MCPServerConfig(
+            name="filesystem",
+            command="npx",
+            args=["-y", "@modelcontextprotocol/server-filesystem", "/Users/me/research"],
+        ),
+    ],
+)
 ```
 
 ## Configuration
@@ -581,13 +871,24 @@ offline-chat/
 │   ├── session.py             # ChatSession implementation
 │   ├── history.py             # HistoryStore implementation
 │   ├── cli.py                 # CLI implementation
-│   └── exceptions.py          # Custom exceptions
+│   ├── exceptions.py          # Custom exceptions
+│   ├── mcp_client.py          # MCP client and manager
+│   ├── mcp_config.py          # MCP server configuration
+│   ├── mcp_presets.py         # MCP server presets management
+│   ├── tools.py               # Web search tools
+│   ├── search.py              # Search providers
+│   └── fetch.py               # Web fetch tool
 └── tests/                     # Test suite
     ├── test_agent.py
     ├── test_manager.py
     ├── test_session.py
     ├── test_history.py
-    └── test_cli.py
+    ├── test_cli.py
+    ├── test_mcp_client.py
+    ├── test_mcp_config.py
+    ├── test_tools.py
+    ├── test_search.py
+    └── test_fetch.py
 ```
 
 Runtime data is stored in `~/.offline-chat/` (see [Data Storage](#data-storage)).
@@ -646,12 +947,19 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for commit message guidelines.
 
 ## Roadmap
 
-Future features under consideration:
+### Completed
 
-- **Web Search / Internet Access**: Enable agents to search the web for current information using Ollama's function calling capabilities
+- ✅ **MCP Server Integration**: Connect agents to Model Context Protocol servers for extended tool capabilities
+
+### Future Features
+
+Features under consideration:
+
 - **RAG (Retrieval Augmented Generation)**: Allow agents to query external documents and knowledge bases
 - **Multi-agent Conversations**: Support conversations between multiple agents
 - **Export/Import Agents**: Share agent configurations between users
+- **Agent Templates**: Pre-configured agent templates for common use cases
+- **Tool Usage Analytics**: Track and visualize tool usage patterns across sessions
 
 ## License
 

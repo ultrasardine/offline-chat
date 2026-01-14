@@ -4,6 +4,7 @@ This module provides the CLI class for terminal-based interaction
 with the Offline Chat application.
 """
 
+import asyncio
 from typing import Optional
 
 from offline_chat.agent import Agent
@@ -11,10 +12,13 @@ from offline_chat.exceptions import (
     AgentExistsError,
     AgentNotFoundError,
     InvalidAgentNameError,
+    MCPConfigError,
     OfflineChatError,
     OllamaConnectionError,
 )
 from offline_chat.manager import AgentManager
+from offline_chat.mcp_config import MCPServerConfig
+from offline_chat.mcp_presets import get_all_available_presets
 from offline_chat.session import ChatSession
 
 
@@ -184,6 +188,13 @@ class CLI:
             if not language:
                 language = "English"
 
+            # Prompt for web search enabled (y/N)
+            web_search_input = input("Enable web search? (y/N): ").strip()
+            web_search_enabled = web_search_input.lower() == "y"
+
+            # Prompt for MCP server configurations
+            mcp_servers = self._prompt_mcp_servers()
+
             # Create the agent
             agent = Agent(
                 name=name,
@@ -192,6 +203,8 @@ class CLI:
                 system_prompt=system_prompt,
                 temperature=temperature,
                 language=language,
+                web_search_enabled=web_search_enabled,
+                mcp_servers=mcp_servers,
             )
 
             print("\nCreating agent...", end=" ", flush=True)
@@ -229,7 +242,17 @@ class CLI:
             if len(purpose) > 50:
                 purpose = purpose[:47] + "..."
 
-            print(f"\n  Name: {agent.name}")
+            # Web search indicator
+            web_search_status = "[Web Search]" if agent.web_search_enabled else ""
+
+            # MCP servers indicator
+            mcp_status = ""
+            if agent.mcp_servers:
+                server_names = [s.name for s in agent.mcp_servers if not s.disabled]
+                if server_names:
+                    mcp_status = f"[MCP: {', '.join(server_names)}]"
+
+            print(f"\n  Name: {agent.name} {web_search_status} {mcp_status}".rstrip())
             print(f"  Display: {agent.display_name}")
             print(f"  Model: {agent.base_model}")
             print(f"  Language: {agent.language}")
@@ -307,10 +330,176 @@ class CLI:
             print("\nInvalid input.")
             return None
 
+    def _prompt_mcp_servers(self) -> list[MCPServerConfig]:
+        """Prompt user for MCP server configurations.
+
+        Shows available presets and allows selecting from them or
+        adding custom configurations.
+
+        Returns:
+            List of MCPServerConfig objects.
+        """
+        mcp_servers: list[MCPServerConfig] = []
+
+        add_mcp = input("\nAdd MCP servers? (y/N): ").strip()
+        if add_mcp.lower() != "y":
+            return mcp_servers
+
+        print("\n" + "-" * 40)
+        print("MCP Server Configuration")
+        print("-" * 40)
+
+        while True:
+            # Show available presets
+            presets = get_all_available_presets()
+
+            print("\nAvailable MCP servers:")
+            for i, (config, description) in enumerate(presets, 1):
+                # Check if already added
+                already_added = any(s.name == config.name for s in mcp_servers)
+                status = " [added]" if already_added else ""
+                print(f"  {i}. {config.name}{status}")
+                print(f"     {description}")
+                print(f"     Command: {config.command} {' '.join(config.args)}")
+
+            print(f"\n  {len(presets) + 1}. Add custom MCP server")
+            print("  0. Done adding servers")
+            print()
+
+            try:
+                choice = input("Select option: ").strip()
+                idx = int(choice)
+
+                if idx == 0:
+                    break
+
+                if 1 <= idx <= len(presets):
+                    preset_config, _ = presets[idx - 1]
+
+                    # Check if already added
+                    if any(s.name == preset_config.name for s in mcp_servers):
+                        print(f"\n'{preset_config.name}' is already added.")
+                        continue
+
+                    # Allow customization of the preset
+                    server = self._customize_preset(preset_config)
+                    if server:
+                        mcp_servers.append(server)
+                        print(f"\nMCP server '{server.name}' added.")
+
+                elif idx == len(presets) + 1:
+                    # Custom server
+                    server = self._prompt_single_mcp_server(len(mcp_servers) + 1)
+                    if server:
+                        mcp_servers.append(server)
+                        print(f"\nMCP server '{server.name}' added.")
+
+                else:
+                    print("\nInvalid selection.")
+
+            except ValueError:
+                print("\nInvalid input.")
+
+        return mcp_servers
+
+    def _customize_preset(self, preset: MCPServerConfig) -> MCPServerConfig | None:
+        """Allow user to customize a preset before adding.
+
+        Args:
+            preset: The preset configuration to customize.
+
+        Returns:
+            Customized MCPServerConfig or None if cancelled.
+        """
+        print(f"\n--- Configure '{preset.name}' ---")
+        print(f"Command: {preset.command} {' '.join(preset.args)}")
+
+        # For filesystem, prompt for path
+        if preset.name == "filesystem":
+            path = input("Directory path to allow access [~]: ").strip()
+            if path:
+                # Replace the last argument (path) with user's choice
+                preset.args = preset.args[:-1] + [path]
+            print(f"Updated: {preset.command} {' '.join(preset.args)}")
+
+        # For servers that need tokens, prompt for them
+        if preset.env:
+            print("\nEnvironment variables needed:")
+            for key, value in preset.env.items():
+                if not value:  # Empty value means user needs to provide it
+                    new_value = input(f"  {key}: ").strip()
+                    if new_value:
+                        preset.env[key] = new_value
+
+        # Confirm
+        confirm = input("\nAdd this server? (Y/n): ").strip()
+        if confirm.lower() == "n":
+            return None
+
+        return preset
+
+    def _prompt_single_mcp_server(self, index: int) -> Optional[MCPServerConfig]:
+        """Prompt user for a single MCP server configuration.
+
+        Args:
+            index: The server index for display purposes.
+
+        Returns:
+            MCPServerConfig if valid input provided, None to cancel.
+        """
+        print(f"\n--- MCP Server {index} ---")
+
+        # Prompt for server name
+        name = input("Server name (e.g., fetch, filesystem): ").strip()
+        if not name:
+            print("Server name is required. Skipping MCP server.")
+            return None
+
+        # Prompt for command
+        command = input("Command (e.g., uvx, npx): ").strip()
+        if not command:
+            print("Command is required. Skipping MCP server.")
+            return None
+
+        # Prompt for arguments
+        args_input = input("Arguments (space-separated, e.g., mcp-server-fetch): ").strip()
+        args = args_input.split() if args_input else []
+
+        # Prompt for environment variables
+        env: dict[str, str] = {}
+        add_env = input("Add environment variables? (y/N): ").strip()
+        if add_env.lower() == "y":
+            print("Enter environment variables (KEY=VALUE format, empty line to finish):")
+            while True:
+                env_input = input("  ").strip()
+                if not env_input:
+                    break
+                if "=" in env_input:
+                    key, value = env_input.split("=", 1)
+                    env[key.strip()] = value.strip()
+                else:
+                    print("  Invalid format. Use KEY=VALUE.")
+
+        # Create and validate the config
+        try:
+            config = MCPServerConfig(
+                name=name,
+                command=command,
+                args=args,
+                env=env,
+                disabled=False,
+            )
+            config.validate()
+            return config
+        except MCPConfigError as e:
+            print(f"\nInvalid MCP configuration: {e}")
+            return None
+
     def chat_flow(self) -> None:
         """Handle chat session workflow.
 
         Allows user to select an agent and start a conversation.
+        Uses async methods when agent has MCP servers configured.
         """
         print("\n" + "=" * 40)
         print("Chat with Agent")
@@ -320,9 +509,35 @@ class CLI:
         if agent is None:
             return
 
+        # Check if agent has MCP servers - use async flow if so
+        if agent.mcp_servers:
+            self._chat_flow_async(agent)
+        else:
+            self._chat_flow_sync(agent)
+
+    def _chat_flow_sync(self, agent: Agent) -> None:
+        """Handle synchronous chat session (no MCP servers).
+
+        Args:
+            agent: The agent to chat with.
+        """
         try:
             self.session.start(agent.name)
             display_name = self.session.get_display_name()
+
+            # Track if we're showing a tool indicator
+            self._tool_indicator_shown = False
+
+            def tool_callback(tool_name: str) -> None:
+                """Display indicator when a tool is called."""
+                self._tool_indicator_shown = True
+                if tool_name == "web_search":
+                    print("\nSearching...", end="", flush=True)
+                elif tool_name == "web_fetch":
+                    print("\nFetching page...", end="", flush=True)
+
+            # Set the tool callback on the session
+            self.session.set_tool_callback(tool_callback)
 
             print(f"\n[{display_name}] - Commands: exit, clear")
             print("-" * 40)
@@ -345,9 +560,18 @@ class CLI:
                         print("\nConversation history cleared.")
                         continue
 
+                    # Reset tool indicator flag
+                    self._tool_indicator_shown = False
+
                     # Send message and stream response
-                    print(f"\n{display_name}: ", end="", flush=True)
+                    response_started = False
                     for chunk in self.session.send_message(user_input):
+                        if not response_started:
+                            # Clear indicator line and start response on new line
+                            if self._tool_indicator_shown:
+                                print()  # New line after indicator
+                            print(f"\n{display_name}: ", end="", flush=True)
+                            response_started = True
                         print(chunk, end="", flush=True)
                     print()
 
@@ -367,6 +591,106 @@ class CLI:
             print(f"\nError: {e}")
             if self.session.is_active:
                 self.session.end()
+
+    def _chat_flow_async(self, agent: Agent) -> None:
+        """Handle async chat session with MCP servers.
+
+        Args:
+            agent: The agent to chat with (has MCP servers configured).
+        """
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        try:
+            loop.run_until_complete(self._chat_flow_async_impl(agent))
+        except KeyboardInterrupt:
+            print("\n\nGoodbye!")
+
+    async def _chat_flow_async_impl(self, agent: Agent) -> None:
+        """Async implementation of chat flow with MCP servers.
+
+        Args:
+            agent: The agent to chat with.
+        """
+        try:
+            print("\nConnecting to MCP servers...", end=" ", flush=True)
+            await self.session.start_async(agent.name)
+            print("Done!")
+
+            display_name = self.session.get_display_name()
+
+            # Track if we're showing a tool indicator
+            self._tool_indicator_shown = False
+
+            def tool_callback(tool_name: str) -> None:
+                """Display indicator when a tool is called."""
+                self._tool_indicator_shown = True
+                # Show tool name for MCP tools
+                print(f"\nUsing tool: {tool_name}...", end="", flush=True)
+
+            # Set the tool callback on the session
+            self.session.set_tool_callback(tool_callback)
+
+            # Show available MCP tools
+            if self.session.has_mcp_tools:
+                tool_count = len(self.session._mcp_manager.tool_registry)
+                print(f"[{tool_count} MCP tool(s) available]")
+
+            print(f"\n[{display_name}] - Commands: exit, clear")
+            print("-" * 40)
+
+            while True:
+                try:
+                    user_input = input("\nYou: ").strip()
+
+                    if not user_input:
+                        continue
+
+                    if user_input.lower() == "exit":
+                        print("\nSaving conversation...", end=" ", flush=True)
+                        await self.session.end_async()
+                        print("Done!")
+                        break
+
+                    if user_input.lower() == "clear":
+                        self.session.clear_history()
+                        print("\nConversation history cleared.")
+                        continue
+
+                    # Reset tool indicator flag
+                    self._tool_indicator_shown = False
+
+                    # Send message using async method
+                    response_chunks = await self.session.send_message_async(user_input)
+
+                    # Display response
+                    if response_chunks:
+                        if self._tool_indicator_shown:
+                            print()  # New line after indicator
+                        print(f"\n{display_name}: ", end="", flush=True)
+                        for chunk in response_chunks:
+                            print(chunk, end="", flush=True)
+                        print()
+
+                except KeyboardInterrupt:
+                    print("\n\nSaving conversation...", end=" ", flush=True)
+                    await self.session.end_async()
+                    print("Done!")
+                    break
+
+        except AgentNotFoundError as e:
+            print(f"\nError: {e}")
+        except OllamaConnectionError as e:
+            print(f"\nError: {e}")
+            if self.session.is_active:
+                await self.session.end_async()
+        except OfflineChatError as e:
+            print(f"\nError: {e}")
+            if self.session.is_active:
+                await self.session.end_async()
 
     def delete_agent_flow(self) -> None:
         """Handle agent deletion workflow.

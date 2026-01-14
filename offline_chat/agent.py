@@ -1,9 +1,14 @@
 """Agent data model for Offline Chat application."""
 
+from __future__ import annotations
+
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from offline_chat.mcp_config import MCPServerConfig
 
 
 @dataclass
@@ -20,6 +25,8 @@ class Agent:
         system_prompt: Persona and purpose definition.
         temperature: Response creativity (0.0-1.0).
         language: Language for agent responses (e.g., "English", "German").
+        web_search_enabled: Whether the agent can search the web for information.
+        mcp_servers: List of MCP server configurations for external tools.
         created_at: Timestamp when the agent was created.
     """
 
@@ -29,6 +36,8 @@ class Agent:
     system_prompt: str
     temperature: float = 0.7
     language: str = "English"
+    web_search_enabled: bool = False
+    mcp_servers: list[MCPServerConfig] = field(default_factory=list)
     created_at: datetime = field(default_factory=datetime.now)
 
     # Regex pattern for valid agent names: kebab-case
@@ -78,6 +87,8 @@ PARAMETER temperature {self.temperature}
             "system_prompt": self.system_prompt,
             "temperature": self.temperature,
             "language": self.language,
+            "web_search_enabled": self.web_search_enabled,
+            "mcp_servers": [s.to_dict() for s in self.mcp_servers],
             "created_at": self.created_at.isoformat(),
         }
 
@@ -91,6 +102,14 @@ PARAMETER temperature {self.temperature}
         Returns:
             Agent instance.
         """
+        # Import here to avoid circular imports at module level
+        from offline_chat.mcp_config import MCPServerConfig
+
+        # Deserialize MCP server configs with backward compatibility
+        mcp_servers = [
+            MCPServerConfig.from_dict(s) for s in data.get("mcp_servers", [])
+        ]
+
         return cls(
             name=data["name"],
             display_name=data["display_name"],
@@ -98,5 +117,7 @@ PARAMETER temperature {self.temperature}
             system_prompt=data["system_prompt"],
             temperature=data.get("temperature", 0.7),
             language=data.get("language", "English"),
+            web_search_enabled=data.get("web_search_enabled", False),
+            mcp_servers=mcp_servers,
             created_at=datetime.fromisoformat(data["created_at"]),
         )
