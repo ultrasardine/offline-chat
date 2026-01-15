@@ -575,9 +575,7 @@ class TestToolRoutingCorrectness:
         import asyncio
 
         with pytest.raises(ValueError, match="not found"):
-            asyncio.get_event_loop().run_until_complete(
-                manager.call_tool("unknown_tool", {})
-            )
+            asyncio.run(manager.call_tool("unknown_tool", {}))
 
     def test_call_tool_raises_for_disconnected_server(self):
         """call_tool should raise ValueError if server is disconnected."""
@@ -595,9 +593,7 @@ class TestToolRoutingCorrectness:
         import asyncio
 
         with pytest.raises(ValueError, match="not connected"):
-            asyncio.get_event_loop().run_until_complete(
-                manager.call_tool("orphan_tool", {})
-            )
+            asyncio.run(manager.call_tool("orphan_tool", {}))
 
     def test_tool_registry_empty_when_no_tools(self):
         """Tool registry should be empty when servers have no tools."""

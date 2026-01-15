@@ -3,6 +3,7 @@
 This module contains property-based tests and unit tests for the ChatSession class.
 """
 
+import asyncio
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -803,9 +804,7 @@ class TestChatSessionMCPIntegration:
                 mock_manager_instance.tool_registry = {}
 
                 import asyncio
-                result = asyncio.get_event_loop().run_until_complete(
-                    session.start_async("test-agent")
-                )
+                result = asyncio.run(session.start_async("test-agent"))
 
                 assert result is True
                 assert session.agent is not None
@@ -853,13 +852,12 @@ class TestChatSessionMCPIntegration:
                 mock_manager_instance.tool_registry = {}
 
                 import asyncio
-                loop = asyncio.get_event_loop()
 
                 # Start session
-                loop.run_until_complete(session.start_async("test-agent"))
+                asyncio.run(session.start_async("test-agent"))
 
                 # End session
-                loop.run_until_complete(session.end_async())
+                asyncio.run(session.end_async())
 
                 mock_manager_instance.disconnect_all.assert_called_once()
                 assert session.agent is None
@@ -1074,9 +1072,7 @@ class TestChatSessionMCPIntegration:
             session = ChatSession(manager)
 
             import asyncio
-            result = asyncio.get_event_loop().run_until_complete(
-                session.start_async("test-agent")
-            )
+            result = asyncio.run(session.start_async("test-agent"))
 
             assert result is True
             assert session.agent is not None
@@ -1125,14 +1121,22 @@ class TestChatSessionMCPIntegration:
 class AsyncMock:
     """Simple async mock for testing."""
 
-    def __init__(self, return_value=None):
+    def __init__(self, return_value=None, side_effect=None):
         self.return_value = return_value
+        self.side_effect = side_effect
         self.call_count = 0
         self.called = False
 
     async def __call__(self, *args, **kwargs):
         self.call_count += 1
         self.called = True
+        if self.side_effect is not None:
+            if isinstance(self.side_effect, Exception):
+                raise self.side_effect
+            elif callable(self.side_effect):
+                return await self.side_effect(*args, **kwargs) if asyncio.iscoroutinefunction(self.side_effect) else self.side_effect(*args, **kwargs)
+            else:
+                raise self.side_effect
         return self.return_value
 
     def assert_called_once(self):
@@ -1141,3 +1145,700 @@ class AsyncMock:
 
 # Register the AsyncMock helper with pytest
 pytest.helpers = type("Helpers", (), {"AsyncMock": AsyncMock})()
+
+
+
+class TestConnectionLifecycleManagement:
+    """Property tests for database connection lifecycle management.
+
+    Feature: database-access
+    Validates: Requirements 2.4, 2.5, 2.7
+    """
+
+    def test_property_7_oracle_audit_logging(self):
+        """Property 7: Oracle audit logging.
+
+        **Validates: Requirements 2.7**
+
+        For any query executed against an Oracle database, the system should
+        log the query execution for audit purposes (Oracle logs to DBTOOLS$MCP_LOG).
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            agents_dir = Path(tmpdir) / "agents"
+            history_dir = Path(tmpdir) / "history"
+
+            manager = AgentManager(agents_dir=agents_dir, history_dir=history_dir)
+
+            from offline_chat.mcp_config import MCPServerConfig
+
+            # Create Oracle database MCP server config
+            oracle_config = MCPServerConfig(
+                name="oracle_db",
+                command="sql",
+                args=["-mcp", "-connection", "TEST_CONN"],
+                database_type="oracle",
+                oracle_connection_name="TEST_CONN",
+            )
+
+            agent = Agent(
+                name="test-agent",
+                display_name="Test Agent",
+                base_model="llama3:latest",
+                system_prompt="You are a test agent.",
+                mcp_servers=[oracle_config],
+            )
+
+            with patch("subprocess.run") as mock_run:
+                mock_run.return_value.returncode = 0
+                mock_run.return_value.stderr = ""
+                mock_run.return_value.stdout = ""
+                manager.create_agent(agent)
+
+            session = ChatSession(manager)
+
+            # Mock the MCPClientManager
+            with patch("offline_chat.session.MCPClientManager") as MockManager:
+                mock_manager_instance = MockManager.return_value
+                mock_manager_instance.connect_all = pytest.helpers.AsyncMock()
+                mock_manager_instance.get_all_tools.return_value = []
+                mock_manager_instance.tool_registry = {"run_sql": "oracle_db"}
+                mock_manager_instance.call_tool = pytest.helpers.AsyncMock(
+                    return_value="Query result"
+                )
+                # Add clients dict to indicate successful connection
+                mock_client = type('MockClient', (), {'config': oracle_config})()
+                mock_manager_instance.clients = {"oracle_db": mock_client}
+
+                import asyncio
+
+                # Start session - should log Oracle connection
+                with patch("offline_chat.session.logger") as mock_logger:
+                    asyncio.run(session.start_async("test-agent"))
+
+                    # Verify Oracle audit logging message was logged
+                    oracle_log_calls = [
+                        call for call in mock_logger.info.call_args_list
+                        if "DBTOOLS$MCP_LOG" in str(call)
+                    ]
+                    assert len(oracle_log_calls) > 0, (
+                        "Expected Oracle audit logging message"
+                    )
+
+                # Verify database connection was tracked
+                assert session.has_database_connections
+                db_connections = session.get_database_connections()
+                assert "oracle_db" in db_connections
+                assert db_connections["oracle_db"] == "oracle"
+
+    def test_property_9_connection_cleanup(self):
+        """Property 9: Connection cleanup.
+
+        **Validates: Requirements 2.4**
+
+        For any chat session with database access, ending the session should
+        result in all database connections being closed with no resource leaks.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            agents_dir = Path(tmpdir) / "agents"
+            history_dir = Path(tmpdir) / "history"
+
+            manager = AgentManager(agents_dir=agents_dir, history_dir=history_dir)
+
+            from offline_chat.mcp_config import MCPServerConfig
+
+            # Create multiple database configs
+            sqlite_config = MCPServerConfig(
+                name="sqlite_db",
+                command="uvx",
+                args=["sqlite-mcp-server", "--db-path", "/tmp/test.db"],
+                database_type="sqlite",
+                database_path="/tmp/test.db",
+            )
+
+            postgres_config = MCPServerConfig(
+                name="postgres_db",
+                command="uvx",
+                args=["postgres-mcp-server"],
+                database_type="postgresql",
+                database_host="localhost",
+                database_port=5432,
+            )
+
+            agent = Agent(
+                name="test-agent",
+                display_name="Test Agent",
+                base_model="llama3:latest",
+                system_prompt="You are a test agent.",
+                mcp_servers=[sqlite_config, postgres_config],
+            )
+
+            with patch("subprocess.run") as mock_run:
+                mock_run.return_value.returncode = 0
+                mock_run.return_value.stderr = ""
+                mock_run.return_value.stdout = ""
+                manager.create_agent(agent)
+
+            session = ChatSession(manager)
+
+            # Mock the MCPClientManager
+            with patch("offline_chat.session.MCPClientManager") as MockManager:
+                mock_manager_instance = MockManager.return_value
+                mock_manager_instance.connect_all = pytest.helpers.AsyncMock()
+                mock_manager_instance.disconnect_all = pytest.helpers.AsyncMock()
+                mock_manager_instance.get_all_tools.return_value = []
+                mock_manager_instance.tool_registry = {}
+                # Add clients dict to indicate successful connections
+                mock_sqlite_client = type('MockClient', (), {'config': sqlite_config})()
+                mock_postgres_client = type('MockClient', (), {'config': postgres_config})()
+                mock_manager_instance.clients = {
+                    "sqlite_db": mock_sqlite_client,
+                    "postgres_db": mock_postgres_client
+                }
+
+                import asyncio
+
+                # Start session
+                asyncio.run(session.start_async("test-agent"))
+
+                # Verify connections are tracked
+                assert session.has_database_connections
+                db_connections = session.get_database_connections()
+                assert len(db_connections) == 2
+                assert "sqlite_db" in db_connections
+                assert "postgres_db" in db_connections
+
+                # End session - should close all connections
+                with patch("offline_chat.session.logger") as mock_logger:
+                    asyncio.run(session.end_async())
+
+                    # Verify cleanup logging
+                    cleanup_calls = [
+                        call for call in mock_logger.info.call_args_list
+                        if "Closing" in str(call) and "database connection" in str(call)
+                    ]
+                    assert len(cleanup_calls) > 0, (
+                        "Expected connection cleanup logging"
+                    )
+
+                # Verify disconnect_all was called
+                mock_manager_instance.disconnect_all.assert_called_once()
+
+                # Verify session state is cleared
+                assert not session.has_database_connections
+                assert len(session.get_database_connections()) == 0
+                assert session._mcp_manager is None
+
+    def test_property_10_connection_reuse(self):
+        """Property 10: Connection reuse.
+
+        **Validates: Requirements 2.5**
+
+        For any sequence of queries in a single session, the system should
+        establish exactly one connection per database and reuse it for all queries.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            agents_dir = Path(tmpdir) / "agents"
+            history_dir = Path(tmpdir) / "history"
+
+            manager = AgentManager(agents_dir=agents_dir, history_dir=history_dir)
+
+            from offline_chat.mcp_config import MCPServerConfig
+
+            # Create database config
+            db_config = MCPServerConfig(
+                name="test_db",
+                command="uvx",
+                args=["sqlite-mcp-server", "--db-path", "/tmp/test.db"],
+                database_type="sqlite",
+                database_path="/tmp/test.db",
+            )
+
+            agent = Agent(
+                name="test-agent",
+                display_name="Test Agent",
+                base_model="llama3:latest",
+                system_prompt="You are a test agent.",
+                mcp_servers=[db_config],
+            )
+
+            with patch("subprocess.run") as mock_run:
+                mock_run.return_value.returncode = 0
+                mock_run.return_value.stderr = ""
+                mock_run.return_value.stdout = ""
+                manager.create_agent(agent)
+
+            session = ChatSession(manager)
+
+            # Mock the MCPClientManager
+            with patch("offline_chat.session.MCPClientManager") as MockManager:
+                mock_manager_instance = MockManager.return_value
+                mock_manager_instance.connect_all = pytest.helpers.AsyncMock()
+                mock_manager_instance.disconnect_all = pytest.helpers.AsyncMock()
+                mock_manager_instance.get_all_tools.return_value = []
+                mock_manager_instance.tool_registry = {"query_database": "test_db"}
+                mock_manager_instance.call_tool = pytest.helpers.AsyncMock(
+                    return_value="Query result"
+                )
+
+                import asyncio
+
+                # Start session - establishes connection
+                asyncio.run(session.start_async("test-agent"))
+
+                # Verify connection was established once
+                mock_manager_instance.connect_all.assert_called_once()
+                initial_call_count = mock_manager_instance.connect_all.call_count
+
+                # Execute multiple queries
+                for i in range(5):
+                    asyncio.run(
+                        session._execute_tool_async(
+                            "query_database",
+                            {"query": f"SELECT * FROM table{i}"}
+                        )
+                    )
+
+                # Verify connect_all was NOT called again (connection reused)
+                assert mock_manager_instance.connect_all.call_count == initial_call_count
+
+                # Verify call_tool was called for each query
+                assert mock_manager_instance.call_tool.call_count == 5
+
+                # End session
+                asyncio.run(session.end_async())
+
+                # Verify disconnect was called exactly once
+                mock_manager_instance.disconnect_all.assert_called_once()
+
+    @settings(max_examples=50, deadline=None)
+    @given(
+        db_type=st.sampled_from(["oracle", "postgresql", "mysql", "sqlite"]),
+        num_queries=st.integers(min_value=1, max_value=10),
+    )
+    def test_connection_reuse_property_based(self, db_type: str, num_queries: int):
+        """Property-based test for connection reuse across multiple queries.
+
+        **Validates: Requirements 2.5**
+
+        For any database type and any number of queries, the connection should
+        be established once and reused for all queries.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            agents_dir = Path(tmpdir) / "agents"
+            history_dir = Path(tmpdir) / "history"
+
+            manager = AgentManager(agents_dir=agents_dir, history_dir=history_dir)
+
+            from offline_chat.mcp_config import MCPServerConfig
+
+            # Create database config based on type
+            if db_type == "oracle":
+                db_config = MCPServerConfig(
+                    name="test_db",
+                    command="sql",
+                    args=["-mcp", "-connection", "TEST"],
+                    database_type="oracle",
+                    oracle_connection_name="TEST",
+                )
+            elif db_type == "sqlite":
+                db_config = MCPServerConfig(
+                    name="test_db",
+                    command="uvx",
+                    args=["sqlite-mcp-server", "--db-path", "/tmp/test.db"],
+                    database_type="sqlite",
+                    database_path="/tmp/test.db",
+                )
+            elif db_type == "postgresql":
+                db_config = MCPServerConfig(
+                    name="test_db",
+                    command="uvx",
+                    args=["postgres-mcp-server"],
+                    database_type="postgresql",
+                    database_host="localhost",
+                    database_port=5432,
+                )
+            else:  # mysql
+                db_config = MCPServerConfig(
+                    name="test_db",
+                    command="uvx",
+                    args=["mysql-mcp-server"],
+                    database_type="mysql",
+                    database_host="localhost",
+                    database_port=3306,
+                )
+
+            agent = Agent(
+                name="test-agent",
+                display_name="Test Agent",
+                base_model="llama3:latest",
+                system_prompt="You are a test agent.",
+                mcp_servers=[db_config],
+            )
+
+            with patch("subprocess.run") as mock_run:
+                mock_run.return_value.returncode = 0
+                mock_run.return_value.stderr = ""
+                mock_run.return_value.stdout = ""
+                manager.create_agent(agent)
+
+            session = ChatSession(manager)
+
+            with patch("offline_chat.session.MCPClientManager") as MockManager:
+                mock_manager_instance = MockManager.return_value
+                mock_manager_instance.connect_all = pytest.helpers.AsyncMock()
+                mock_manager_instance.disconnect_all = pytest.helpers.AsyncMock()
+                mock_manager_instance.get_all_tools.return_value = []
+                mock_manager_instance.tool_registry = {"query": "test_db"}
+                mock_manager_instance.call_tool = pytest.helpers.AsyncMock(
+                    return_value="Result"
+                )
+
+                import asyncio
+
+                # Start session
+                asyncio.run(session.start_async("test-agent"))
+
+                # Connection should be established once
+                assert mock_manager_instance.connect_all.call_count == 1
+
+                # Execute multiple queries
+                for i in range(num_queries):
+                    asyncio.run(
+                        session._execute_tool_async("query", {"query": f"SELECT {i}"})
+                    )
+
+                # Connection should still be established only once (reused)
+                assert mock_manager_instance.connect_all.call_count == 1
+
+                # All queries should have been executed
+                assert mock_manager_instance.call_tool.call_count == num_queries
+
+                # End session
+                asyncio.run(session.end_async())
+
+                # Disconnect should be called once
+                assert mock_manager_instance.disconnect_all.call_count == 1
+
+    def test_database_tool_execution_logging(self):
+        """Database tool execution should be logged for audit purposes.
+
+        **Validates: Requirements 2.7**
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            agents_dir = Path(tmpdir) / "agents"
+            history_dir = Path(tmpdir) / "history"
+
+            manager = AgentManager(agents_dir=agents_dir, history_dir=history_dir)
+
+            from offline_chat.mcp_config import MCPServerConfig
+
+            # Create Oracle database config
+            oracle_config = MCPServerConfig(
+                name="oracle_db",
+                command="sql",
+                args=["-mcp", "-connection", "TEST"],
+                database_type="oracle",
+                oracle_connection_name="TEST",
+            )
+
+            agent = Agent(
+                name="test-agent",
+                display_name="Test Agent",
+                base_model="llama3:latest",
+                system_prompt="You are a test agent.",
+                mcp_servers=[oracle_config],
+            )
+
+            with patch("subprocess.run") as mock_run:
+                mock_run.return_value.returncode = 0
+                mock_run.return_value.stderr = ""
+                mock_run.return_value.stdout = ""
+                manager.create_agent(agent)
+
+            session = ChatSession(manager)
+
+            with patch("offline_chat.session.MCPClientManager") as MockManager:
+                mock_manager_instance = MockManager.return_value
+                mock_manager_instance.connect_all = pytest.helpers.AsyncMock()
+                mock_manager_instance.get_all_tools.return_value = []
+                mock_manager_instance.tool_registry = {"run_sql": "oracle_db"}
+                mock_manager_instance.call_tool = pytest.helpers.AsyncMock(
+                    return_value="Query result"
+                )
+                # Add clients dict to indicate successful connection
+                mock_client = type('MockClient', (), {'config': oracle_config})()
+                mock_manager_instance.clients = {"oracle_db": mock_client}
+
+                import asyncio
+
+                # Start session
+                asyncio.run(session.start_async("test-agent"))
+
+                # Execute database tool with logging
+                with patch("offline_chat.session.logger") as mock_logger:
+                    asyncio.run(
+                        session._execute_tool_async(
+                            "run_sql",
+                            {"query": "SELECT * FROM users"}
+                        )
+                    )
+
+                    # Verify execution was logged
+                    info_calls = [str(call) for call in mock_logger.info.call_args_list]
+                    assert any("Executing database tool" in call for call in info_calls)
+                    assert any("oracle" in call for call in info_calls)
+                    assert any("completed successfully" in call for call in info_calls)
+
+                    # Verify Oracle-specific logging
+                    debug_calls = [str(call) for call in mock_logger.debug.call_args_list]
+                    assert any("DBTOOLS$MCP_LOG" in call for call in debug_calls)
+
+    def test_has_database_connections_property(self):
+        """has_database_connections property should reflect connection state."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            agents_dir = Path(tmpdir) / "agents"
+            history_dir = Path(tmpdir) / "history"
+
+            manager = AgentManager(agents_dir=agents_dir, history_dir=history_dir)
+
+            # Agent without database
+            agent_no_db = Agent(
+                name="test-agent-no-db",
+                display_name="Test Agent No DB",
+                base_model="llama3:latest",
+                system_prompt="You are a test agent.",
+            )
+
+            with patch("subprocess.run") as mock_run:
+                mock_run.return_value.returncode = 0
+                mock_run.return_value.stderr = ""
+                mock_run.return_value.stdout = ""
+                manager.create_agent(agent_no_db)
+
+            session = ChatSession(manager)
+
+            import asyncio
+
+            # Start session without database
+            asyncio.run(session.start_async("test-agent-no-db"))
+            assert not session.has_database_connections
+            assert len(session.get_database_connections()) == 0
+
+            # End session
+            asyncio.run(session.end_async())
+
+            # Now test with database
+            from offline_chat.mcp_config import MCPServerConfig
+
+            db_config = MCPServerConfig(
+                name="test_db",
+                command="uvx",
+                args=["sqlite-mcp-server"],
+                database_type="sqlite",
+                database_path="/tmp/test.db",
+            )
+
+            agent_with_db = Agent(
+                name="test-agent-with-db",
+                display_name="Test Agent With DB",
+                base_model="llama3:latest",
+                system_prompt="You are a test agent.",
+                mcp_servers=[db_config],
+            )
+
+            with patch("subprocess.run") as mock_run:
+                mock_run.return_value.returncode = 0
+                mock_run.return_value.stderr = ""
+                mock_run.return_value.stdout = ""
+                manager.create_agent(agent_with_db)
+
+            session2 = ChatSession(manager)
+
+            with patch("offline_chat.session.MCPClientManager") as MockManager:
+                mock_manager_instance = MockManager.return_value
+                mock_manager_instance.connect_all = pytest.helpers.AsyncMock()
+                mock_manager_instance.disconnect_all = pytest.helpers.AsyncMock()
+                mock_manager_instance.get_all_tools.return_value = []
+                mock_manager_instance.tool_registry = {}
+                # Add clients dict to indicate successful connection
+                mock_client = type('MockClient', (), {'config': db_config})()
+                mock_manager_instance.clients = {"test_db": mock_client}
+
+                # Start session with database
+                asyncio.run(session2.start_async("test-agent-with-db"))
+                assert session2.has_database_connections
+                assert len(session2.get_database_connections()) == 1
+                assert "test_db" in session2.get_database_connections()
+
+                # End session
+                asyncio.run(session2.end_async())
+                assert not session2.has_database_connections
+
+
+
+class TestErrorHandlingProperties:
+    """Property tests for error handling and graceful degradation.
+
+    Feature: database-access
+    Validates: Requirements 9.1, 9.2
+    """
+
+    @settings(max_examples=100, deadline=None)
+    @given(
+        agent=st.builds(
+            Agent,
+            name=valid_agent_name_strategy(),
+            display_name=st.text(min_size=1, max_size=50).filter(lambda s: s.strip()),
+            base_model=st.sampled_from(["llama3:latest", "mistral", "codellama"]),
+            system_prompt=st.text(min_size=1, max_size=200).filter(lambda s: s.strip()),
+            temperature=st.floats(min_value=0.0, max_value=1.0, allow_nan=False),
+            created_at=st.datetimes(
+                min_value=datetime(2020, 1, 1),
+                max_value=datetime(2030, 12, 31),
+            ),
+        ),
+    )
+    def test_property_33_graceful_connection_failure(self, agent: Agent):
+        """Property 33: Graceful connection failure.
+
+        **Validates: Requirements 9.1**
+
+        For any agent configuration with invalid database settings, starting
+        a chat session should succeed and continue without database tools
+        rather than crashing.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            agents_dir = Path(tmpdir) / "agents"
+            history_dir = Path(tmpdir) / "history"
+
+            manager = AgentManager(agents_dir=agents_dir, history_dir=history_dir)
+
+            # Import MCP config
+            from offline_chat.mcp_config import MCPServerConfig
+
+            # Create agent with invalid database configuration
+            # (command that will fail to connect)
+            invalid_db_config = MCPServerConfig(
+                name="invalid_db",
+                command="nonexistent-command",
+                args=["--invalid"],
+                database_type="sqlite",
+                database_path="/nonexistent/path.db",
+            )
+
+            agent.mcp_servers = [invalid_db_config]
+
+            with patch("subprocess.run") as mock_run:
+                mock_run.return_value.returncode = 0
+                mock_run.return_value.stderr = ""
+                mock_run.return_value.stdout = ""
+                manager.create_agent(agent)
+
+            session = ChatSession(manager)
+
+            # Mock MCPClientManager to simulate connection failure
+            with patch("offline_chat.session.MCPClientManager") as MockManager:
+                mock_manager_instance = MockManager.return_value
+                # Simulate connection failure by raising an exception
+                mock_manager_instance.connect_all = pytest.helpers.AsyncMock(
+                    side_effect=Exception("Connection failed")
+                )
+
+                # Start session should succeed despite connection failure
+                result = asyncio.run(session.start_async(agent.name))
+
+                # Session should start successfully
+                assert result is True
+                assert session.is_active
+                assert session.agent is not None
+
+                # MCP manager should be None (graceful degradation)
+                assert session._mcp_manager is None
+
+                # No database connections should be tracked
+                assert not session.has_database_connections
+                assert len(session.get_database_connections()) == 0
+
+    @settings(max_examples=100, deadline=None)
+    @given(
+        agent=st.builds(
+            Agent,
+            name=valid_agent_name_strategy(),
+            display_name=st.text(min_size=1, max_size=50).filter(lambda s: s.strip()),
+            base_model=st.sampled_from(["llama3:latest", "mistral", "codellama"]),
+            system_prompt=st.text(min_size=1, max_size=200).filter(lambda s: s.strip()),
+            temperature=st.floats(min_value=0.0, max_value=1.0, allow_nan=False),
+            created_at=st.datetimes(
+                min_value=datetime(2020, 1, 1),
+                max_value=datetime(2030, 12, 31),
+            ),
+        ),
+        error_message=st.text(min_size=10, max_size=100).filter(lambda s: s.strip()),
+    )
+    def test_property_34_syntax_error_message_return(self, agent: Agent, error_message: str):
+        """Property 34: Syntax error message return.
+
+        **Validates: Requirements 9.2**
+
+        For any query with syntax errors, the database tool should return
+        the error message to the agent rather than raising an exception.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            agents_dir = Path(tmpdir) / "agents"
+            history_dir = Path(tmpdir) / "history"
+
+            manager = AgentManager(agents_dir=agents_dir, history_dir=history_dir)
+
+            # Import MCP config
+            from offline_chat.mcp_config import MCPServerConfig
+
+            # Create agent with database configuration
+            db_config = MCPServerConfig(
+                name="test_db",
+                command="uvx",
+                args=["sqlite-mcp-server"],
+                database_type="sqlite",
+                database_path="/tmp/test.db",
+            )
+
+            agent.mcp_servers = [db_config]
+
+            with patch("subprocess.run") as mock_run:
+                mock_run.return_value.returncode = 0
+                mock_run.return_value.stderr = ""
+                mock_run.return_value.stdout = ""
+                manager.create_agent(agent)
+
+            session = ChatSession(manager)
+
+            # Mock MCPClientManager
+            with patch("offline_chat.session.MCPClientManager") as MockManager:
+                mock_manager_instance = MockManager.return_value
+                mock_manager_instance.connect_all = pytest.helpers.AsyncMock()
+                mock_manager_instance.disconnect_all = pytest.helpers.AsyncMock()
+                mock_manager_instance.get_all_tools.return_value = []
+                mock_manager_instance.tool_registry = {"test_tool": "test_db"}
+
+                # Mock call_tool to raise an exception (simulating syntax error)
+                mock_manager_instance.call_tool = pytest.helpers.AsyncMock(
+                    side_effect=Exception(error_message)
+                )
+
+                # Start session
+                asyncio.run(session.start_async(agent.name))
+
+                # Execute tool - should return error message, not raise exception
+                result = asyncio.run(
+                    session._execute_tool_async("test_tool", {"query": "INVALID SQL"})
+                )
+
+                # Result should be an error message string, not an exception
+                assert isinstance(result, str)
+                assert "Error executing tool" in result
+                assert error_message in result
+
+                # Session should still be active
+                assert session.is_active
+
+                # End session
+                asyncio.run(session.end_async())

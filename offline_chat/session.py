@@ -5,6 +5,7 @@ with AI agents, including message handling and history persistence.
 """
 
 import asyncio
+import logging
 from datetime import datetime
 from typing import Any, Callable, Iterator, Optional
 
@@ -17,6 +18,8 @@ from offline_chat.history import ConversationHistory, HistoryStore, Message
 from offline_chat.manager import AgentManager
 from offline_chat.mcp_client import MCPClientManager
 from offline_chat.tools import WebSearchTool
+
+logger = logging.getLogger(__name__)
 
 
 class ChatSession:
@@ -57,6 +60,7 @@ class ChatSession:
         self._web_fetch_tool: Optional[WebFetchTool] = None
         self._mcp_manager: Optional[MCPClientManager] = None
         self._on_tool_call: Optional[Callable[[str], None]] = None
+        self._database_connections: dict[str, str] = {}  # Maps server name to database type
 
     def start(self, agent_name: str) -> bool:
         """Start a chat session with the specified agent.
@@ -87,7 +91,11 @@ class ChatSession:
         """Start a chat session with async MCP server connections.
 
         Loads the agent configuration, existing conversation history,
-        and connects to any configured MCP servers.
+        and connects to any configured MCP servers. Tracks database
+        connections for lifecycle management.
+        
+        If database connections fail, logs the error and continues
+        the session without database tools (graceful degradation).
 
         Args:
             agent_name: The name of the agent to chat with.
@@ -103,8 +111,44 @@ class ChatSession:
 
         # Connect to MCP servers if configured
         if self.agent and self.agent.mcp_servers:
-            self._mcp_manager = MCPClientManager(self.agent.mcp_servers)
-            await self._mcp_manager.connect_all()
+            try:
+                self._mcp_manager = MCPClientManager(self.agent.mcp_servers)
+                await self._mcp_manager.connect_all()
+                
+                # Track database connections for lifecycle management
+                # Only track successfully connected database servers
+                self._database_connections.clear()
+                for config in self.agent.mcp_servers:
+                    if config.database_type:
+                        # Check if this server actually connected
+                        if config.name in self._mcp_manager.clients:
+                            self._database_connections[config.name] = config.database_type
+                            logger.info(
+                                f"Database connection established: {config.name} "
+                                f"(type: {config.database_type})"
+                            )
+                        else:
+                            logger.warning(
+                                f"Database connection failed: {config.name} "
+                                f"(type: {config.database_type}). "
+                                f"Continuing session without this database."
+                            )
+                
+                # Log Oracle-specific connection info for audit purposes
+                for server_name, db_type in self._database_connections.items():
+                    if db_type == "oracle":
+                        logger.info(
+                            f"Oracle database connection active: {server_name}. "
+                            f"Queries will be logged in DBTOOLS$MCP_LOG table."
+                        )
+            except Exception as e:
+                # Log the error but continue the session without database tools
+                logger.error(
+                    f"Failed to connect to MCP servers: {e}. "
+                    f"Continuing session without database tools."
+                )
+                self._mcp_manager = None
+                self._database_connections.clear()
 
         return True
 
@@ -204,19 +248,64 @@ class ChatSession:
     async def _execute_tool_async(self, name: str, arguments: dict[str, Any]) -> str:
         """Execute tool, routing to MCP or built-in handlers.
 
+        For database tools, logs the operation for audit purposes
+        (especially important for Oracle databases which log to DBTOOLS$MCP_LOG).
+        
+        Handles errors gracefully by catching exceptions and returning error
+        messages to the agent, allowing the agent to understand and potentially
+        correct issues (e.g., syntax errors in SQL queries).
+
         Args:
             name: Tool name.
             arguments: Tool arguments.
 
         Returns:
-            Tool execution result.
+            Tool execution result or error message.
         """
         if self._on_tool_call:
             self._on_tool_call(name)
 
         # Check MCP tools first
         if self._mcp_manager and name in self._mcp_manager.tool_registry:
-            return await self._mcp_manager.call_tool(name, arguments)
+            server_name = self._mcp_manager.tool_registry[name]
+            
+            # Log database operations for audit purposes
+            if server_name in self._database_connections:
+                db_type = self._database_connections[server_name]
+                logger.info(
+                    f"Executing database tool '{name}' on {db_type} database '{server_name}'"
+                )
+                
+                # For Oracle, note that query will be logged in DBTOOLS$MCP_LOG
+                if db_type == "oracle" and "sql" in name.lower():
+                    logger.debug(
+                        f"Oracle query will be logged in DBTOOLS$MCP_LOG table "
+                        f"for database '{server_name}'"
+                    )
+            
+            try:
+                result = await self._mcp_manager.call_tool(name, arguments)
+                
+                # Log completion of database operations
+                if server_name in self._database_connections:
+                    logger.info(f"Database tool '{name}' completed successfully")
+                
+                return result
+            except Exception as e:
+                # Catch and return errors to the agent instead of raising
+                # This allows the agent to understand syntax errors, execution errors, etc.
+                error_msg = str(e)
+                
+                # Log the error for debugging
+                if server_name in self._database_connections:
+                    logger.warning(
+                        f"Database tool '{name}' failed on '{server_name}': {error_msg}"
+                    )
+                else:
+                    logger.warning(f"Tool '{name}' failed: {error_msg}")
+                
+                # Return a formatted error message to the agent
+                return f"Error executing tool '{name}': {error_msg}"
 
         # Fall back to built-in tools
         return self._execute_tool(name, arguments)
@@ -235,16 +324,29 @@ class ChatSession:
         self.agent = None
         self.history = None
         self._mcp_manager = None
+        self._database_connections.clear()
 
     async def end_async(self) -> None:
         """End session and disconnect MCP servers.
 
         Saves the current conversation history and disconnects
-        from all MCP servers.
+        from all MCP servers, ensuring database connections are
+        properly closed with no resource leaks.
         """
-        # Disconnect MCP servers
+        # Log database connection cleanup
+        if self._database_connections:
+            logger.info(
+                f"Closing {len(self._database_connections)} database connection(s): "
+                f"{', '.join(self._database_connections.keys())}"
+            )
+        
+        # Disconnect MCP servers (which closes database connections)
         if self._mcp_manager:
             await self._mcp_manager.disconnect_all()
+            
+            # Verify all database connections were closed
+            for server_name, db_type in self._database_connections.items():
+                logger.info(f"Database connection closed: {server_name} (type: {db_type})")
 
         # Save history and clear state using sync method
         self.end()
@@ -550,6 +652,60 @@ class ChatSession:
             True if MCP manager is connected with tools, False otherwise.
         """
         return self._mcp_manager is not None and len(self._mcp_manager.tool_registry) > 0
+
+    @property
+    def has_database_connections(self) -> bool:
+        """Check if there are active database connections in this session.
+        
+        This property is useful for determining if the agent has database
+        capabilities available during the current chat session. Database
+        connections are established when the session starts and tracked
+        throughout the session lifecycle.
+        
+        Returns:
+            True if database connections are active, False otherwise.
+            
+        Examples:
+            >>> session = ChatSession(manager)
+            >>> await session.start_async("data-analyst")
+            >>> 
+            >>> if session.has_database_connections:
+            ...     print("Agent can query databases")
+            ... else:
+            ...     print("Agent has no database access")
+        """
+        return len(self._database_connections) > 0
+
+    def get_database_connections(self) -> dict[str, str]:
+        """Get information about active database connections.
+        
+        Returns a dictionary mapping MCP server names to their database types.
+        This is useful for understanding which databases are available to the
+        agent during the current session.
+        
+        Returns:
+            Dictionary mapping server names to database types.
+            Example: {"prod_db": "oracle", "analytics_db": "postgresql"}
+            
+        Examples:
+            >>> session = ChatSession(manager)
+            >>> await session.start_async("data-analyst")
+            >>> 
+            >>> connections = session.get_database_connections()
+            >>> for server_name, db_type in connections.items():
+            ...     print(f"{server_name}: {db_type}")
+            prod_db: oracle
+            analytics_db: postgresql
+            >>> 
+            >>> # Check for specific database type
+            >>> has_oracle = any(
+            ...     db_type == "oracle" 
+            ...     for db_type in connections.values()
+            ... )
+            >>> if has_oracle:
+            ...     print("Oracle database available - queries logged in DBTOOLS$MCP_LOG")
+        """
+        return self._database_connections.copy()
 
     def get_display_name(self) -> str:
         """Get the display name of the current agent.

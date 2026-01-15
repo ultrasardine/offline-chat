@@ -8,6 +8,7 @@ import asyncio
 from typing import Optional
 
 from offline_chat.agent import Agent
+from offline_chat.database_config_cli import configure_database_access
 from offline_chat.exceptions import (
     AgentExistsError,
     AgentNotFoundError,
@@ -61,6 +62,7 @@ class CLI:
     MENU_OPTIONS = [
         "Create new agent",
         "List agents",
+        "View agent details",
         "Chat with agent",
         "View conversation history",
         "Delete agent",
@@ -99,12 +101,14 @@ class CLI:
                 elif choice == 2:
                     self.list_agents_flow()
                 elif choice == 3:
-                    self.chat_flow()
+                    self.view_agent_details_flow()
                 elif choice == 4:
-                    self.view_history_flow()
+                    self.chat_flow()
                 elif choice == 5:
-                    self.delete_agent_flow()
+                    self.view_history_flow()
                 elif choice == 6:
+                    self.delete_agent_flow()
+                elif choice == 7:
                     self._running = False
                     print("\nGoodbye!")
                 else:
@@ -195,6 +199,12 @@ class CLI:
             # Prompt for MCP server configurations
             mcp_servers = self._prompt_mcp_servers()
 
+            # Prompt for database configurations
+            database_configs = configure_database_access()
+            
+            # Combine MCP servers and database configs
+            all_mcp_servers = mcp_servers + database_configs
+
             # Create the agent
             agent = Agent(
                 name=name,
@@ -204,7 +214,7 @@ class CLI:
                 temperature=temperature,
                 language=language,
                 web_search_enabled=web_search_enabled,
-                mcp_servers=mcp_servers,
+                mcp_servers=all_mcp_servers,
             )
 
             print("\nCreating agent...", end=" ", flush=True)
@@ -245,19 +255,126 @@ class CLI:
             # Web search indicator
             web_search_status = "[Web Search]" if agent.web_search_enabled else ""
 
-            # MCP servers indicator
+            # Separate database servers from other MCP servers
+            database_servers = [s for s in agent.mcp_servers 
+                              if hasattr(s, 'database_type') and s.database_type]
+            other_mcp_servers = [s for s in agent.mcp_servers 
+                               if not (hasattr(s, 'database_type') and s.database_type)]
+
+            # MCP servers indicator (non-database)
             mcp_status = ""
-            if agent.mcp_servers:
-                server_names = [s.name for s in agent.mcp_servers if not s.disabled]
+            if other_mcp_servers:
+                server_names = [s.name for s in other_mcp_servers if not s.disabled]
                 if server_names:
                     mcp_status = f"[MCP: {', '.join(server_names)}]"
+            
+            # Database indicator
+            db_status = ""
+            if database_servers:
+                db_info = []
+                for db in database_servers:
+                    if not db.disabled:
+                        db_type = db.database_type
+                        db_info.append(f"{db_type}({db.name})")
+                if db_info:
+                    db_status = f"[Databases: {', '.join(db_info)}]"
+                else:
+                    db_status = "[No database access]"
+            else:
+                db_status = "[No database access]"
 
-            print(f"\n  Name: {agent.name} {web_search_status} {mcp_status}".rstrip())
+            print(f"\n  Name: {agent.name} {web_search_status} {mcp_status} {db_status}".rstrip())
             print(f"  Display: {agent.display_name}")
             print(f"  Model: {agent.base_model}")
             print(f"  Language: {agent.language}")
             print(f"  Purpose: {purpose}")
             print()
+
+    def view_agent_details_flow(self) -> None:
+        """Handle viewing detailed agent information workflow.
+
+        Displays comprehensive agent details including database configurations
+        with masked passwords.
+        """
+        print("\n" + "=" * 40)
+        print("View Agent Details")
+        print("=" * 40)
+
+        agent = self._select_agent("Select agent to view details")
+        if agent is None:
+            return
+
+        print("\n" + "=" * 40)
+        print(f"Agent: {agent.display_name}")
+        print("=" * 40)
+
+        # Basic information
+        print(f"\nName: {agent.name}")
+        print(f"Display Name: {agent.display_name}")
+        print(f"Base Model: {agent.base_model}")
+        print(f"Temperature: {agent.temperature}")
+        print(f"Language: {agent.language}")
+        print(f"Web Search: {'Enabled' if agent.web_search_enabled else 'Disabled'}")
+        print(f"Created: {agent.created_at.strftime('%Y-%m-%d %H:%M')}")
+
+        # System prompt
+        print(f"\nPurpose/Persona:")
+        print(f"  {agent.system_prompt}")
+
+        # Separate database servers from other MCP servers
+        database_servers = [s for s in agent.mcp_servers 
+                          if hasattr(s, 'database_type') and s.database_type]
+        other_mcp_servers = [s for s in agent.mcp_servers 
+                           if not (hasattr(s, 'database_type') and s.database_type)]
+
+        # Display non-database MCP servers
+        if other_mcp_servers:
+            print("\nMCP Servers:")
+            for server in other_mcp_servers:
+                status = "disabled" if server.disabled else "enabled"
+                print(f"  - {server.name} ({status})")
+                print(f"    Command: {server.command} {' '.join(server.args)}")
+                if server.env:
+                    print(f"    Environment: {len(server.env)} variable(s)")
+
+        # Display database configurations with masked passwords
+        if database_servers:
+            print("\nDatabase Access:")
+            from offline_chat.credential_utils import sanitize_config_for_display
+            
+            for db_config in database_servers:
+                status = "disabled" if db_config.disabled else "enabled"
+                print(f"\n  Database: {db_config.name} ({status})")
+                print(f"  Type: {db_config.database_type}")
+                
+                # Display connection details based on database type
+                if db_config.database_type == "oracle":
+                    if db_config.oracle_connection_name:
+                        print(f"  Connection: {db_config.oracle_connection_name}")
+                    elif db_config.oracle_tns_name:
+                        print(f"  TNS Name: {db_config.oracle_tns_name}")
+                        print(f"  Username: {db_config.database_user}")
+                        print(f"  Password: ****")
+                    else:
+                        print(f"  Host: {db_config.database_host}")
+                        print(f"  Port: {db_config.database_port}")
+                        print(f"  Service: {db_config.database_name}")
+                        print(f"  Username: {db_config.database_user}")
+                        print(f"  Password: ****")
+                
+                elif db_config.database_type == "sqlite":
+                    print(f"  Path: {db_config.database_path}")
+                
+                elif db_config.database_type in ["postgresql", "mysql"]:
+                    print(f"  Host: {db_config.database_host}")
+                    print(f"  Port: {db_config.database_port}")
+                    print(f"  Database: {db_config.database_name}")
+                    print(f"  Username: {db_config.database_user}")
+                    print(f"  Password: ****")
+        else:
+            print("\nDatabase Access: No database access")
+
+        print("\n" + "=" * 40)
 
     def view_history_flow(self) -> None:
         """Handle viewing conversation history workflow.

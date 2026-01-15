@@ -268,7 +268,11 @@ class MCPClientManager:
         Logs errors for servers that fail to connect but continues
         with remaining servers. After successful connections, builds
         the tool registry mapping tool names to server names.
+        
+        When multiple database servers are configured, tool names are
+        prefixed with the database name to avoid conflicts.
         """
+        # First pass: connect to all servers
         for config in self.configs:
             if config.disabled:
                 logger.info(f"MCP server '{config.name}' is disabled, skipping")
@@ -279,17 +283,6 @@ class MCPClientManager:
                 success = await client.connect()
                 if success:
                     self.clients[config.name] = client
-                    # Register tools from this server
-                    for tool in client.tools:
-                        tool_name = tool["function"]["name"]
-                        if tool_name in self.tool_registry:
-                            logger.warning(
-                                f"Tool '{tool_name}' from server '{config.name}' "
-                                f"conflicts with existing tool from server "
-                                f"'{self.tool_registry[tool_name]}'. Using first registered."
-                            )
-                        else:
-                            self.tool_registry[tool_name] = config.name
                     logger.info(
                         f"Connected to MCP server '{config.name}' "
                         f"with {len(client.tools)} tools"
@@ -298,6 +291,9 @@ class MCPClientManager:
                     logger.warning(f"Failed to connect to MCP server '{config.name}'")
             except Exception as e:
                 logger.error(f"Error connecting to MCP server '{config.name}': {e}")
+        
+        # Second pass: register tools with namespacing for multiple databases
+        self._register_tools_with_namespacing()
 
     async def disconnect_all(self) -> None:
         """Disconnect from all connected MCP servers.
@@ -313,6 +309,54 @@ class MCPClientManager:
 
         self.clients.clear()
         self.tool_registry.clear()
+
+    def _register_tools_with_namespacing(self) -> None:
+        """Register tools from all connected servers with appropriate namespacing.
+        
+        When multiple database servers are configured, tool names are prefixed
+        with the database name to avoid conflicts. For example:
+        - prod_db_run_sql
+        - analytics_db_query_database
+        
+        Non-database servers and single database servers use original tool names.
+        """
+        # Count database servers
+        db_servers = [
+            (name, client) 
+            for name, client in self.clients.items()
+            if hasattr(client.config, 'database_type') and client.config.database_type
+        ]
+        
+        needs_namespacing = len(db_servers) > 1
+        
+        # Register tools from all servers
+        for server_name, client in self.clients.items():
+            is_db_server = (
+                hasattr(client.config, 'database_type') 
+                and client.config.database_type
+            )
+            
+            for tool in client.tools:
+                original_name = tool["function"]["name"]
+                
+                # Apply namespacing for database servers when multiple exist
+                if is_db_server and needs_namespacing:
+                    # Prefix with database name
+                    tool_name = f"{server_name}_{original_name}"
+                    # Update the tool schema with the new name
+                    tool["function"]["name"] = tool_name
+                else:
+                    tool_name = original_name
+                
+                # Register in tool registry
+                if tool_name in self.tool_registry:
+                    logger.warning(
+                        f"Tool '{tool_name}' from server '{server_name}' "
+                        f"conflicts with existing tool from server "
+                        f"'{self.tool_registry[tool_name]}'. Using first registered."
+                    )
+                else:
+                    self.tool_registry[tool_name] = server_name
 
     def get_all_tools(self) -> list[dict[str, Any]]:
         """Get combined tools from all connected servers.
@@ -330,10 +374,11 @@ class MCPClientManager:
         """Route and execute a tool call.
 
         Routes the tool call to the server that registered the tool
-        and returns the execution result.
+        and returns the execution result. Handles namespaced tool names
+        for database servers by stripping the prefix before calling.
 
         Args:
-            name: The tool name.
+            name: The tool name (may be namespaced like "db_name_tool_name").
             arguments: Tool arguments.
 
         Returns:
@@ -352,4 +397,18 @@ class MCPClientManager:
             )
 
         client = self.clients[server_name]
-        return await client.call_tool(name, arguments)
+        
+        # Check if this is a namespaced database tool
+        # If the tool name starts with the server name, strip the prefix
+        is_db_server = (
+            hasattr(client.config, 'database_type') 
+            and client.config.database_type
+        )
+        
+        if is_db_server and name.startswith(f"{server_name}_"):
+            # Strip the namespace prefix to get the original tool name
+            original_tool_name = name[len(server_name) + 1:]
+            return await client.call_tool(original_tool_name, arguments)
+        else:
+            # Use the tool name as-is
+            return await client.call_tool(name, arguments)

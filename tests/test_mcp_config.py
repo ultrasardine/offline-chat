@@ -51,6 +51,12 @@ def valid_env_strategy():
     )
 
 
+# Strategy for generating database types
+def database_type_strategy():
+    """Generate valid database types."""
+    return st.sampled_from(["oracle", "postgresql", "mysql", "sqlite"])
+
+
 # Strategy for generating valid MCPServerConfig objects
 def valid_mcp_config_strategy():
     """Generate valid MCPServerConfig objects for property testing."""
@@ -61,6 +67,15 @@ def valid_mcp_config_strategy():
         args=valid_args_strategy(),
         env=valid_env_strategy(),
         disabled=st.booleans(),
+        database_type=st.one_of(st.none(), database_type_strategy()),
+        oracle_connection_name=st.one_of(st.none(), st.text(min_size=1, max_size=50)),
+        oracle_tns_name=st.one_of(st.none(), st.text(min_size=1, max_size=50)),
+        database_path=st.one_of(st.none(), st.text(min_size=1, max_size=200)),
+        database_host=st.one_of(st.none(), st.text(min_size=1, max_size=100)),
+        database_port=st.one_of(st.none(), st.integers(min_value=1, max_value=65535)),
+        database_name=st.one_of(st.none(), st.text(min_size=1, max_size=100)),
+        database_user=st.one_of(st.none(), st.text(min_size=1, max_size=100)),
+        database_password=st.one_of(st.none(), st.text(min_size=0, max_size=100)),
     )
 
 
@@ -91,6 +106,17 @@ class TestMCPServerConfigRoundTrip:
         assert restored.args == config.args
         assert restored.env == config.env
         assert restored.disabled == config.disabled
+        
+        # Verify database-specific fields are preserved
+        assert restored.database_type == config.database_type
+        assert restored.oracle_connection_name == config.oracle_connection_name
+        assert restored.oracle_tns_name == config.oracle_tns_name
+        assert restored.database_path == config.database_path
+        assert restored.database_host == config.database_host
+        assert restored.database_port == config.database_port
+        assert restored.database_name == config.database_name
+        assert restored.database_user == config.database_user
+        assert restored.database_password == config.database_password
 
     @settings(max_examples=100)
     @given(config=valid_mcp_config_strategy())
@@ -165,6 +191,113 @@ class TestMCPServerConfigRoundTrip:
         assert config.args == []
         assert config.env == {}
         assert config.disabled is False
+        # Database fields should default to None
+        assert config.database_type is None
+        assert config.oracle_connection_name is None
+        assert config.oracle_tns_name is None
+        assert config.database_path is None
+        assert config.database_host is None
+        assert config.database_port is None
+        assert config.database_name is None
+        assert config.database_user is None
+        assert config.database_password is None
+
+    def test_round_trip_with_oracle_database_config(self):
+        """Unit test for round-trip with Oracle database configuration."""
+        original = MCPServerConfig(
+            name="oracle-db",
+            command="sql",
+            args=["-mcp", "-connection", "PROD_DB"],
+            env={},
+            disabled=False,
+            database_type="oracle",
+            oracle_connection_name="PROD_DB",
+            database_host="localhost",
+            database_port=1521,
+            database_name="ORCL",
+            database_user="admin",
+            database_password="secret123",
+        )
+
+        data = original.to_dict()
+        restored = MCPServerConfig.from_dict(data)
+
+        assert restored.name == original.name
+        assert restored.command == original.command
+        assert restored.database_type == "oracle"
+        assert restored.oracle_connection_name == "PROD_DB"
+        assert restored.database_host == "localhost"
+        assert restored.database_port == 1521
+        assert restored.database_name == "ORCL"
+        assert restored.database_user == "admin"
+        assert restored.database_password == "secret123"
+
+    def test_round_trip_with_sqlite_database_config(self):
+        """Unit test for round-trip with SQLite database configuration."""
+        original = MCPServerConfig(
+            name="sqlite-db",
+            command="uvx",
+            args=["sqlite-mcp-server", "--db-path", "/tmp/test.db"],
+            env={},
+            disabled=False,
+            database_type="sqlite",
+            database_path="/tmp/test.db",
+        )
+
+        data = original.to_dict()
+        restored = MCPServerConfig.from_dict(data)
+
+        assert restored.name == original.name
+        assert restored.database_type == "sqlite"
+        assert restored.database_path == "/tmp/test.db"
+
+    def test_round_trip_with_postgresql_database_config(self):
+        """Unit test for round-trip with PostgreSQL database configuration."""
+        original = MCPServerConfig(
+            name="postgres-db",
+            command="uvx",
+            args=["postgres-mcp-server"],
+            env={"PGPASSWORD": "pgpass"},
+            disabled=False,
+            database_type="postgresql",
+            database_host="db.example.com",
+            database_port=5432,
+            database_name="analytics",
+            database_user="analyst",
+            database_password="pgpass",
+        )
+
+        data = original.to_dict()
+        restored = MCPServerConfig.from_dict(data)
+
+        assert restored.name == original.name
+        assert restored.database_type == "postgresql"
+        assert restored.database_host == "db.example.com"
+        assert restored.database_port == 5432
+        assert restored.database_name == "analytics"
+        assert restored.database_user == "analyst"
+        assert restored.database_password == "pgpass"
+
+    def test_to_dict_excludes_none_database_fields(self):
+        """to_dict should not include database fields when they are None."""
+        config = MCPServerConfig(
+            name="regular-server",
+            command="uvx",
+            args=["some-server"],
+        )
+
+        data = config.to_dict()
+
+        # Database fields should not be in the dict when None
+        assert "database_type" not in data
+        assert "oracle_connection_name" not in data
+        assert "oracle_tns_name" not in data
+        assert "database_path" not in data
+        assert "database_host" not in data
+        assert "database_port" not in data
+        assert "database_name" not in data
+        assert "database_user" not in data
+        assert "database_password" not in data
 
 
 class TestMCPServerConfigValidation:
