@@ -8,6 +8,7 @@
 - Maximum line length: 100 characters
 - Always use UV instead of PIP. This is mandatory.
 - Never send long chunks of text to the terminal for running as script. It will break the connection to the terminal.
+- use venv in the project root "./.venv"
 
 ## Naming Conventions
 - Classes: PascalCase (e.g., `AgentManager`, `ChatSession`)
