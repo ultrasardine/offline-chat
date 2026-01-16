@@ -1,3 +1,14 @@
+## [1.1.0](https://gitlab.com/eosts/internal/eosportugal/tools/offline_chat/compare/v1.0.0...v1.1.0) (2026-01-16)
+
+### Features
+
+* add database access for agents through MCP servers ([2071e1b](https://gitlab.com/eosts/internal/eosportugal/tools/offline_chat/commit/2071e1b7057f12057bfdef62837da9dbd4337238))
+
+### Bug Fixes
+
+* resolve linting and formatting issues ([85f8b18](https://gitlab.com/eosts/internal/eosportugal/tools/offline_chat/commit/85f8b18618ecadf89899485754d04f2812a7f250))
+* tool calling now works correctly with web search and MCP ([5821565](https://gitlab.com/eosts/internal/eosportugal/tools/offline_chat/commit/58215651e1105dda4924cb966be75b15f4b5ab62))
+
 ## 1.0.0 (2026-01-13)
 
 ### ⚠ BREAKING CHANGES
