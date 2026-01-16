@@ -18,6 +18,7 @@ class SearchResult:
         href: The URL of the search result.
         body: A snippet/description of the search result.
     """
+
     title: str
     href: str
     body: str
@@ -28,11 +29,7 @@ class SearchResult:
         Returns:
             Dictionary with title, href, and body fields.
         """
-        return {
-            "title": self.title,
-            "href": self.href,
-            "body": self.body
-        }
+        return {"title": self.title, "href": self.href, "body": self.body}
 
 
 class SearchProviderProtocol(Protocol):
@@ -92,9 +89,7 @@ class DuckDuckGoProvider:
                 results = ddgs.text(query, max_results=max_results)
                 return [
                     SearchResult(
-                        title=r.get("title", ""),
-                        href=r.get("href", ""),
-                        body=r.get("body", "")
+                        title=r.get("title", ""), href=r.get("href", ""), body=r.get("body", "")
                     )
                     for r in results
                 ]

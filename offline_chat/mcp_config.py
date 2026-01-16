@@ -19,45 +19,45 @@ class MCPServerConfig:
         args: List of arguments to pass to the command.
         env: Optional environment variables for the server process.
         disabled: Whether this server is disabled.
-        
+
         database_type: Optional database type ("oracle", "postgresql", "mysql", "sqlite").
             Used to identify database MCP servers and enable database-specific features.
-        
+
         oracle_connection_name: Optional SQLcl connection name for Oracle databases.
             When provided, uses an existing SQLcl connection instead of creating a new one.
             This is the recommended approach for Oracle as it reuses saved credentials.
             Example: "PROD_ANALYTICS" (refers to a connection in ~/.sqlcl/connections.json)
-        
+
         oracle_tns_name: Optional TNS alias for Oracle databases.
             When provided, uses a TNS name from tnsnames.ora for connection.
             Requires database_user and database_password to be set.
             Example: "PROD_TNS" (refers to an entry in tnsnames.ora)
-        
+
         database_path: Optional file path for SQLite databases.
             The absolute or relative path to the SQLite database file.
             Example: "/data/app.db" or "./local.db"
-        
+
         database_host: Optional host for Oracle/PostgreSQL/MySQL databases.
             The hostname or IP address of the database server.
             Example: "db.example.com" or "192.168.1.100"
-        
+
         database_port: Optional port for Oracle/PostgreSQL/MySQL databases.
             The port number the database server listens on.
             Defaults: Oracle=1521, PostgreSQL=5432, MySQL=3306
-        
+
         database_name: Optional database/service name.
             For Oracle: The service name (e.g., "PRODDB", "ORCL")
             For PostgreSQL/MySQL: The database name (e.g., "analytics", "sales")
-        
+
         database_user: Optional database username.
             The username for database authentication.
             Example: "analyst", "app_user"
-        
+
         database_password: Optional database password.
             The password for database authentication.
             Note: Stored in configuration files - ensure proper file permissions.
             Masked in displays and logs for security.
-    
+
     Examples:
         Oracle with existing SQLcl connection (recommended):
             >>> config = MCPServerConfig(
@@ -67,7 +67,7 @@ class MCPServerConfig:
             ...     database_type="oracle",
             ...     oracle_connection_name="PROD_ANALYTICS"
             ... )
-        
+
         Oracle with TNS alias:
             >>> config = MCPServerConfig(
             ...     name="prod_db",
@@ -78,7 +78,7 @@ class MCPServerConfig:
             ...     database_user="analyst",
             ...     database_password="password"
             ... )
-        
+
         Oracle with full connection details:
             >>> config = MCPServerConfig(
             ...     name="prod_db",
@@ -91,7 +91,7 @@ class MCPServerConfig:
             ...     database_user="analyst",
             ...     database_password="password"
             ... )
-        
+
         PostgreSQL:
             >>> config = MCPServerConfig(
             ...     name="analytics_db",
@@ -106,7 +106,7 @@ class MCPServerConfig:
             ...     database_user="analyst",
             ...     database_password="password"
             ... )
-        
+
         SQLite:
             >>> config = MCPServerConfig(
             ...     name="local_db",
@@ -122,7 +122,7 @@ class MCPServerConfig:
     args: list[str] = field(default_factory=list)
     env: dict[str, str] = field(default_factory=dict)
     disabled: bool = False
-    
+
     # Database-specific fields (optional, used when server is a database)
     database_type: str | None = None
     oracle_connection_name: str | None = None
@@ -168,7 +168,7 @@ class MCPServerConfig:
             "env": self.env.copy(),
             "disabled": self.disabled,
         }
-        
+
         # Add database-specific fields if present
         if self.database_type is not None:
             result["database_type"] = self.database_type
@@ -188,7 +188,7 @@ class MCPServerConfig:
             result["database_user"] = self.database_user
         if self.database_password is not None:
             result["database_password"] = self.database_password
-            
+
         return result
 
     @classmethod

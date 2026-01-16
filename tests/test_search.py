@@ -70,7 +70,7 @@ class TestSearchResultStructure:
         result = SearchResult(
             title="Python Documentation",
             href="https://docs.python.org",
-            body="Welcome to Python's official documentation."
+            body="Welcome to Python's official documentation.",
         )
 
         assert result.title == "Python Documentation"
@@ -81,7 +81,7 @@ class TestSearchResultStructure:
         assert data == {
             "title": "Python Documentation",
             "href": "https://docs.python.org",
-            "body": "Welcome to Python's official documentation."
+            "body": "Welcome to Python's official documentation.",
         }
 
 

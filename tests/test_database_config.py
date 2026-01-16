@@ -5,8 +5,8 @@ serialization and deserialization, ensuring all database settings including
 credentials are preserved through round-trip operations.
 """
 
-import pytest
 from datetime import datetime
+
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
@@ -199,7 +199,7 @@ class TestDatabaseConfigurationSerializationRoundTrip:
             assert restored_mcp.database_port == original_mcp.database_port
             assert restored_mcp.database_name == original_mcp.database_name
             assert restored_mcp.database_user == original_mcp.database_user
-            
+
             # CRITICAL: Verify credentials (passwords) are preserved
             assert restored_mcp.database_password == original_mcp.database_password
 
@@ -260,7 +260,7 @@ class TestDatabaseConfigurationSerializationRoundTrip:
         # Verify database config is preserved
         assert len(restored.mcp_servers) == 1
         restored_db = restored.mcp_servers[0]
-        
+
         assert restored_db.name == "prod-oracle"
         assert restored_db.database_type == "oracle"
         assert restored_db.oracle_connection_name == "PROD_DB"
@@ -303,7 +303,7 @@ class TestDatabaseConfigurationSerializationRoundTrip:
         # Verify database config is preserved
         assert len(restored.mcp_servers) == 1
         restored_db = restored.mcp_servers[0]
-        
+
         assert restored_db.name == "analytics-postgres"
         assert restored_db.database_type == "postgresql"
         assert restored_db.database_host == "postgres.example.com"
@@ -341,7 +341,7 @@ class TestDatabaseConfigurationSerializationRoundTrip:
         # Verify database config is preserved
         assert len(restored.mcp_servers) == 1
         restored_db = restored.mcp_servers[0]
-        
+
         assert restored_db.name == "local-sqlite"
         assert restored_db.database_type == "sqlite"
         assert restored_db.database_path == "/data/local.db"

@@ -20,13 +20,13 @@ Limitations:
     - Block legitimate queries with write keywords in comments or strings
     - Not catch all possible write operations in complex SQL dialects
     - Not validate SQL syntax (only checks for write operations)
-    
+
     For production use with untrusted input, consider using database-level
     read-only users or more sophisticated SQL parsing libraries.
 
 Usage Example:
     >>> from offline_chat.query_validator import is_read_only_query
-    >>> 
+    >>>
     >>> # Valid read-only queries
     >>> is_read_only_query("SELECT * FROM users")
     True
@@ -34,7 +34,7 @@ Usage Example:
     True
     >>> is_read_only_query("SELECT COUNT(*) FROM orders")
     True
-    >>> 
+    >>>
     >>> # Invalid write operations
     >>> is_read_only_query("INSERT INTO users VALUES (1, 'John')")
     False
@@ -53,19 +53,19 @@ Usage Example:
 
 Integration with Database Tools:
     >>> from offline_chat.query_validator import is_read_only_query
-    >>> 
+    >>>
     >>> def execute_query(query: str):
     ...     '''Execute a database query with safety validation.'''
     ...     if not is_read_only_query(query):
     ...         return "Error: Only SELECT queries are allowed (read-only mode)"
-    ...     
+    ...
     ...     # Execute the query...
     ...     return execute_sql(query)
-    >>> 
+    >>>
     >>> # Agent attempts to query
     >>> result = execute_query("SELECT * FROM customers LIMIT 10")
     >>> # Success - query executed
-    >>> 
+    >>>
     >>> # Agent attempts to modify data
     >>> result = execute_query("DELETE FROM customers WHERE id = 1")
     >>> # Returns: "Error: Only SELECT queries are allowed (read-only mode)"
@@ -74,15 +74,15 @@ Edge Cases:
     >>> # Query with comment containing write keyword (blocked)
     >>> is_read_only_query("SELECT * FROM users -- INSERT comment")
     False
-    >>> 
+    >>>
     >>> # Query with string containing write keyword (blocked)
     >>> is_read_only_query("SELECT 'DELETE' as action FROM users")
     False
-    >>> 
+    >>>
     >>> # Multiple statements (blocked if any contains write keyword)
     >>> is_read_only_query("SELECT * FROM users; DELETE FROM logs;")
     False
-    >>> 
+    >>>
     >>> # Case variations (all detected)
     >>> is_read_only_query("insert into users values (1)")
     False
@@ -93,16 +93,16 @@ Edge Cases:
 
 def is_read_only_query(query: str) -> bool:
     """Check if a SQL query is read-only.
-    
+
     This function validates that a query contains only SELECT statements
     and does not contain any write operations (INSERT, UPDATE, DELETE, etc.).
-    
+
     Args:
         query: SQL query string to validate
-        
+
     Returns:
         True if query is read-only (SELECT only), False otherwise
-        
+
     Examples:
         >>> is_read_only_query("SELECT * FROM users")
         True
@@ -115,23 +115,23 @@ def is_read_only_query(query: str) -> bool:
     """
     # Normalize query: strip whitespace and convert to uppercase
     normalized = query.strip().upper()
-    
+
     # Check for write operation keywords
     write_keywords = [
         "INSERT",
-        "UPDATE", 
+        "UPDATE",
         "DELETE",
         "DROP",
         "ALTER",
         "CREATE",
         "TRUNCATE",
-        "REPLACE"
+        "REPLACE",
     ]
-    
+
     # Check if any write keyword is present in the query
     for keyword in write_keywords:
         if keyword in normalized:
             return False
-    
+
     # Query must start with SELECT (after normalization)
     return normalized.startswith("SELECT")

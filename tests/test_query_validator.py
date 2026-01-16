@@ -4,7 +4,6 @@ This module contains property-based tests and unit tests for SQL query validatio
 ensuring that only read-only queries are accepted and write operations are rejected.
 """
 
-import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
@@ -16,7 +15,7 @@ def select_query_strategy():
     """Generate valid SELECT queries."""
     table_names = st.sampled_from(["users", "products", "orders", "customers", "items"])
     column_names = st.sampled_from(["id", "name", "email", "price", "quantity", "*"])
-    
+
     return st.builds(
         lambda table, column: f"SELECT {column} FROM {table}",
         table=table_names,
@@ -37,13 +36,16 @@ def write_query_strategy():
         "TRUNCATE",
         "REPLACE",
     ]
-    
+
     table_names = st.sampled_from(["users", "products", "orders"])
-    
+
     return st.builds(
-        lambda keyword, table: f"{keyword} INTO {table} VALUES (1)" if keyword == "INSERT"
-        else f"{keyword} {table} SET name = 'test'" if keyword == "UPDATE"
-        else f"{keyword} FROM {table}" if keyword == "DELETE"
+        lambda keyword, table: f"{keyword} INTO {table} VALUES (1)"
+        if keyword == "INSERT"
+        else f"{keyword} {table} SET name = 'test'"
+        if keyword == "UPDATE"
+        else f"{keyword} FROM {table}"
+        if keyword == "DELETE"
         else f"{keyword} TABLE {table}",
         keyword=st.sampled_from(write_keywords),
         table=table_names,
@@ -101,15 +103,14 @@ class TestReadOnlyQueryValidation:
             transformed = "".join(
                 c.upper() if i % 2 == 0 else c.lower() for i, c in enumerate(query)
             )
-        
+
         assert is_read_only_query(transformed) is True
 
     @settings(max_examples=100)
     @given(
-        write_keyword=st.sampled_from([
-            "INSERT", "UPDATE", "DELETE", "DROP",
-            "ALTER", "CREATE", "TRUNCATE", "REPLACE"
-        ]),
+        write_keyword=st.sampled_from(
+            ["INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "CREATE", "TRUNCATE", "REPLACE"]
+        ),
         case_transform=st.sampled_from(["upper", "lower", "mixed"]),
     )
     def test_write_keywords_detected_case_insensitive(
@@ -123,10 +124,9 @@ class TestReadOnlyQueryValidation:
         else:
             # Mixed case
             keyword = "".join(
-                c.upper() if i % 2 == 0 else c.lower()
-                for i, c in enumerate(write_keyword)
+                c.upper() if i % 2 == 0 else c.lower() for i, c in enumerate(write_keyword)
             )
-        
+
         query = f"{keyword} INTO users VALUES (1)"
         assert is_read_only_query(query) is False
 
@@ -259,7 +259,7 @@ class TestQueryValidatorEdgeCases:
     def test_select_with_complex_expressions(self):
         """SELECT with complex expressions should be read-only."""
         query = """
-        SELECT 
+        SELECT
             u.id,
             u.name,
             COUNT(o.id) as order_count,

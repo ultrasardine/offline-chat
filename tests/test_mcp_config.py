@@ -106,7 +106,7 @@ class TestMCPServerConfigRoundTrip:
         assert restored.args == config.args
         assert restored.env == config.env
         assert restored.disabled == config.disabled
-        
+
         # Verify database-specific fields are preserved
         assert restored.database_type == config.database_type
         assert restored.oracle_connection_name == config.oracle_connection_name

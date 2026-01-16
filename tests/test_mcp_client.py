@@ -327,9 +327,7 @@ class TestToolAggregationCompleteness:
             max_size=4,
         )
     )
-    def test_aggregation_contains_all_tools(
-        self, server_tools: list[list[MockMCPTool]]
-    ):
+    def test_aggregation_contains_all_tools(self, server_tools: list[list[MockMCPTool]]):
         """Aggregated tools should contain all tools from all servers."""
         from offline_chat import MCPClientManager, MCPServerConfig
 
@@ -370,9 +368,7 @@ class TestToolAggregationCompleteness:
             max_size=3,
         )
     )
-    def test_aggregation_preserves_tool_names(
-        self, server_tools: list[list[MockMCPTool]]
-    ):
+    def test_aggregation_preserves_tool_names(self, server_tools: list[list[MockMCPTool]]):
         """Aggregated tools should preserve all tool names from all servers."""
         from offline_chat import MCPClientManager, MCPServerConfig
 
@@ -439,7 +435,6 @@ class TestToolAggregationCompleteness:
         assert all_tools == []
 
 
-
 class TestToolRoutingCorrectness:
     """Property 5: Tool Routing Correctness.
 
@@ -463,9 +458,7 @@ class TestToolRoutingCorrectness:
             max_size=3,
         )
     )
-    def test_tool_registry_maps_to_correct_server(
-        self, server_tools: list[list[MockMCPTool]]
-    ):
+    def test_tool_registry_maps_to_correct_server(self, server_tools: list[list[MockMCPTool]]):
         """Tool registry should map each tool to its originating server."""
         from offline_chat import MCPClientManager, MCPServerConfig
 

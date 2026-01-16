@@ -80,7 +80,6 @@ class TestWebFetchToolSchemaValidity:
         assert props["max_length"]["type"] == "integer"
 
 
-
 class TestWebFetchContentExtraction:
     """Property 9: Web Fetch Content Extraction.
 
@@ -101,14 +100,14 @@ class TestWebFetchContentExtraction:
         """
         from bs4 import BeautifulSoup
 
-        soup = BeautifulSoup(html, 'html.parser')
+        soup = BeautifulSoup(html, "html.parser")
 
         # Remove unwanted elements
-        for element in soup(['script', 'style', 'nav', 'header', 'footer', 'aside']):
+        for element in soup(["script", "style", "nav", "header", "footer", "aside"]):
             element.decompose()
 
         # Extract text
-        text = soup.get_text(separator='\n', strip=True)
+        text = soup.get_text(separator="\n", strip=True)
 
         # Truncate if needed
         if len(text) > max_length:
@@ -118,10 +117,13 @@ class TestWebFetchContentExtraction:
 
     @settings(max_examples=100)
     @given(
-        main_content=st.text(min_size=1, max_size=200, alphabet=st.characters(
-            whitelist_categories=('L', 'N', 'P', 'Z'),
-            whitelist_characters=' '
-        )),
+        main_content=st.text(
+            min_size=1,
+            max_size=200,
+            alphabet=st.characters(
+                whitelist_categories=("L", "N", "P", "Z"), whitelist_characters=" "
+            ),
+        ),
     )
     def test_unwanted_elements_are_removed(self, main_content: str):
         """Script, style, nav, header, footer, aside elements should be removed."""

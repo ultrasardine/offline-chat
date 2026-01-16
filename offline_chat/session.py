@@ -93,7 +93,7 @@ class ChatSession:
         Loads the agent configuration, existing conversation history,
         and connects to any configured MCP servers. Tracks database
         connections for lifecycle management.
-        
+
         If database connections fail, logs the error and continues
         the session without database tools (graceful degradation).
 
@@ -114,7 +114,7 @@ class ChatSession:
             try:
                 self._mcp_manager = MCPClientManager(self.agent.mcp_servers)
                 await self._mcp_manager.connect_all()
-                
+
                 # Track database connections for lifecycle management
                 # Only track successfully connected database servers
                 self._database_connections.clear()
@@ -133,7 +133,7 @@ class ChatSession:
                                 f"(type: {config.database_type}). "
                                 f"Continuing session without this database."
                             )
-                
+
                 # Log Oracle-specific connection info for audit purposes
                 for server_name, db_type in self._database_connections.items():
                     if db_type == "oracle":
@@ -250,7 +250,7 @@ class ChatSession:
 
         For database tools, logs the operation for audit purposes
         (especially important for Oracle databases which log to DBTOOLS$MCP_LOG).
-        
+
         Handles errors gracefully by catching exceptions and returning error
         messages to the agent, allowing the agent to understand and potentially
         correct issues (e.g., syntax errors in SQL queries).
@@ -268,42 +268,40 @@ class ChatSession:
         # Check MCP tools first
         if self._mcp_manager and name in self._mcp_manager.tool_registry:
             server_name = self._mcp_manager.tool_registry[name]
-            
+
             # Log database operations for audit purposes
             if server_name in self._database_connections:
                 db_type = self._database_connections[server_name]
                 logger.info(
                     f"Executing database tool '{name}' on {db_type} database '{server_name}'"
                 )
-                
+
                 # For Oracle, note that query will be logged in DBTOOLS$MCP_LOG
                 if db_type == "oracle" and "sql" in name.lower():
                     logger.debug(
                         f"Oracle query will be logged in DBTOOLS$MCP_LOG table "
                         f"for database '{server_name}'"
                     )
-            
+
             try:
                 result = await self._mcp_manager.call_tool(name, arguments)
-                
+
                 # Log completion of database operations
                 if server_name in self._database_connections:
                     logger.info(f"Database tool '{name}' completed successfully")
-                
+
                 return result
             except Exception as e:
                 # Catch and return errors to the agent instead of raising
                 # This allows the agent to understand syntax errors, execution errors, etc.
                 error_msg = str(e)
-                
+
                 # Log the error for debugging
                 if server_name in self._database_connections:
-                    logger.warning(
-                        f"Database tool '{name}' failed on '{server_name}': {error_msg}"
-                    )
+                    logger.warning(f"Database tool '{name}' failed on '{server_name}': {error_msg}")
                 else:
                     logger.warning(f"Tool '{name}' failed: {error_msg}")
-                
+
                 # Return a formatted error message to the agent
                 return f"Error executing tool '{name}': {error_msg}"
 
@@ -339,11 +337,11 @@ class ChatSession:
                 f"Closing {len(self._database_connections)} database connection(s): "
                 f"{', '.join(self._database_connections.keys())}"
             )
-        
+
         # Disconnect MCP servers (which closes database connections)
         if self._mcp_manager:
             await self._mcp_manager.disconnect_all()
-            
+
             # Verify all database connections were closed
             for server_name, db_type in self._database_connections.items():
                 logger.info(f"Database connection closed: {server_name} (type: {db_type})")
@@ -383,13 +381,8 @@ class ChatSession:
         self.history.messages.append(user_message)
 
         # Build messages list for Ollama with enhanced system prompt
-        messages: list[dict[str, Any]] = [
-            {"role": "system", "content": self._get_system_prompt()}
-        ]
-        messages.extend(
-            {"role": msg.role, "content": msg.content}
-            for msg in self.history.messages
-        )
+        messages: list[dict[str, Any]] = [{"role": "system", "content": self._get_system_prompt()}]
+        messages.extend({"role": msg.role, "content": msg.content} for msg in self.history.messages)
 
         tools = self._get_tools()
 
@@ -456,19 +449,19 @@ class ChatSession:
                         except RuntimeError:
                             loop = asyncio.new_event_loop()
                             asyncio.set_event_loop(loop)
-                        result = loop.run_until_complete(
-                            self._execute_tool_async(name, args)
-                        )
+                        result = loop.run_until_complete(self._execute_tool_async(name, args))
                     else:
                         result = self._execute_tool(name, args)
 
                     # Add tool result to messages (not to history)
                     # Use tool_name as per Ollama's tool calling format
-                    messages.append({
-                        "role": "tool",
-                        "tool_name": name,
-                        "content": result if result else "No results returned",
-                    })
+                    messages.append(
+                        {
+                            "role": "tool",
+                            "tool_name": name,
+                            "content": result if result else "No results returned",
+                        }
+                    )
 
         except Exception as e:
             # Check for connection errors
@@ -505,13 +498,8 @@ class ChatSession:
         self.history.messages.append(user_message)
 
         # Build messages list for Ollama with enhanced system prompt
-        messages: list[dict[str, Any]] = [
-            {"role": "system", "content": self._get_system_prompt()}
-        ]
-        messages.extend(
-            {"role": msg.role, "content": msg.content}
-            for msg in self.history.messages
-        )
+        messages: list[dict[str, Any]] = [{"role": "system", "content": self._get_system_prompt()}]
+        messages.extend({"role": msg.role, "content": msg.content} for msg in self.history.messages)
 
         tools = self._get_tools()
         response_chunks: list[str] = []
@@ -579,11 +567,13 @@ class ChatSession:
 
                     # Add tool result to messages (not to history)
                     # Use tool_name as per Ollama's tool calling format
-                    messages.append({
-                        "role": "tool",
-                        "tool_name": name,
-                        "content": result if result else "No results returned",
-                    })
+                    messages.append(
+                        {
+                            "role": "tool",
+                            "tool_name": name,
+                            "content": result if result else "No results returned",
+                        }
+                    )
 
         except Exception as e:
             # Check for connection errors
@@ -656,19 +646,19 @@ class ChatSession:
     @property
     def has_database_connections(self) -> bool:
         """Check if there are active database connections in this session.
-        
+
         This property is useful for determining if the agent has database
         capabilities available during the current chat session. Database
         connections are established when the session starts and tracked
         throughout the session lifecycle.
-        
+
         Returns:
             True if database connections are active, False otherwise.
-            
+
         Examples:
             >>> session = ChatSession(manager)
             >>> await session.start_async("data-analyst")
-            >>> 
+            >>>
             >>> if session.has_database_connections:
             ...     print("Agent can query databases")
             ... else:
@@ -678,28 +668,28 @@ class ChatSession:
 
     def get_database_connections(self) -> dict[str, str]:
         """Get information about active database connections.
-        
+
         Returns a dictionary mapping MCP server names to their database types.
         This is useful for understanding which databases are available to the
         agent during the current session.
-        
+
         Returns:
             Dictionary mapping server names to database types.
             Example: {"prod_db": "oracle", "analytics_db": "postgresql"}
-            
+
         Examples:
             >>> session = ChatSession(manager)
             >>> await session.start_async("data-analyst")
-            >>> 
+            >>>
             >>> connections = session.get_database_connections()
             >>> for server_name, db_type in connections.items():
             ...     print(f"{server_name}: {db_type}")
             prod_db: oracle
             analytics_db: postgresql
-            >>> 
+            >>>
             >>> # Check for specific database type
             >>> has_oracle = any(
-            ...     db_type == "oracle" 
+            ...     db_type == "oracle"
             ...     for db_type in connections.values()
             ... )
             >>> if has_oracle:

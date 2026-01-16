@@ -396,7 +396,6 @@ class TestChatSessionBasicOperations:
                 list(session.send_message("Hello"))
 
 
-
 class TestToolRegistrationBasedOnConfiguration:
     """Property 4: Tool Registration Based on Configuration.
 
@@ -487,7 +486,6 @@ class TestToolRegistrationBasedOnConfiguration:
             tools = session._get_tools()
 
             assert len(tools) == 0
-
 
 
 class TestHistoryPersistenceExcludesToolMessages:
@@ -600,7 +598,6 @@ class TestHistoryPersistenceExcludesToolMessages:
             assert loaded_history.messages[1].content == final_response
 
 
-
 class TestAgentLoopTermination:
     """Property 7: Agent Loop Termination.
 
@@ -653,29 +650,33 @@ class TestAgentLoopTermination:
             # Build mock responses: N tool calls followed by final response
             mock_responses = []
             for i in range(num_tool_calls):
-                mock_responses.append({
-                    "message": {
-                        "role": "assistant",
-                        "content": "",
-                        "tool_calls": [
-                            {
-                                "function": {
-                                    "name": "web_search",
-                                    "arguments": {"query": f"test query {i}"},
+                mock_responses.append(
+                    {
+                        "message": {
+                            "role": "assistant",
+                            "content": "",
+                            "tool_calls": [
+                                {
+                                    "function": {
+                                        "name": "web_search",
+                                        "arguments": {"query": f"test query {i}"},
+                                    }
                                 }
-                            }
-                        ],
+                            ],
+                        }
                     }
-                })
+                )
 
             # Final response with no tool calls
-            mock_responses.append({
-                "message": {
-                    "role": "assistant",
-                    "content": final_response,
-                    "tool_calls": [],
+            mock_responses.append(
+                {
+                    "message": {
+                        "role": "assistant",
+                        "content": final_response,
+                        "tool_calls": [],
+                    }
                 }
-            })
+            )
 
             with patch("ollama.chat") as mock_chat:
                 mock_chat.side_effect = mock_responses
@@ -713,9 +714,7 @@ class TestAgentLoopTermination:
         user_message=st.text(min_size=1, max_size=100).filter(lambda s: s.strip()),
         final_response=st.text(min_size=1, max_size=200).filter(lambda s: s.strip()),
     )
-    def test_final_response_is_streamed(
-        self, agent: Agent, user_message: str, final_response: str
-    ):
+    def test_final_response_is_streamed(self, agent: Agent, user_message: str, final_response: str):
         """Final response should be yielded character by character."""
         with tempfile.TemporaryDirectory() as tmpdir:
             agents_dir = Path(tmpdir) / "agents"
@@ -749,7 +748,6 @@ class TestAgentLoopTermination:
             assert len(response_chars) == len(final_response)
             for i, char in enumerate(response_chars):
                 assert char == final_response[i]
-
 
 
 class TestChatSessionMCPIntegration:
@@ -804,6 +802,7 @@ class TestChatSessionMCPIntegration:
                 mock_manager_instance.tool_registry = {}
 
                 import asyncio
+
                 result = asyncio.run(session.start_async("test-agent"))
 
                 assert result is True
@@ -890,6 +889,7 @@ class TestChatSessionMCPIntegration:
 
             # Mock MCP manager with tools
             from offline_chat.mcp_client import MCPClientManager
+
             mock_mcp_manager = MCPClientManager([])
             mock_mcp_manager.clients = {}
             mock_mcp_manager.tool_registry = {"mcp_tool": "test-server"}
@@ -941,6 +941,7 @@ class TestChatSessionMCPIntegration:
 
             # Mock MCP manager with tools
             from offline_chat.mcp_client import MCPClientManager
+
             mock_mcp_manager = MCPClientManager([])
             mock_mcp_manager.clients = {}
             mock_mcp_manager.tool_registry = {"mcp_tool": "test-server"}
@@ -1038,6 +1039,7 @@ class TestChatSessionMCPIntegration:
 
             # With MCP manager but no tools
             from offline_chat.mcp_client import MCPClientManager
+
             mock_mcp_manager = MCPClientManager([])
             mock_mcp_manager.tool_registry = {}
             session._mcp_manager = mock_mcp_manager
@@ -1072,6 +1074,7 @@ class TestChatSessionMCPIntegration:
             session = ChatSession(manager)
 
             import asyncio
+
             result = asyncio.run(session.start_async("test-agent"))
 
             assert result is True
@@ -1134,7 +1137,11 @@ class AsyncMock:
             if isinstance(self.side_effect, Exception):
                 raise self.side_effect
             elif callable(self.side_effect):
-                return await self.side_effect(*args, **kwargs) if asyncio.iscoroutinefunction(self.side_effect) else self.side_effect(*args, **kwargs)
+                return (
+                    await self.side_effect(*args, **kwargs)
+                    if asyncio.iscoroutinefunction(self.side_effect)
+                    else self.side_effect(*args, **kwargs)
+                )
             else:
                 raise self.side_effect
         return self.return_value
@@ -1145,7 +1152,6 @@ class AsyncMock:
 
 # Register the AsyncMock helper with pytest
 pytest.helpers = type("Helpers", (), {"AsyncMock": AsyncMock})()
-
 
 
 class TestConnectionLifecycleManagement:
@@ -1206,7 +1212,7 @@ class TestConnectionLifecycleManagement:
                     return_value="Query result"
                 )
                 # Add clients dict to indicate successful connection
-                mock_client = type('MockClient', (), {'config': oracle_config})()
+                mock_client = type("MockClient", (), {"config": oracle_config})()
                 mock_manager_instance.clients = {"oracle_db": mock_client}
 
                 import asyncio
@@ -1217,12 +1223,11 @@ class TestConnectionLifecycleManagement:
 
                     # Verify Oracle audit logging message was logged
                     oracle_log_calls = [
-                        call for call in mock_logger.info.call_args_list
+                        call
+                        for call in mock_logger.info.call_args_list
                         if "DBTOOLS$MCP_LOG" in str(call)
                     ]
-                    assert len(oracle_log_calls) > 0, (
-                        "Expected Oracle audit logging message"
-                    )
+                    assert len(oracle_log_calls) > 0, "Expected Oracle audit logging message"
 
                 # Verify database connection was tracked
                 assert session.has_database_connections
@@ -1288,11 +1293,11 @@ class TestConnectionLifecycleManagement:
                 mock_manager_instance.get_all_tools.return_value = []
                 mock_manager_instance.tool_registry = {}
                 # Add clients dict to indicate successful connections
-                mock_sqlite_client = type('MockClient', (), {'config': sqlite_config})()
-                mock_postgres_client = type('MockClient', (), {'config': postgres_config})()
+                mock_sqlite_client = type("MockClient", (), {"config": sqlite_config})()
+                mock_postgres_client = type("MockClient", (), {"config": postgres_config})()
                 mock_manager_instance.clients = {
                     "sqlite_db": mock_sqlite_client,
-                    "postgres_db": mock_postgres_client
+                    "postgres_db": mock_postgres_client,
                 }
 
                 import asyncio
@@ -1313,12 +1318,11 @@ class TestConnectionLifecycleManagement:
 
                     # Verify cleanup logging
                     cleanup_calls = [
-                        call for call in mock_logger.info.call_args_list
+                        call
+                        for call in mock_logger.info.call_args_list
                         if "Closing" in str(call) and "database connection" in str(call)
                     ]
-                    assert len(cleanup_calls) > 0, (
-                        "Expected connection cleanup logging"
-                    )
+                    assert len(cleanup_calls) > 0, "Expected connection cleanup logging"
 
                 # Verify disconnect_all was called
                 mock_manager_instance.disconnect_all.assert_called_once()
@@ -1393,8 +1397,7 @@ class TestConnectionLifecycleManagement:
                 for i in range(5):
                     asyncio.run(
                         session._execute_tool_async(
-                            "query_database",
-                            {"query": f"SELECT * FROM table{i}"}
+                            "query_database", {"query": f"SELECT * FROM table{i}"}
                         )
                     )
 
@@ -1489,9 +1492,7 @@ class TestConnectionLifecycleManagement:
                 mock_manager_instance.disconnect_all = pytest.helpers.AsyncMock()
                 mock_manager_instance.get_all_tools.return_value = []
                 mock_manager_instance.tool_registry = {"query": "test_db"}
-                mock_manager_instance.call_tool = pytest.helpers.AsyncMock(
-                    return_value="Result"
-                )
+                mock_manager_instance.call_tool = pytest.helpers.AsyncMock(return_value="Result")
 
                 import asyncio
 
@@ -1503,9 +1504,7 @@ class TestConnectionLifecycleManagement:
 
                 # Execute multiple queries
                 for i in range(num_queries):
-                    asyncio.run(
-                        session._execute_tool_async("query", {"query": f"SELECT {i}"})
-                    )
+                    asyncio.run(session._execute_tool_async("query", {"query": f"SELECT {i}"}))
 
                 # Connection should still be established only once (reused)
                 assert mock_manager_instance.connect_all.call_count == 1
@@ -1566,7 +1565,7 @@ class TestConnectionLifecycleManagement:
                     return_value="Query result"
                 )
                 # Add clients dict to indicate successful connection
-                mock_client = type('MockClient', (), {'config': oracle_config})()
+                mock_client = type("MockClient", (), {"config": oracle_config})()
                 mock_manager_instance.clients = {"oracle_db": mock_client}
 
                 import asyncio
@@ -1577,10 +1576,7 @@ class TestConnectionLifecycleManagement:
                 # Execute database tool with logging
                 with patch("offline_chat.session.logger") as mock_logger:
                     asyncio.run(
-                        session._execute_tool_async(
-                            "run_sql",
-                            {"query": "SELECT * FROM users"}
-                        )
+                        session._execute_tool_async("run_sql", {"query": "SELECT * FROM users"})
                     )
 
                     # Verify execution was logged
@@ -1661,7 +1657,7 @@ class TestConnectionLifecycleManagement:
                 mock_manager_instance.get_all_tools.return_value = []
                 mock_manager_instance.tool_registry = {}
                 # Add clients dict to indicate successful connection
-                mock_client = type('MockClient', (), {'config': db_config})()
+                mock_client = type("MockClient", (), {"config": db_config})()
                 mock_manager_instance.clients = {"test_db": mock_client}
 
                 # Start session with database
@@ -1673,7 +1669,6 @@ class TestConnectionLifecycleManagement:
                 # End session
                 asyncio.run(session2.end_async())
                 assert not session2.has_database_connections
-
 
 
 class TestErrorHandlingProperties:

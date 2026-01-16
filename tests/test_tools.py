@@ -108,9 +108,7 @@ class TestSearchResultFormatting:
             max_size=10,
         )
     )
-    def test_formatted_results_contain_numbered_entries(
-        self, results: list[SearchResult]
-    ):
+    def test_formatted_results_contain_numbered_entries(self, results: list[SearchResult]):
         """Formatted results should contain numbered entries with title and URL."""
         formatted = format_search_results(results)
 

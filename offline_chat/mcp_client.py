@@ -268,7 +268,7 @@ class MCPClientManager:
         Logs errors for servers that fail to connect but continues
         with remaining servers. After successful connections, builds
         the tool registry mapping tool names to server names.
-        
+
         When multiple database servers are configured, tool names are
         prefixed with the database name to avoid conflicts.
         """
@@ -284,14 +284,13 @@ class MCPClientManager:
                 if success:
                     self.clients[config.name] = client
                     logger.info(
-                        f"Connected to MCP server '{config.name}' "
-                        f"with {len(client.tools)} tools"
+                        f"Connected to MCP server '{config.name}' with {len(client.tools)} tools"
                     )
                 else:
                     logger.warning(f"Failed to connect to MCP server '{config.name}'")
             except Exception as e:
                 logger.error(f"Error connecting to MCP server '{config.name}': {e}")
-        
+
         # Second pass: register tools with namespacing for multiple databases
         self._register_tools_with_namespacing()
 
@@ -312,33 +311,30 @@ class MCPClientManager:
 
     def _register_tools_with_namespacing(self) -> None:
         """Register tools from all connected servers with appropriate namespacing.
-        
+
         When multiple database servers are configured, tool names are prefixed
         with the database name to avoid conflicts. For example:
         - prod_db_run_sql
         - analytics_db_query_database
-        
+
         Non-database servers and single database servers use original tool names.
         """
         # Count database servers
         db_servers = [
-            (name, client) 
+            (name, client)
             for name, client in self.clients.items()
-            if hasattr(client.config, 'database_type') and client.config.database_type
+            if hasattr(client.config, "database_type") and client.config.database_type
         ]
-        
+
         needs_namespacing = len(db_servers) > 1
-        
+
         # Register tools from all servers
         for server_name, client in self.clients.items():
-            is_db_server = (
-                hasattr(client.config, 'database_type') 
-                and client.config.database_type
-            )
-            
+            is_db_server = hasattr(client.config, "database_type") and client.config.database_type
+
             for tool in client.tools:
                 original_name = tool["function"]["name"]
-                
+
                 # Apply namespacing for database servers when multiple exist
                 if is_db_server and needs_namespacing:
                     # Prefix with database name
@@ -347,7 +343,7 @@ class MCPClientManager:
                     tool["function"]["name"] = tool_name
                 else:
                     tool_name = original_name
-                
+
                 # Register in tool registry
                 if tool_name in self.tool_registry:
                     logger.warning(
@@ -392,22 +388,17 @@ class MCPClientManager:
 
         server_name = self.tool_registry[name]
         if server_name not in self.clients:
-            raise ValueError(
-                f"Server '{server_name}' for tool '{name}' is not connected"
-            )
+            raise ValueError(f"Server '{server_name}' for tool '{name}' is not connected")
 
         client = self.clients[server_name]
-        
+
         # Check if this is a namespaced database tool
         # If the tool name starts with the server name, strip the prefix
-        is_db_server = (
-            hasattr(client.config, 'database_type') 
-            and client.config.database_type
-        )
-        
+        is_db_server = hasattr(client.config, "database_type") and client.config.database_type
+
         if is_db_server and name.startswith(f"{server_name}_"):
             # Strip the namespace prefix to get the original tool name
-            original_tool_name = name[len(server_name) + 1:]
+            original_tool_name = name[len(server_name) + 1 :]
             return await client.call_tool(original_tool_name, arguments)
         else:
             # Use the tool name as-is

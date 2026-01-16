@@ -26,11 +26,7 @@ def format_search_results(results: list[SearchResult]) -> str:
     for i, result in enumerate(results, 1):
         # Truncate body to keep results concise
         body = result.body[:200] + "..." if len(result.body) > 200 else result.body
-        formatted.append(
-            f"{i}. {result.title}\n"
-            f"   URL: {result.href}\n"
-            f"   {body}"
-        )
+        formatted.append(f"{i}. {result.title}\n   URL: {result.href}\n   {body}")
 
     return "\n\n".join(formatted)
 
@@ -72,18 +68,15 @@ class WebSearchTool:
                     "type": "object",
                     "required": ["query"],
                     "properties": {
-                        "query": {
-                            "type": "string",
-                            "description": "The search query"
-                        },
+                        "query": {"type": "string", "description": "The search query"},
                         "max_results": {
                             "type": "integer",
                             "description": "Maximum number of results (default: 5)",
-                            "default": 5
-                        }
-                    }
-                }
-            }
+                            "default": 5,
+                        },
+                    },
+                },
+            },
         }
 
     def execute(self, query: str, max_results: int = 5) -> str:
@@ -108,7 +101,4 @@ class WebSearchTool:
                 "Please answer based on your existing knowledge."
             )
         except Exception as e:
-            return (
-                f"Search failed: {str(e)}. "
-                "Please answer based on your existing knowledge."
-            )
+            return f"Search failed: {str(e)}. Please answer based on your existing knowledge."

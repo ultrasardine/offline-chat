@@ -106,9 +106,7 @@ PARAMETER temperature {self.temperature}
         from offline_chat.mcp_config import MCPServerConfig
 
         # Deserialize MCP server configs with backward compatibility
-        mcp_servers = [
-            MCPServerConfig.from_dict(s) for s in data.get("mcp_servers", [])
-        ]
+        mcp_servers = [MCPServerConfig.from_dict(s) for s in data.get("mcp_servers", [])]
 
         return cls(
             name=data["name"],

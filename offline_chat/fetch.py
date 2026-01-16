@@ -49,16 +49,16 @@ class WebFetchTool:
                     "properties": {
                         "url": {
                             "type": "string",
-                            "description": "The URL of the web page to fetch"
+                            "description": "The URL of the web page to fetch",
                         },
                         "max_length": {
                             "type": "integer",
                             "description": "Maximum characters to return (default: 5000)",
-                            "default": 5000
-                        }
-                    }
-                }
-            }
+                            "default": 5000,
+                        },
+                    },
+                },
+            },
         }
 
     def execute(self, url: str, max_length: int = 5000) -> str:
@@ -74,26 +74,26 @@ class WebFetchTool:
         """
         try:
             # Validate URL
-            if not url.startswith(('http://', 'https://')):
+            if not url.startswith(("http://", "https://")):
                 return f"Invalid URL: {url}. URL must start with http:// or https://"
 
             # Fetch the page
             response = requests.get(
                 url,
                 timeout=self.timeout,
-                headers={'User-Agent': 'Mozilla/5.0 (compatible; OfflineChat/1.0)'}
+                headers={"User-Agent": "Mozilla/5.0 (compatible; OfflineChat/1.0)"},
             )
             response.raise_for_status()
 
             # Parse and extract text
-            soup = BeautifulSoup(response.text, 'html.parser')
+            soup = BeautifulSoup(response.text, "html.parser")
 
             # Remove unwanted elements
-            for element in soup(['script', 'style', 'nav', 'header', 'footer', 'aside']):
+            for element in soup(["script", "style", "nav", "header", "footer", "aside"]):
                 element.decompose()
 
             # Extract text
-            text = soup.get_text(separator='\n', strip=True)
+            text = soup.get_text(separator="\n", strip=True)
 
             # Truncate if needed
             if len(text) > max_length:

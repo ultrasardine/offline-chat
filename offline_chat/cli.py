@@ -201,7 +201,7 @@ class CLI:
 
             # Prompt for database configurations
             database_configs = configure_database_access()
-            
+
             # Combine MCP servers and database configs
             all_mcp_servers = mcp_servers + database_configs
 
@@ -256,10 +256,14 @@ class CLI:
             web_search_status = "[Web Search]" if agent.web_search_enabled else ""
 
             # Separate database servers from other MCP servers
-            database_servers = [s for s in agent.mcp_servers 
-                              if hasattr(s, 'database_type') and s.database_type]
-            other_mcp_servers = [s for s in agent.mcp_servers 
-                               if not (hasattr(s, 'database_type') and s.database_type)]
+            database_servers = [
+                s for s in agent.mcp_servers if hasattr(s, "database_type") and s.database_type
+            ]
+            other_mcp_servers = [
+                s
+                for s in agent.mcp_servers
+                if not (hasattr(s, "database_type") and s.database_type)
+            ]
 
             # MCP servers indicator (non-database)
             mcp_status = ""
@@ -267,7 +271,7 @@ class CLI:
                 server_names = [s.name for s in other_mcp_servers if not s.disabled]
                 if server_names:
                     mcp_status = f"[MCP: {', '.join(server_names)}]"
-            
+
             # Database indicator
             db_status = ""
             if database_servers:
@@ -318,14 +322,16 @@ class CLI:
         print(f"Created: {agent.created_at.strftime('%Y-%m-%d %H:%M')}")
 
         # System prompt
-        print(f"\nPurpose/Persona:")
+        print("\nPurpose/Persona:")
         print(f"  {agent.system_prompt}")
 
         # Separate database servers from other MCP servers
-        database_servers = [s for s in agent.mcp_servers 
-                          if hasattr(s, 'database_type') and s.database_type]
-        other_mcp_servers = [s for s in agent.mcp_servers 
-                           if not (hasattr(s, 'database_type') and s.database_type)]
+        database_servers = [
+            s for s in agent.mcp_servers if hasattr(s, "database_type") and s.database_type
+        ]
+        other_mcp_servers = [
+            s for s in agent.mcp_servers if not (hasattr(s, "database_type") and s.database_type)
+        ]
 
         # Display non-database MCP servers
         if other_mcp_servers:
@@ -340,13 +346,12 @@ class CLI:
         # Display database configurations with masked passwords
         if database_servers:
             print("\nDatabase Access:")
-            from offline_chat.credential_utils import sanitize_config_for_display
-            
+
             for db_config in database_servers:
                 status = "disabled" if db_config.disabled else "enabled"
                 print(f"\n  Database: {db_config.name} ({status})")
                 print(f"  Type: {db_config.database_type}")
-                
+
                 # Display connection details based on database type
                 if db_config.database_type == "oracle":
                     if db_config.oracle_connection_name:
@@ -354,23 +359,23 @@ class CLI:
                     elif db_config.oracle_tns_name:
                         print(f"  TNS Name: {db_config.oracle_tns_name}")
                         print(f"  Username: {db_config.database_user}")
-                        print(f"  Password: ****")
+                        print("  Password: ****")
                     else:
                         print(f"  Host: {db_config.database_host}")
                         print(f"  Port: {db_config.database_port}")
                         print(f"  Service: {db_config.database_name}")
                         print(f"  Username: {db_config.database_user}")
-                        print(f"  Password: ****")
-                
+                        print("  Password: ****")
+
                 elif db_config.database_type == "sqlite":
                     print(f"  Path: {db_config.database_path}")
-                
+
                 elif db_config.database_type in ["postgresql", "mysql"]:
                     print(f"  Host: {db_config.database_host}")
                     print(f"  Port: {db_config.database_port}")
                     print(f"  Database: {db_config.database_name}")
                     print(f"  Username: {db_config.database_user}")
-                    print(f"  Password: ****")
+                    print("  Password: ****")
         else:
             print("\nDatabase Access: No database access")
 
