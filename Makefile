@@ -5,7 +5,7 @@
 # Usage: make <target>
 # Run 'make help' to see all available targets
 
-.PHONY: help install install-dev run test test-verbose test-coverage lint lint-fix format format-check clean clean-all check all bump bump-minor bump-major changelog agents models history agent-info
+.PHONY: help install install-dev run test test-verbose test-coverage test-pbt lint lint-fix format format-check clean clean-all check all bump bump-minor bump-major changelog agents models history agent-info connections migrate
 
 .DEFAULT_GOAL := help
 
@@ -26,6 +26,9 @@ help: ## Display this help message with all available targets
 	@echo ""
 	@echo "Agent Management:"
 	@grep -E '^(agents|models|history|agent-info):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@echo ""
+	@echo "Database Management:"
+	@grep -E '^(connections|migrate):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Testing:"
 	@grep -E '^(test|test-verbose|test-coverage|test-pbt):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -100,6 +103,26 @@ agent-info: ## Show agent configuration (usage: make agent-info AGENT=agent-name
 		echo "=========="; \
 		cat ~/.offline-chat/agents/$(AGENT)/Modelfile 2>/dev/null || echo "Modelfile not found"; \
 	fi
+
+# ============================================================================
+# Database Management
+# ============================================================================
+
+connections: ## List all database connections
+	@uv run python -c "from offline_chat.database import DatabaseConnectionManager; m = DatabaseConnectionManager(); conns = m.list_connections(); \
+	print('\nDatabase Connections:\n' + '='*50) if conns else print('\nNo database connections configured.'); \
+	[print(f'  {c.name:<20} {c.database_type:<12} {c.host or \"N/A\":<20}') for c in conns]; \
+	print()"
+
+migrate: ## Run migration from inline database configs to centralized connections
+	@echo "\nRunning database configuration migration..."
+	@echo "==========================================="
+	@uv run python -c "from offline_chat import AgentManager, DatabaseConnectionManager; \
+	am = AgentManager(DatabaseConnectionManager()); \
+	results = am.migrate_inline_configs(); \
+	print(f'\nMigration complete: {len(results)} agent(s) migrated') if results else print('\nNo agents require migration'); \
+	[print(f'  {agent} -> {conn}') for agent, conn in results.items()]; \
+	print()"
 
 # ============================================================================
 # Testing

@@ -255,9 +255,13 @@ class TestMCPServerConfigRoundTrip:
         """Unit test for round-trip with PostgreSQL database configuration."""
         original = MCPServerConfig(
             name="postgres-db",
-            command="uvx",
-            args=["postgres-mcp-server"],
-            env={"PGPASSWORD": "pgpass"},
+            command="npx",
+            args=[
+                "-y",
+                "@modelcontextprotocol/server-postgres",
+                "postgresql://analyst:pgpass@db.example.com:5432/analytics",
+            ],
+            env={},
             disabled=False,
             database_type="postgresql",
             database_host="db.example.com",

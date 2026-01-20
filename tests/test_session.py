@@ -1262,11 +1262,18 @@ class TestConnectionLifecycleManagement:
 
             postgres_config = MCPServerConfig(
                 name="postgres_db",
-                command="uvx",
-                args=["postgres-mcp-server"],
+                command="npx",
+                args=[
+                    "-y",
+                    "@modelcontextprotocol/server-postgres",
+                    "postgresql://user:pass@localhost:5432/testdb",
+                ],
                 database_type="postgresql",
                 database_host="localhost",
                 database_port=5432,
+                database_name="testdb",
+                database_user="user",
+                database_password="pass",
             )
 
             agent = Agent(
@@ -1454,11 +1461,18 @@ class TestConnectionLifecycleManagement:
             elif db_type == "postgresql":
                 db_config = MCPServerConfig(
                     name="test_db",
-                    command="uvx",
-                    args=["postgres-mcp-server"],
+                    command="npx",
+                    args=[
+                        "-y",
+                        "@modelcontextprotocol/server-postgres",
+                        "postgresql://user:pass@localhost:5432/testdb",
+                    ],
                     database_type="postgresql",
                     database_host="localhost",
                     database_port=5432,
+                    database_name="testdb",
+                    database_user="user",
+                    database_password="pass",
                 )
             else:  # mysql
                 db_config = MCPServerConfig(

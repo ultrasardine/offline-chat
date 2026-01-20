@@ -74,6 +74,7 @@ Offline Chat - Main Menu
 3. Chat with agent
 4. Delete agent
 5. Exit
+6. Update agent
 
 Select option: 
 ```
@@ -178,6 +179,73 @@ This removes:
 - Agent configuration files
 - All conversation history
 
+### Updating an Agent
+
+Select option `6`, choose the agent, and select what to update:
+
+```
+Update Agent
+========================================
+
+Available agents:
+  1. german-tutor (German Language Tutor)
+  2. code-reviewer (Code Reviewer)
+  0. Cancel
+
+Select agent to update: 1
+
+Update Options for: german-tutor
+----------------------------------------
+  1. Update base model
+  2. Update database connections
+  3. Manage guidelines
+  4. Back to agent selection
+
+Select option: 
+```
+
+#### Updating Base Model
+
+Select option `1` to change the Ollama model an agent uses:
+
+```
+Update Base Model: german-tutor
+========================================
+
+Current base model: llama3:latest
+
+Recommended models for tool calling:
+  - llama3.2:latest (recommended)
+  - mistral:latest (fast alternative)
+  - qwen2.5:latest (best for tools)
+
+Other options:
+  - llama3.1:latest (current, limited tool support)
+  - llama3:latest (older version)
+
+Enter new base model (or 'cancel' to abort): llama3.2:latest
+
+Change base model from 'llama3:latest' to 'llama3.2:latest'?
+Continue? (y/N): y
+
+Updating base model... Done!
+
+✓ Base model updated to 'llama3.2:latest' successfully.
+
+Note: The agent will use the new model in the next chat session.
+
+Tip: Make sure the model is available in Ollama:
+  ollama pull llama3.2:latest
+```
+
+This is particularly useful when:
+- Upgrading to a model with better tool calling support
+- Switching to a faster or more capable model
+- Testing different models for your use case
+- Fixing issues with models that have limited tool support
+
+**Note**: Make sure to pull the new model with `ollama pull <model-name>` before using it.
+
 ### Viewing Agent Information
 
 Use make targets to inspect agents without starting the CLI:
@@ -266,6 +334,68 @@ if manager.agent_exists("code-helper"):
 # Delete an agent (removes model, config, and history)
 manager.delete_agent("code-helper")
 ```
+
+#### Updating Agents
+
+Update an existing agent's configuration programmatically:
+
+```python
+from offline_chat import AgentManager
+from offline_chat.database.result import is_ok, unwrap, unwrap_err
+
+manager = AgentManager()
+
+# Update base model (automatically recreates Ollama model)
+result = manager.update_agent(
+    "code-helper",
+    {"base_model": "llama3.2:latest"}
+)
+
+if is_ok(result):
+    agent = unwrap(result)
+    print(f"Updated agent to use {agent.base_model}")
+else:
+    print(f"Update failed: {unwrap_err(result)}")
+
+# Update multiple fields at once
+result = manager.update_agent(
+    "code-helper",
+    {
+        "base_model": "qwen2.5:latest",
+        "system_prompt": "You are an expert code reviewer with a focus on security.",
+        "temperature": 0.4,
+        "language": "English"
+    }
+)
+
+# Update web search setting
+result = manager.update_agent(
+    "research-assistant",
+    {"web_search_enabled": True}
+)
+
+# Update guidelines
+result = manager.update_agent(
+    "data-analyst",
+    {"guidelines": [
+        "Always explain SQL queries before executing",
+        "Provide data visualizations when possible",
+        "Focus on actionable insights"
+    ]}
+)
+```
+
+**Supported update fields**:
+- `base_model` (str) - Ollama model name (e.g., "llama3.2:latest")
+- `system_prompt` (str) - Agent's persona and behavior
+- `temperature` (float) - Response creativity (0.0-1.0)
+- `language` (str) - Response language
+- `web_search_enabled` (bool) - Enable/disable web search
+- `connection_assignments` (list) - Database connection assignments
+- `mcp_servers` (list) - MCP server configurations
+- `guidelines` (list[str]) - Agent guidelines
+
+**Note**: When updating `base_model`, the Ollama model is automatically recreated with the new base model. Make sure the new model is available in Ollama (`ollama pull <model-name>`) before updating.
 
 #### Working with Chat Sessions
 
@@ -727,14 +857,16 @@ agent = Agent(
 
 Agents can connect to databases (Oracle, PostgreSQL, MySQL, SQLite) through MCP servers to query data, discover schemas, and analyze information during conversations. **Oracle Database is the primary supported database**, accessed through Oracle SQLcl's built-in MCP server.
 
+> **Quick Start**: Want to try database access right away? See the [Sample Database Guide](SAMPLE_DATABASE_GUIDE.md) for a ready-to-use SQLite database with company sales data and step-by-step setup instructions.
+
 ### Supported Databases
 
 | Database | MCP Server | Primary Support |
 |----------|------------|-----------------|
 | **Oracle** | Oracle SQLcl (built-in) | ✅ Primary |
-| PostgreSQL | `postgres-mcp-server` | ✅ Supported |
+| PostgreSQL | `@modelcontextprotocol/server-postgres` | ✅ Supported |
 | MySQL | `mysql-mcp-server` | ✅ Supported |
-| SQLite | `sqlite-mcp-server` | ✅ Supported |
+| SQLite | `mcp-server-sqlite-npx` | ✅ Supported |
 
 ### Oracle Database Setup
 
@@ -884,8 +1016,8 @@ manager.create_agent(agent)
 Install the PostgreSQL MCP server:
 
 ```bash
-# Using uvx (recommended)
-uvx postgres-mcp-server --help
+# Using npx (recommended - no installation needed)
+npx -y @modelcontextprotocol/server-postgres --help
 
 # Or install globally with npm
 npm install -g @modelcontextprotocol/server-postgres
@@ -998,8 +1130,8 @@ mysql_config = create_database_mcp_config(
 Install the SQLite MCP server:
 
 ```bash
-# Using uvx (recommended)
-uvx sqlite-mcp-server --help
+# Using npx (recommended)
+npx -y mcp-server-sqlite-npx --help
 ```
 
 #### Creating an Agent with SQLite Access
@@ -1117,22 +1249,300 @@ When multiple databases are configured, tools are automatically namespaced by da
 
 **Note**: Single database configurations use original tool names without namespacing. Regular (non-database) MCP servers always use original tool names.
 
-### Security and Safety
+### Access Control and Security
 
-**Read-Only Mode**:
-- All database queries are validated for safety
-- Write operations (INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, TRUNCATE, REPLACE) are rejected
-- Only SELECT queries are allowed by default
+Offline Chat provides fine-grained access control for database connections through **access levels**. Each agent-to-database connection assignment can specify what operations are allowed and which tables can be accessed.
+
+#### Access Levels
+
+| Access Level | Description | Allowed Operations | Table Restrictions |
+|--------------|-------------|-------------------|-------------------|
+| `READ_ONLY` | Read-only access to all tables | SELECT only | All tables |
+| `READ_WRITE` | Read and write access to all tables | SELECT, INSERT, UPDATE, DELETE | All tables |
+| `TABLE_SPECIFIC_READ` | Read-only access to specific tables | SELECT only | Specified tables only |
+| `TABLE_SPECIFIC_READ_WRITE` | Read and write access to specific tables | SELECT, INSERT, UPDATE, DELETE | Specified tables only |
+
+**Note**: DDL operations (CREATE, DROP, ALTER, TRUNCATE) are always blocked for safety, regardless of access level.
+
+#### Configuring Access Levels
+
+##### Via Library
+
+```python
+from offline_chat import Agent, AgentManager
+from offline_chat.database.access_level import AccessLevel
+from offline_chat.database.connection_assignment import AgentConnectionAssignment
+from offline_chat.mcp_config import MCPServerConfig
+
+manager = AgentManager()
+
+# Example 1: Read-only access to all tables
+agent = Agent(
+    name="data-viewer",
+    display_name="Data Viewer",
+    base_model="llama3.1:latest",
+    system_prompt="You can view database data but not modify it.",
+    temperature=0.7,
+    connection_assignments=[
+        AgentConnectionAssignment(
+            connection_name="prod_db",
+            access_level=AccessLevel.READ_ONLY,
+            allowed_tables=None  # All tables accessible
+        )
+    ],
+    mcp_servers=[
+        MCPServerConfig(
+            name="prod_db",
+            command="sql",
+            args=["-mcp", "user/pass@host:port/service"],
+            database_type="oracle"
+        )
+    ]
+)
+manager.create_agent(agent)
+
+# Example 2: Read-write access to specific tables only
+agent = Agent(
+    name="sales-updater",
+    display_name="Sales Data Updater",
+    base_model="llama3.1:latest",
+    system_prompt="You can read and update sales data.",
+    temperature=0.7,
+    connection_assignments=[
+        AgentConnectionAssignment(
+            connection_name="sales_db",
+            access_level=AccessLevel.TABLE_SPECIFIC_READ_WRITE,
+            allowed_tables=["sales", "customers", "orders"]
+        )
+    ],
+    mcp_servers=[
+        MCPServerConfig(
+            name="sales_db",
+            command="npx",
+            args=["-y", "@modelcontextprotocol/server-postgres", "postgresql://user:pass@host:5432/sales"],
+            database_type="postgresql"
+        )
+    ]
+)
+manager.create_agent(agent)
+
+# Example 3: Multiple connections with different access levels
+agent = Agent(
+    name="data-analyst",
+    display_name="Data Analyst",
+    base_model="llama3.1:latest",
+    system_prompt="You can analyze production data (read-only) and update reports.",
+    temperature=0.7,
+    connection_assignments=[
+        AgentConnectionAssignment(
+            connection_name="prod_db",
+            access_level=AccessLevel.READ_ONLY,
+            allowed_tables=None
+        ),
+        AgentConnectionAssignment(
+            connection_name="reports_db",
+            access_level=AccessLevel.TABLE_SPECIFIC_READ_WRITE,
+            allowed_tables=["reports", "dashboards"]
+        )
+    ],
+    mcp_servers=[
+        MCPServerConfig(name="prod_db", command="sql", args=["-mcp", "..."], database_type="oracle"),
+        MCPServerConfig(name="reports_db", command="npx", args=["-y", "@modelcontextprotocol/server-postgres", "postgresql://user:pass@host:5432/reports"], database_type="postgresql")
+    ]
+)
+manager.create_agent(agent)
+```
+
+##### Via CLI
+
+When creating an agent with database access through the CLI, you'll be prompted to select an access level:
+
+```
+--- Configure Database Connection ---
+
+Database name: prod_db
+Database type: Oracle
+
+Select access level:
+  1. Read-only (SELECT queries only, all tables)
+  2. Read-write (SELECT, INSERT, UPDATE, DELETE on all tables)
+  3. Table-specific read (SELECT queries only, specific tables)
+  4. Table-specific read-write (SELECT, INSERT, UPDATE, DELETE on specific tables)
+
+Select access level (1-4): 3
+
+Enter allowed tables (comma-separated): customers,orders,products
+
+✓ Access level configured: table-specific-read
+  Allowed tables: customers, orders, products
+```
+
+#### Query Validation
+
+All database queries are automatically validated against the assigned access level before execution:
+
+```python
+import asyncio
+from offline_chat import AgentManager, ChatSession
+
+async def demo_access_control():
+    manager = AgentManager()
+    session = ChatSession(manager)
+    
+    # Agent has READ_ONLY access
+    await session.start_async("data-viewer")
+    
+    # This query will succeed (SELECT is allowed)
+    print("You: Show me the top 10 customers")
+    for chunk in session.send_message("Show me the top 10 customers"):
+        print(chunk, end="", flush=True)
+    print("\n")
+    
+    # This query will be blocked (INSERT not allowed with READ_ONLY)
+    print("You: Add a new customer named 'Test Corp'")
+    for chunk in session.send_message("Add a new customer named 'Test Corp'"):
+        print(chunk, end="", flush=True)
+    # Output: "Access denied: INSERT operation not permitted with read-only access"
+    print("\n")
+    
+    await session.end_async()
+
+asyncio.run(demo_access_control())
+```
+
+#### Access Violation Examples
+
+**READ_ONLY Access**:
+```python
+# ✓ Allowed
+"SELECT * FROM customers"
+"SELECT COUNT(*) FROM orders WHERE status = 'completed'"
+
+# ✗ Blocked
+"INSERT INTO customers (name) VALUES ('New Customer')"
+"UPDATE orders SET status = 'cancelled' WHERE id = 123"
+"DELETE FROM customers WHERE id = 456"
+```
+
+**TABLE_SPECIFIC_READ Access** (allowed tables: `customers`, `orders`):
+```python
+# ✓ Allowed
+"SELECT * FROM customers"
+"SELECT * FROM orders WHERE customer_id = 123"
+
+# ✗ Blocked - wrong table
+"SELECT * FROM admin_secrets"
+"SELECT * FROM employees"
+
+# ✗ Blocked - write operation
+"INSERT INTO customers (name) VALUES ('Test')"
+```
+
+**TABLE_SPECIFIC_READ_WRITE Access** (allowed tables: `reports`, `dashboards`):
+```python
+# ✓ Allowed
+"SELECT * FROM reports"
+"INSERT INTO reports (title, data) VALUES ('Q1 Report', '{}')"
+"UPDATE dashboards SET last_updated = NOW() WHERE id = 1"
+"DELETE FROM reports WHERE id = 999"
+
+# ✗ Blocked - wrong table
+"SELECT * FROM customers"
+"INSERT INTO orders (customer_id) VALUES (123)"
+
+# ✗ Blocked - DDL operation (always blocked)
+"DROP TABLE reports"
+"ALTER TABLE dashboards ADD COLUMN new_col VARCHAR(100)"
+```
+
+#### Error Messages
+
+When a query violates access restrictions, the agent receives a clear error message:
+
+```
+Access denied: INSERT operation not permitted with read-only access
+Access denied: Table 'admin_secrets' not in allowed list: [customers, orders]
+Access denied: DDL operations (DROP, ALTER, CREATE) are not permitted
+```
+
+The agent can see these errors and understand the restrictions, allowing it to adjust its approach or inform the user about the limitations.
+
+#### Security Best Practices
+
+1. **Principle of Least Privilege**:
+   - Start with `READ_ONLY` access by default
+   - Only grant `READ_WRITE` when necessary
+   - Use `TABLE_SPECIFIC_*` levels to limit scope
+
+2. **Separate Agents by Role**:
+   ```python
+   # Viewer agent - read-only
+   viewer = Agent(
+       name="data-viewer",
+       connection_assignments=[
+           AgentConnectionAssignment(
+               connection_name="prod_db",
+               access_level=AccessLevel.READ_ONLY
+           )
+       ]
+   )
+   
+   # Editor agent - write access to specific tables
+   editor = Agent(
+       name="data-editor",
+       connection_assignments=[
+           AgentConnectionAssignment(
+               connection_name="prod_db",
+               access_level=AccessLevel.TABLE_SPECIFIC_READ_WRITE,
+               allowed_tables=["reports", "logs"]
+           )
+       ]
+   )
+   ```
+
+3. **Audit and Monitor**:
+   - Review conversation history to see what queries were executed
+   - For Oracle databases, check `DBTOOLS$MCP_LOG` table for query audit trail
+   - Monitor agent behavior and adjust access levels as needed
+
+4. **Database-Level Permissions**:
+   - Access levels are enforced at the application level
+   - Also configure database user permissions as a second layer of defense
+   - Use database roles and grants to limit what the database user can do
+
+5. **Testing Access Levels**:
+   ```python
+   from offline_chat.database.access_validator import AccessLevelValidator
+   from offline_chat.database.access_level import AccessLevel
+   
+   # Test if a query would be allowed
+   result = AccessLevelValidator.validate_query(
+       "INSERT INTO customers (name) VALUES ('Test')",
+       AccessLevel.READ_ONLY,
+       []
+   )
+   
+   if result.is_err():
+       print(f"Query would be blocked: {result.unwrap_err()}")
+   ```
+
+### Additional Security Features
 
 **Credential Storage**:
 - Database credentials are stored in agent configuration files
 - Passwords are masked in CLI displays and logs
-- Configuration files should have appropriate file permissions
+- Configuration files should have appropriate file permissions (600)
 
 **Connection Management**:
 - Connections are established when chat sessions start
 - Connections are reused within a session for efficiency
 - All connections are properly closed when sessions end
+- Failed connections are logged but don't crash the session
+
+**Query Logging** (Oracle):
+- All queries to Oracle databases are logged in `DBTOOLS$MCP_LOG` table
+- Includes query text, execution time, and session information
+- Useful for compliance and security auditing
 
 ### Viewing Database Configuration
 
@@ -1166,20 +1576,43 @@ make agent-info AGENT=data-analyst
 Output shows masked credentials:
 
 ```
-Agent: data-analyst
+========================================
+Agent: Data Analyst
+========================================
+
+Name: data-analyst
 Display Name: Data Analyst
 Base Model: llama3.1:latest
 Temperature: 0.7
+Language: English
+Web Search: Disabled
+Created: 2025-01-20 10:30
 
-MCP Servers:
-  - prod_db (oracle)
-    Connection: PROD_ANALYTICS
-  
-  - analytics_db (postgresql)
-    Host: db.example.com:5432
-    Database: analytics
-    User: analyst
-    Password: ****
+Purpose/Persona:
+  You are a data analyst who can query and analyze database information.
+
+Database Connections:
+
+  Connection: prod_db
+  Type: oracle
+  Access Level: read_only
+  Host: db.example.com
+  Port: 1521
+  Database: PRODDB
+  Username: analyst
+  Password: ****
+
+  Connection: analytics_db
+  Type: postgresql
+  Access Level: read_write
+  Allowed Tables: sales, customers, products
+  Host: analytics.example.com
+  Port: 5432
+  Database: analytics
+  Username: analyst
+  Password: ****
+
+========================================
 ```
 
 ### Database Access Examples
@@ -1478,9 +1911,82 @@ for query in unsafe_queries:
     print(f"✗ Rejected: {query}")
 ```
 
-### Troubleshooting Database Access
+## Troubleshooting
 
-#### Connection Issues
+### Tool Calling Issues
+
+**Agent outputs SQL code blocks instead of executing queries**:
+
+This happens when the agent's system prompt doesn't emphasize tool usage, or when using models with weak tool calling support.
+
+**Solution**:
+1. Update the agent's system prompt to emphasize direct tool usage:
+   ```python
+   system_prompt = """You are a database analyst. Your job is to query databases and provide insights.
+   
+   IMPORTANT: You have direct access to database tools. When users ask questions:
+   1. Use the tools to query the database
+   2. Analyze the results
+   3. Provide clear, concise answers
+   
+   DO NOT explain what queries you would run. Just run them and report the findings.
+   DO NOT write SQL code in your responses. The tools handle that automatically.
+   
+   Focus on delivering insights, not explaining your process."""
+   ```
+
+2. Use a model with strong tool calling support:
+   - **Best**: `qwen2.5:latest` - Excellent tool calling, fast
+   - **Good**: `llama3.2:latest` - Reliable tool calling
+   - **Fast**: `mistral:latest` - Quick responses, decent tools
+   - **Avoid**: `llama3.1:latest` - Limited tool support, often outputs JSON/SQL as text
+
+3. Update the agent's base model:
+   ```bash
+   # Via CLI
+   make run
+   # Select "Update agent" → Choose agent → "Update base model"
+   
+   # Via library
+   from offline_chat import AgentManager
+   manager = AgentManager()
+   manager.update_agent("agent-name", {"base_model": "qwen2.5:latest"})
+   ```
+
+**Agent stops mid-task or hits iteration limit**:
+
+The agent loop has a 20-iteration safety limit to prevent infinite loops. For complex queries requiring many tool calls, the agent will automatically summarize findings and prompt for follow-up questions.
+
+**What happens**:
+- Agent makes up to 20 tool calls per message
+- If limit is reached, agent summarizes findings so far
+- A note appears: "[Note: This was a complex query. Feel free to ask follow-up questions for more details.]"
+- Conversation history preserves all context for continuation
+
+**Solution**:
+- Break complex questions into smaller parts
+- Use follow-up questions to continue analysis
+- Type `clear` to reset conversation if agent seems confused
+- Consider if the query is too broad and needs refinement
+
+**Example**:
+```
+You: Analyze top customers, their products, and buying patterns over 6 months
+
+Agent: Based on my analysis, I found:
+- Top 5 customers by revenue: Customer A ($50k), Customer B ($45k)...
+- Most popular products: Product X (1000 units), Product Y (800 units)...
+
+I was analyzing buying patterns but need more queries to complete that analysis.
+
+[Note: This was a complex query. Feel free to ask follow-up questions for more details.]
+
+You: Show me the buying patterns for Customer A
+
+Agent: Customer A's buying patterns show...
+```
+
+### Connection Issues
 
 **"Cannot connect to database"**:
 - Verify database server is running and accessible
@@ -1514,10 +2020,10 @@ for query in unsafe_queries:
 - Check MCP server installation
   ```bash
   # For PostgreSQL
-  uvx postgres-mcp-server --help
+  npx -y @modelcontextprotocol/server-postgres --help
   
   # For SQLite
-  uvx sqlite-mcp-server --help
+  npx -y mcp-server-sqlite-npx --help
   ```
 - Verify command and arguments in configuration
 - Check server logs for detailed error messages
@@ -1655,7 +2161,7 @@ logger.setLevel(logging.DEBUG)
 sql -mcp username/password@host:port/service
 
 # Test PostgreSQL MCP server
-uvx postgres-mcp-server --host localhost --port 5432 --database testdb --user testuser
+npx -y @modelcontextprotocol/server-postgres postgresql://user:pass@localhost:5432/dbname
 ```
 
 **Verify agent configuration**:
@@ -1883,9 +2389,9 @@ make agent-info AGENT=your-agent-name
 | Database | Command | Config Function |
 |----------|---------|-----------------|
 | Oracle (Primary) | `sql -mcp` | `create_database_mcp_config("oracle", ...)` |
-| PostgreSQL | `uvx postgres-mcp-server` | `create_database_mcp_config("postgresql", ...)` |
-| MySQL | `uvx mysql-mcp-server` | `create_database_mcp_config("mysql", ...)` |
-| SQLite | `uvx sqlite-mcp-server` | `create_database_mcp_config("sqlite", ...)` |
+| PostgreSQL | `npx -y @modelcontextprotocol/server-postgres` | `create_database_mcp_config("postgresql", ...)` |
+| MySQL | `npx -y @modelcontextprotocol/server-mysql` | `create_database_mcp_config("mysql", ...)` |
+| SQLite | `npx -y mcp-server-sqlite-npx` | `create_database_mcp_config("sqlite", ...)` |
 
 #### Oracle Connection Methods
 
@@ -1929,8 +2435,8 @@ make agent-info AGENT=agent-name
 sql -version
 
 # Test MCP server installation
-uvx postgres-mcp-server --help
-uvx sqlite-mcp-server --help
+npx -y @modelcontextprotocol/server-postgres --help
+npx -y mcp-server-sqlite-npx --help
 ```
 
 #### Code Snippets
@@ -1973,6 +2479,174 @@ config = create_database_mcp_config("postgresql", "db", host="localhost",
                                    username="user", password="pass")
 success, error = validate_database_connection(config)
 print("✓ Connected" if success else f"✗ Failed: {error}")
+```
+
+### Sample Database for Testing
+
+A sample SQLite database with realistic company sales data is included for testing database-connected agents.
+
+#### Quick Setup
+
+1. **Generate the sample database**:
+   ```bash
+   uv run python create_sample_db.py
+   ```
+
+   This creates `sample_company.db` with:
+   - 10 customers (various companies)
+   - 10 products (software, hardware, services)
+   - 5 sales representatives
+   - 50 orders (last 6 months)
+   - 113 order items
+   - ~$470K in total sales
+
+2. **Get the absolute path**:
+   ```bash
+   ./setup_demo_agent.sh
+   ```
+   
+   This displays the full path you'll need for the connection.
+
+3. **Create a database connection** (via CLI):
+   ```bash
+   make run
+   # Select: 7. Manage database connections
+   # Select: 1. Create new connection
+   # Name: company-sales-db
+   # Type: sqlite
+   # Path: /full/path/to/sample_company.db (from step 2)
+   ```
+
+4. **Create a sales analyst agent**:
+   ```bash
+   # Select: 1. Create new agent
+   # Name: sales-analyst
+   # Display: Sales Data Analyst
+   # Model: llama3.1:latest
+   # Prompt: You are a sales data analyst...
+   # Temperature: 0.3
+   ```
+
+5. **Assign the database**:
+   ```bash
+   # Select: 6. Update agent
+   # Select: sales-analyst
+   # Select: 2. Update database connections
+   # Select: 1. Assign connection
+   # Select: company-sales-db
+   # Access level: 1. READ_ONLY
+   ```
+
+6. **Start analyzing**:
+   ```bash
+   # Select: 4. Chat with agent
+   # Select: sales-analyst
+   # Ask: "What were our total sales last month?"
+   ```
+
+#### Sample Questions
+
+Try these questions with your sales analyst agent:
+
+- "What were our total sales last month?"
+- "Who are our top 5 customers by revenue?"
+- "Which products are selling best?"
+- "Show me sales trends over the last 6 months"
+- "Which sales rep has the highest performance?"
+- "What's our average order value?"
+- "Which product category generates the most revenue?"
+- "Are there any customers who haven't ordered recently?"
+
+#### Database Schema
+
+**Tables**:
+- `customers` - Company customer information (10 records)
+- `products` - Product catalog with categories (10 records)
+- `sales_reps` - Sales team members (5 records)
+- `orders` - Customer orders with status (50 records)
+- `order_items` - Individual line items (113 records)
+
+**Sample Queries**:
+```sql
+-- Monthly sales trend
+SELECT strftime('%Y-%m', order_date) as month, 
+       COUNT(*) as orders,
+       SUM(total_amount) as revenue
+FROM orders
+WHERE status = 'Completed'
+GROUP BY month
+ORDER BY month DESC;
+
+-- Top customers
+SELECT c.company_name, 
+       COUNT(o.order_id) as order_count,
+       SUM(o.total_amount) as total_revenue
+FROM customers c
+JOIN orders o ON c.customer_id = o.customer_id
+WHERE o.status = 'Completed'
+GROUP BY c.customer_id
+ORDER BY total_revenue DESC
+LIMIT 5;
+
+-- Product performance
+SELECT p.product_name,
+       p.category,
+       SUM(oi.quantity) as units_sold,
+       SUM(oi.subtotal) as revenue
+FROM products p
+JOIN order_items oi ON p.product_id = oi.product_id
+JOIN orders o ON oi.order_id = o.order_id
+WHERE o.status = 'Completed'
+GROUP BY p.product_id
+ORDER BY revenue DESC;
+```
+
+#### Regenerating Sample Data
+
+To create a fresh database with new random data:
+
+```bash
+uv run python create_sample_db.py
+```
+
+This deletes the existing database and creates a new one with different random orders.
+
+#### Testing Access Levels
+
+The sample database is perfect for testing different access levels:
+
+```python
+from offline_chat import Agent, AgentManager
+from offline_chat.database import DatabaseConnectionManager, AgentConnectionAssignment, AccessLevel
+
+db_manager = DatabaseConnectionManager()
+agent_manager = AgentManager(db_manager=db_manager)
+
+# Create connection
+from offline_chat.database import DatabaseConnection
+conn = DatabaseConnection(
+    name="company-sales-db",
+    database_type="sqlite",
+    file_path="/path/to/sample_company.db"
+)
+db_manager.create_connection(conn)
+
+# Create agent with table-specific read access
+agent = Agent(
+    name="limited-analyst",
+    display_name="Limited Analyst",
+    base_model="llama3.1:latest",
+    system_prompt="You can only view orders and customers.",
+    temperature=0.3,
+    connection_assignments=[
+        AgentConnectionAssignment(
+            connection_name="company-sales-db",
+            access_level=AccessLevel.TABLE_SPECIFIC_READ,
+            allowed_tables=["orders", "customers", "order_items"]
+        )
+    ]
+)
+agent_manager.create_agent(agent)
 ```
 
 ## Configuration
@@ -2057,6 +2731,10 @@ Agent Management:
   models               List available Ollama models
   history              Show chat history (usage: make history AGENT=name)
   agent-info           Show agent config (usage: make agent-info AGENT=name)
+
+Database Management:
+  connections          List all database connections
+  migrate              Run migration from inline database configs
 
 Testing:
   test                 Run the test suite using pytest

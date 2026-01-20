@@ -49,24 +49,45 @@ def sanitize_config_for_display(config: MCPServerConfig) -> dict[str, Any]:
         >>> print(safe_config["database_password"])
         ****
         >>>
-        >>> # PostgreSQL with password in environment
+        >>> # PostgreSQL with password in connection string
         >>> pg_config = MCPServerConfig(
         ...     name="analytics",
-        ...     command="uvx",
-        ...     args=["postgres-mcp-server"],
-        ...     env={"PGPASSWORD": "secret123"},
+        ...     command="npx",
+        ...     args=["-y", "@modelcontextprotocol/server-postgres",
+        ...           "postgresql://user:secret123@localhost:5432/db"],
         ...     database_type="postgresql"
         ... )
         >>>
         >>> safe_pg = sanitize_config_for_display(pg_config)
-        >>> print(safe_pg["env"]["PGPASSWORD"])
-        ****
+        >>> # Password in connection string is masked
+        >>> "secret123" not in str(safe_pg["args"])
+        True
     """
     result = config.to_dict()
 
     # Mask the database password if present
     if "database_password" in result and result["database_password"] is not None:
         result["database_password"] = mask_password(result["database_password"])
+
+    # Mask passwords in PostgreSQL connection strings in args
+    if "args" in result and isinstance(result["args"], list):
+        import re
+        masked_args = []
+        for arg in result["args"]:
+            if isinstance(arg, str) and "postgresql://" in arg:
+                # Mask password in PostgreSQL connection string
+                # Format: postgresql://user:password@host:port/database
+                # The password can contain @ characters, so we need to match greedily
+                # Match everything from the : after username to the last @ before host
+                masked_arg = re.sub(
+                    r'(postgresql://[^:/@]+:)(.+)(@[^/@]+(?::\d+)?/)',
+                    r'\1****\3',
+                    arg
+                )
+                masked_args.append(masked_arg)
+            else:
+                masked_args.append(arg)
+        result["args"] = masked_args
 
     # Also check for passwords in environment variables
     if "env" in result and isinstance(result["env"], dict):
@@ -101,18 +122,34 @@ def sanitize_error_message(error_message: str, config: MCPServerConfig | None = 
     sanitized = error_message
 
     if config is not None:
-        # Replace database password if present
-        if config.database_password is not None and config.database_password in sanitized:
-            sanitized = sanitized.replace(config.database_password, "****")
+        # Collect all passwords to sanitize
+        passwords_to_sanitize = []
+        
+        # Add database password if present
+        if config.database_password is not None:
+            passwords_to_sanitize.append(config.database_password)
 
-        # Replace passwords from environment variables
+        # Add passwords from environment variables
         if config.env:
             for key, value in config.env.items():
                 if any(
                     pwd_key in key.upper()
                     for pwd_key in ["PASSWORD", "PASSWD", "PWD", "SECRET", "TOKEN"]
                 ):
-                    if value and value in sanitized:
-                        sanitized = sanitized.replace(value, "****")
+                    if value:
+                        passwords_to_sanitize.append(value)
+
+        # Sort passwords by length (longest first) to avoid partial replacements
+        # Also filter out passwords that are too short or are just the mask character
+        passwords_to_sanitize = [
+            pwd for pwd in passwords_to_sanitize 
+            if len(pwd) >= 3 and pwd != "****"
+        ]
+        passwords_to_sanitize.sort(key=len, reverse=True)
+
+        # Replace each password
+        for password in passwords_to_sanitize:
+            if password in sanitized:
+                sanitized = sanitized.replace(password, "****")
 
     return sanitized

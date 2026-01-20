@@ -12,6 +12,8 @@ from typing import Any, Callable, Iterator, Optional
 import ollama
 
 from offline_chat.agent import Agent
+from offline_chat.database.access_validator import AccessLevelValidator
+from offline_chat.database.result import is_err, unwrap_err
 from offline_chat.exceptions import AgentNotFoundError, OllamaConnectionError
 from offline_chat.fetch import WebFetchTool
 from offline_chat.history import ConversationHistory, HistoryStore, Message
@@ -210,12 +212,27 @@ class ChatSession:
         tool_list = ", ".join(tool_names)
 
         tool_instructions = (
-            f"\n\nYou have access to the following tools: {tool_list}. "
-            "When you need current or up-to-date information, USE these tools. "
-            "IMPORTANT: When a tool returns results, you MUST use that information "
-            "to answer the user's question. Do NOT ignore tool results or claim you "
-            "don't have information when tools have provided it. Base your response "
-            "on the tool results."
+            f"\n\n=== TOOL USAGE INSTRUCTIONS ===\n"
+            f"Available tools: {tool_list}\n\n"
+            "CRITICAL RULES - READ CAREFULLY:\n"
+            "1. You MUST use the available tools to answer questions. DO NOT explain what you would do.\n"
+            "2. NEVER write SQL queries in code blocks like ```sql SELECT * FROM table```\n"
+            "3. NEVER write JSON in your responses like {\"name\": \"tool_name\", \"parameters\": {...}}\n"
+            "4. NEVER say things like 'Let me execute this query' or 'I will run this SQL'\n"
+            "5. When you need data, the system will AUTOMATICALLY call the tools for you.\n"
+            "6. When you receive tool results, immediately use them to answer the question.\n"
+            "7. ONLY respond with natural language answers based on tool results.\n"
+            "8. If a tool returns an error, try a different approach or ask for clarification.\n\n"
+            "WRONG BEHAVIOR:\n"
+            "❌ 'Let me run this query: SELECT * FROM orders'\n"
+            "❌ 'Here is the SQL: ```sql SELECT customer_id FROM orders```'\n"
+            "❌ '{\"name\": \"read_query\", \"parameters\": {...}}'\n\n"
+            "CORRECT BEHAVIOR:\n"
+            "✓ Think about what data you need, the system calls the tool automatically\n"
+            "✓ When you get results, immediately answer: 'The top customer is...'\n"
+            "✓ Speak naturally like a human analyst, not a programmer\n\n"
+            "Remember: You are an analyst having a conversation. The tools work invisibly. "
+            "Just think about what data you need, and answer based on the results you receive."
         )
 
         return base_prompt + tool_instructions
@@ -251,6 +268,8 @@ class ChatSession:
         For database tools, logs the operation for audit purposes
         (especially important for Oracle databases which log to DBTOOLS$MCP_LOG).
 
+        Validates database queries against access level restrictions before execution.
+
         Handles errors gracefully by catching exceptions and returning error
         messages to the agent, allowing the agent to understand and potentially
         correct issues (e.g., syntax errors in SQL queries).
@@ -268,6 +287,12 @@ class ChatSession:
         # Check MCP tools first
         if self._mcp_manager and name in self._mcp_manager.tool_registry:
             server_name = self._mcp_manager.tool_registry[name]
+
+            # Validate database queries against access level
+            if server_name in self._database_connections:
+                validation_error = self._validate_database_query(name, arguments, server_name)
+                if validation_error:
+                    return validation_error
 
             # Log database operations for audit purposes
             if server_name in self._database_connections:
@@ -307,6 +332,96 @@ class ChatSession:
 
         # Fall back to built-in tools
         return self._execute_tool(name, arguments)
+
+    def _validate_database_query(
+        self, tool_name: str, arguments: dict[str, Any], server_name: str
+    ) -> str | None:
+        """Validate a database query against access level restrictions.
+
+        This method checks if the tool is a query execution tool, extracts the SQL
+        query from the arguments, finds the connection assignment for the server,
+        and validates the query using AccessLevelValidator.
+
+        Args:
+            tool_name: Name of the tool being executed.
+            arguments: Tool arguments containing the SQL query.
+            server_name: Name of the MCP server (database connection).
+
+        Returns:
+            Error message if validation fails, None if validation succeeds or
+            if the tool is not a query tool.
+        """
+        # Check if this is a query execution tool
+        query_tool_names = ["run-sql", "query_database", "query", "execute_query", "run_query"]
+        
+        # Handle namespaced tool names (e.g., "db_name_run_sql")
+        base_tool_name = tool_name
+        if tool_name.startswith(f"{server_name}_"):
+            base_tool_name = tool_name[len(server_name) + 1 :].replace("_", "-")
+        
+        if base_tool_name not in query_tool_names:
+            # Not a query tool, no validation needed
+            return None
+
+        # Extract SQL query from arguments
+        # Different tools use different parameter names
+        sql_query = None
+        for param_name in ["sql", "query", "statement"]:
+            if param_name in arguments:
+                sql_query = arguments[param_name]
+                break
+
+        if not sql_query:
+            # No SQL query found in arguments, can't validate
+            logger.warning(
+                f"Query tool '{tool_name}' called without recognizable SQL parameter"
+            )
+            return None
+
+        # Find the connection assignment for this server
+        if not self.agent or not self.agent.connection_assignments:
+            # No connection assignments configured
+            logger.warning(
+                f"No connection assignments found for agent '{self.agent.name if self.agent else 'unknown'}'"
+            )
+            return None
+
+        # Find the assignment that matches this server name
+        # The server name in MCP config should match the connection name
+        assignment = None
+        for ca in self.agent.connection_assignments:
+            if ca.connection_name == server_name:
+                assignment = ca
+                break
+
+        if not assignment:
+            # No assignment found for this server
+            logger.warning(
+                f"No connection assignment found for server '{server_name}' "
+                f"in agent '{self.agent.name}'"
+            )
+            return None
+
+        # Validate the query using AccessLevelValidator
+        allowed_tables = assignment.allowed_tables or []
+        validation_result = AccessLevelValidator.validate_query(
+            sql_query, assignment.access_level, allowed_tables
+        )
+
+        if is_err(validation_result):
+            error_msg = unwrap_err(validation_result)
+            logger.info(
+                f"Query validation failed for agent '{self.agent.name}' "
+                f"on server '{server_name}': {error_msg}"
+            )
+            return f"Access denied: {error_msg}"
+
+        # Validation succeeded
+        logger.debug(
+            f"Query validation passed for agent '{self.agent.name}' "
+            f"on server '{server_name}' with access level '{assignment.access_level.value}'"
+        )
+        return None
 
     def end(self) -> None:
         """End the session and save history.
@@ -387,8 +502,14 @@ class ChatSession:
         tools = self._get_tools()
 
         # Agent loop - continue until no more tool calls
+        # Add a safety limit to prevent infinite loops
+        max_iterations = 20
+        iteration = 0
+        
         try:
-            while True:
+            while iteration < max_iterations:
+                iteration += 1
+                
                 if not tools:
                     # No tools - use streaming directly
                     yield from self._stream_response(messages)
@@ -420,6 +541,9 @@ class ChatSession:
                     # No tool calls - yield the final response
                     response_content = message.get("content", "")
                     if response_content:
+                        # Filter out any JSON tool call syntax
+                        response_content = self._filter_json_tool_calls(response_content)
+                        
                         # Stream the response character by character
                         for char in response_content:
                             yield char
@@ -462,6 +586,41 @@ class ChatSession:
                             "content": result if result else "No results returned",
                         }
                     )
+            
+            # If we exit the loop due to max iterations, prompt agent to summarize
+            if iteration >= max_iterations:
+                # Add a system message asking the agent to summarize findings
+                messages.append({
+                    "role": "user",
+                    "content": "Please summarize what you've found so far based on the tool results above."
+                })
+                
+                # Get summary response
+                response = ollama.chat(
+                    model=self.agent.base_model,
+                    messages=messages,
+                    stream=False,
+                )
+                
+                summary_content = response.get("message", {}).get("content", "")
+                if summary_content:
+                    # Add note about complex query
+                    note = "\n\n[Note: This was a complex query. Feel free to ask follow-up questions for more details.]"
+                    full_response = summary_content + note
+                    
+                    # Stream the response
+                    for char in full_response:
+                        yield char
+                    
+                    # Save to history
+                    self.history.messages.append(
+                        Message(
+                            role="assistant",
+                            content=full_response,
+                            timestamp=datetime.now(),
+                        )
+                    )
+                return
 
         except Exception as e:
             # Check for connection errors
@@ -505,8 +664,14 @@ class ChatSession:
         response_chunks: list[str] = []
 
         # Agent loop - continue until no more tool calls
+        # Add a safety limit to prevent infinite loops
+        max_iterations = 20
+        iteration = 0
+        
         try:
-            while True:
+            while iteration < max_iterations:
+                iteration += 1
+                
                 if not tools:
                     # No tools - use streaming directly
                     for chunk in self._stream_response(messages):
@@ -540,6 +705,9 @@ class ChatSession:
                     # No tool calls - collect the final response
                     response_content = message.get("content", "")
                     if response_content:
+                        # Filter out any JSON tool call syntax that the model might output
+                        response_content = self._filter_json_tool_calls(response_content)
+                        
                         # Collect response character by character
                         for char in response_content:
                             response_chunks.append(char)
@@ -574,6 +742,41 @@ class ChatSession:
                             "content": result if result else "No results returned",
                         }
                     )
+            
+            # If we exit the loop due to max iterations, prompt agent to summarize
+            if iteration >= max_iterations:
+                # Add a system message asking the agent to summarize findings
+                messages.append({
+                    "role": "user",
+                    "content": "Please summarize what you've found so far based on the tool results above."
+                })
+                
+                # Get summary response
+                response = ollama.chat(
+                    model=self.agent.base_model,
+                    messages=messages,
+                    stream=False,
+                )
+                
+                summary_content = response.get("message", {}).get("content", "")
+                if summary_content:
+                    # Add note about complex query
+                    note = "\n\n[Note: This was a complex query. Feel free to ask follow-up questions for more details.]"
+                    full_response = summary_content + note
+                    
+                    # Collect response character by character
+                    for char in full_response:
+                        response_chunks.append(char)
+                    
+                    # Save to history
+                    self.history.messages.append(
+                        Message(
+                            role="assistant",
+                            content=full_response,
+                            timestamp=datetime.now(),
+                        )
+                    )
+                return response_chunks
 
         except Exception as e:
             # Check for connection errors
@@ -581,6 +784,73 @@ class ChatSession:
             if "connection" in error_str or "refused" in error_str or "connect" in error_str:
                 raise OllamaConnectionError()
             raise
+
+    def _filter_json_tool_calls(self, content: str) -> str:
+        """Filter out JSON tool call syntax and SQL code blocks from model responses.
+        
+        Some models output JSON like {"name": "tool_name", "parameters": {...}}
+        or SQL code blocks like ```sql SELECT * FROM table``` as part of their
+        response even when they shouldn't. This method removes such blocks and
+        related explanatory text from the response.
+        
+        Args:
+            content: The response content to filter.
+            
+        Returns:
+            Filtered content with JSON tool calls and SQL blocks removed.
+        """
+        import re
+        
+        # Pattern to match JSON tool call syntax
+        # Matches: {"name": "...", "parameters": {...}}
+        json_pattern = r'\{["\']name["\']\s*:\s*["\'][^"\']+["\']\s*,\s*["\']parameters["\']\s*:\s*\{[^}]*\}\s*\}'
+        
+        # Pattern to match SQL code blocks
+        # Matches: ```sql ... ``` or ```SQL ... ```
+        sql_block_pattern = r'```[sS][qQ][lL]\s*\n.*?\n```'
+        
+        # Patterns for phrases that indicate the model is about to output JSON or execute a tool
+        json_intro_patterns = [
+            r'Here is the JSON object for the function call:?\s*$',
+            r'I\'ll call the `\w+` function with (?:a|the) (?:query|parameters):?\s*$',
+            r'Let me call the `\w+` function:?\s*$',
+            r'I need to call the `\w+` function:?\s*$',
+            r'To (?:answer|get) .+, I (?:need to|will|\'ll) call the `\w+` function.+:?\s*$',
+            r'Let me execute (?:this|the) query now\.?\s*$',
+            r'I\'ll execute (?:this|the) query now\.?\s*$',
+            r'Let me (?:try|run) (?:this|that|the) query\.?\s*$',
+            r'Here is the refined query:?\s*$',
+            r'Let me run (?:this|the) following SQL query:?\s*$',
+            r'I will run (?:this|the) following SQL query:?\s*$',
+            r'To find out .+, I\'ll run (?:a|the) query .+:?\s*$',
+            r'Here\'s the query:?\s*$',
+            r'This will give us .+\.?\s*$',
+        ]
+        
+        # Remove SQL code blocks first
+        filtered = re.sub(sql_block_pattern, '', content, flags=re.DOTALL)
+        
+        # Remove JSON tool calls
+        filtered = re.sub(json_pattern, '', filtered)
+        
+        # Remove JSON introduction phrases (at end of text)
+        for pattern in json_intro_patterns:
+            filtered = re.sub(pattern, '', filtered, flags=re.IGNORECASE | re.MULTILINE)
+        
+        # Clean up extra whitespace and newlines left behind
+        filtered = re.sub(r'\n\s*\n\s*\n+', '\n\n', filtered)
+        
+        # Only strip if we actually removed something
+        if filtered != content:
+            filtered = filtered.strip()
+            
+            # If after filtering we're left with very little meaningful content,
+            # it means the model was just trying to explain a tool call
+            # In this case, don't show anything (empty response will trigger retry)
+            if len(filtered) < 20 and any(phrase in content.lower() for phrase in ['json', 'function call', 'call the', 'execute', 'query', 'sql']):
+                return ""
+        
+        return filtered
 
     def _stream_response(self, messages: list[dict[str, Any]]) -> Iterator[str]:
         """Stream response without tools.

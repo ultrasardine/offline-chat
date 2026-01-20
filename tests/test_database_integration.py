@@ -214,7 +214,7 @@ def test_list_agents_displays_database_status():
         output = "\n".join(output_lines)
 
         # Agent with database should show database info
-        assert "sqlite(test_db)" in output or "Databases:" in output
+        assert "sqlite:test_db" in output or "Databases:" in output
 
-        # Agent without database should show "No database access"
-        assert "No database access" in output
+        # Agent without database should not show database indicator
+        # (cleaner to show nothing than "No database access")

@@ -274,9 +274,13 @@ class TestDatabaseConfigurationSerializationRoundTrip:
         """Unit test: PostgreSQL database config with credentials should round-trip correctly."""
         mcp_config = MCPServerConfig(
             name="analytics-postgres",
-            command="uvx",
-            args=["postgres-mcp-server"],
-            env={"PGPASSWORD": "pg_secret"},
+            command="npx",
+            args=[
+                "-y",
+                "@modelcontextprotocol/server-postgres",
+                "postgresql://analyst:pg_secret@postgres.example.com:5432/analytics",
+            ],
+            env={},
             disabled=False,
             database_type="postgresql",
             database_host="postgres.example.com",
@@ -362,8 +366,12 @@ class TestDatabaseConfigurationSerializationRoundTrip:
 
         postgres_config = MCPServerConfig(
             name="postgres-dev",
-            command="uvx",
-            args=["postgres-mcp-server"],
+            command="npx",
+            args=[
+                "-y",
+                "@modelcontextprotocol/server-postgres",
+                "postgresql://dev:devpass@localhost:5432/devdb",
+            ],
             database_type="postgresql",
             database_host="localhost",
             database_port=5432,
@@ -418,8 +426,12 @@ class TestDatabaseConfigurationSerializationRoundTrip:
         """Unit test: Empty passwords should be preserved (not converted to None)."""
         mcp_config = MCPServerConfig(
             name="no-pass-db",
-            command="uvx",
-            args=["postgres-mcp-server"],
+            command="npx",
+            args=[
+                "-y",
+                "@modelcontextprotocol/server-postgres",
+                "postgresql://user:@localhost:5432/testdb",
+            ],
             database_type="postgresql",
             database_host="localhost",
             database_port=5432,

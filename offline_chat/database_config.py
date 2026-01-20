@@ -180,8 +180,8 @@ def _create_sqlite_config(name: str, path: str | None = None, **kwargs) -> MCPSe
 
     return MCPServerConfig(
         name=name,
-        command="uvx",
-        args=["sqlite-mcp-server", "--db-path", path],
+        command="npx",
+        args=["-y", "mcp-server-sqlite-npx", path],
         database_type="sqlite",
         database_path=path,
     )
@@ -220,19 +220,13 @@ def _create_postgresql_config(
 
     return MCPServerConfig(
         name=name,
-        command="uvx",
+        command="npx",
         args=[
-            "postgres-mcp-server",
-            "--host",
-            host,
-            "--port",
-            str(port),
-            "--database",
-            database,
-            "--user",
-            username,
+            "-y",
+            "@modelcontextprotocol/server-postgres",
+            f"postgresql://{username}:{password}@{host}:{port}/{database}",
         ],
-        env={"PGPASSWORD": password},
+        env={},
         database_type="postgresql",
         database_host=host,
         database_port=port,

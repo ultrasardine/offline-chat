@@ -34,8 +34,8 @@ def validate_database_connection(config: MCPServerConfig) -> Tuple[bool, Optiona
     Examples:
         >>> config = MCPServerConfig(
         ...     name="test_db",
-        ...     command="uvx",
-        ...     args=["sqlite-mcp-server", "--db-path", "/tmp/test.db"],
+        ...     command="npx",
+        ...     args=["-y", "mcp-server-sqlite-npx", "/tmp/test.db"],
         ...     database_type="sqlite"
         ... )
         >>> success, error = validate_database_connection(config)
@@ -74,8 +74,8 @@ async def _validate_connection_async(config: MCPServerConfig) -> Tuple[bool, Opt
         >>>
         >>> config = MCPServerConfig(
         ...     name="test_db",
-        ...     command="uvx",
-        ...     args=["sqlite-mcp-server", "--db-path", "/tmp/test.db"],
+        ...     command="npx",
+        ...     args=["-y", "mcp-server-sqlite-npx", "/tmp/test.db"],
         ...     database_type="sqlite"
         ... )
         >>>

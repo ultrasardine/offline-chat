@@ -470,25 +470,21 @@ Database configurations are stored as part of the agent's config.json:
     },
     {
       "name": "sales_db",
-      "command": "uvx",
-      "args": ["sqlite-mcp-server", "--db-path", "/path/to/sales.db"],
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sqlite", "--db-path", "/path/to/sales.db"],
       "env": {},
       "database_type": "sqlite",
       "database_path": "/path/to/sales.db"
     },
     {
       "name": "analytics_db",
-      "command": "uvx",
+      "command": "npx",
       "args": [
-        "postgres-mcp-server",
-        "--host", "localhost",
-        "--port", "5432",
-        "--database", "analytics",
-        "--user", "analyst"
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://analyst:secure_password@localhost:5432/analytics"
       ],
-      "env": {
-        "PGPASSWORD": "secure_password"
-      },
+      "env": {},
       "database_type": "postgresql",
       "database_host": "localhost",
       "database_port": 5432,

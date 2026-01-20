@@ -2,6 +2,7 @@
 
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -27,3 +28,15 @@ def temp_history_dir(temp_data_dir: Path):
     history_dir = temp_data_dir / "history"
     history_dir.mkdir(parents=True)
     return history_dir
+
+
+@pytest.fixture(autouse=True)
+def mock_getpass_globally():
+    """Automatically mock getpass for all tests to prevent password prompts.
+    
+    This fixture patches getpass at the module level where it's imported.
+    Tests with explicit @patch decorators will override this default.
+    """
+    with patch('offline_chat.database_menu.getpass', return_value='test_password'), \
+         patch('offline_chat.database_config_cli.getpass', return_value='test_password'):
+        yield

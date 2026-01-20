@@ -1,0 +1,10 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "name": "sample_db",
+            "database": "sample_company.db"
+        }
+    ]
+}

@@ -69,18 +69,28 @@ import json
 import os
 from getpass import getpass
 from pathlib import Path
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from offline_chat.connection_validator import validate_database_connection
 from offline_chat.database_config import create_database_mcp_config
 from offline_chat.mcp_config import MCPServerConfig
 
+if TYPE_CHECKING:
+    from offline_chat.database.manager import DatabaseConnectionManager
+    from offline_chat.database.connection import DatabaseConnection
 
-def configure_database_access() -> list[MCPServerConfig]:
+
+def configure_database_access(
+    db_manager: Optional["DatabaseConnectionManager"] = None,
+) -> list[MCPServerConfig]:
     """Interactive CLI flow for configuring database access.
 
     Prompts the user to add one or more database configurations,
-    validates connections, and returns the list of configurations.
+    either by selecting existing connections or creating new ones.
+    Validates connections and returns the list of configurations.
+
+    Args:
+        db_manager: Optional DatabaseConnectionManager for accessing existing connections.
 
     Returns:
         List of database MCP server configurations.
@@ -96,59 +106,125 @@ def configure_database_access() -> list[MCPServerConfig]:
     print("-" * 40)
 
     while True:
-        db_type = select_database_type()
-        if db_type is None:
-            break
-
-        db_name = input("\nDatabase connection name: ").strip()
-        if not db_name:
-            print("Database name is required. Skipping.")
-            continue
-
-        # Check if name already used
-        if any(c.name == db_name for c in configs):
-            print(f"Database '{db_name}' already added. Use a different name.")
-            continue
-
-        try:
-            if db_type == "oracle":
-                config = configure_oracle(db_name)
-            elif db_type == "sqlite":
-                config = configure_sqlite(db_name)
-            elif db_type == "postgresql":
-                config = configure_postgresql(db_name)
-            elif db_type == "mysql":
-                config = configure_mysql(db_name)
-            else:
-                print(f"Unsupported database type: {db_type}")
-                continue
-
-            if config is None:
-                continue
-
-            # Test connection
-            print("\nTesting connection...", end=" ", flush=True)
-            success, error = validate_database_connection(config)
-
-            if success:
-                print("Done!")
-                configs.append(config)
-                print(f"✓ Database '{db_name}' configured successfully")
-            else:
-                print("Failed!")
-                print(f"\nConnection error: {error}")
-                retry = input("Skip this database? (Y/n): ").strip().lower()
-                if retry != "n":
-                    print("Database configuration skipped.")
+        # Show option to use existing connection or create new
+        use_existing = False
+        if db_manager is not None:
+            existing_connections = db_manager.list_connections()
+            if existing_connections:
+                print("\nOptions:")
+                print("  1. Use existing database connection")
+                print("  2. Create new database connection")
+                print("  0. Done adding databases")
+                print()
+                
+                try:
+                    choice = input("Select option: ").strip()
+                    if choice == "0":
+                        break
+                    elif choice == "1":
+                        use_existing = True
+                    elif choice == "2":
+                        use_existing = False
+                    else:
+                        print("Invalid selection.")
+                        continue
+                except ValueError:
+                    print("Invalid input.")
                     continue
-                # If user wants to retry, loop will continue
+        
+        if use_existing and db_manager is not None:
+            # Select from existing connections
+            existing_connections = db_manager.list_connections()
+            
+            # Filter out already selected connections
+            available_connections = [
+                conn for conn in existing_connections
+                if not any(c.name == conn.name for c in configs)
+            ]
+            
+            if not available_connections:
+                print("\nNo available connections. All existing connections have been added.")
+                continue
+            
+            print("\nExisting database connections:")
+            for i, conn in enumerate(available_connections, 1):
+                print(f"  {i}. {conn.name} ({conn.database_type})")
+            print("  0. Cancel")
+            print()
+            
+            try:
+                choice = input("Select connection: ").strip()
+                if choice == "0":
+                    continue
+                
+                idx = int(choice)
+                if 1 <= idx <= len(available_connections):
+                    selected_conn = available_connections[idx - 1]
+                    
+                    # Convert DatabaseConnection to MCPServerConfig
+                    config = _connection_to_mcp_config(selected_conn)
+                    configs.append(config)
+                    print(f"✓ Database '{selected_conn.name}' added successfully")
+                else:
+                    print("Invalid selection.")
+            except ValueError:
+                print("Invalid input.")
+            
+        else:
+            # Create new connection
+            db_type = select_database_type()
+            if db_type is None:
+                break
 
-        except ValueError as e:
-            print(f"\nConfiguration error: {e}")
-            continue
-        except KeyboardInterrupt:
-            print("\n\nDatabase configuration cancelled.")
-            break
+            db_name = input("\nDatabase connection name: ").strip()
+            if not db_name:
+                print("Database name is required. Skipping.")
+                continue
+
+            # Check if name already used
+            if any(c.name == db_name for c in configs):
+                print(f"Database '{db_name}' already added. Use a different name.")
+                continue
+
+            try:
+                if db_type == "oracle":
+                    config = configure_oracle(db_name)
+                elif db_type == "sqlite":
+                    config = configure_sqlite(db_name)
+                elif db_type == "postgresql":
+                    config = configure_postgresql(db_name)
+                elif db_type == "mysql":
+                    config = configure_mysql(db_name)
+                else:
+                    print(f"Unsupported database type: {db_type}")
+                    continue
+
+                if config is None:
+                    continue
+
+                # Test connection
+                print("\nTesting connection...", end=" ", flush=True)
+                success, error = validate_database_connection(config)
+
+                if success:
+                    print("Done!")
+                    configs.append(config)
+                    print(f"✓ Database '{db_name}' configured successfully")
+                else:
+                    print("Failed!")
+                    print(f"\nConnection error: {error}")
+                    retry = input("Skip this database? (Y/n): ").strip().lower()
+                    if retry != "n":
+                        print("Database configuration skipped.")
+                        continue
+                    # If user wants to retry, loop will continue
+
+            except ValueError as e:
+                print(f"\nConfiguration error: {e}")
+                continue
+            except KeyboardInterrupt:
+                print("\n\nDatabase configuration cancelled.")
+                break
 
         # Ask if user wants to add another database
         add_another = input("\nAdd another database? (y/N): ").strip().lower()
@@ -156,6 +232,57 @@ def configure_database_access() -> list[MCPServerConfig]:
             break
 
     return configs
+
+
+def _connection_to_mcp_config(conn: "DatabaseConnection") -> MCPServerConfig:
+    """Convert a DatabaseConnection to an MCPServerConfig.
+    
+    Args:
+        conn: DatabaseConnection object to convert.
+        
+    Returns:
+        MCPServerConfig configured for the database connection.
+    """
+    if conn.database_type == "sqlite":
+        return create_database_mcp_config(
+            "sqlite",
+            conn.name,
+            path=conn.file_path
+        )
+    elif conn.database_type == "oracle":
+        # Oracle connections always use full connection details in DatabaseConnection
+        return create_database_mcp_config(
+            "oracle",
+            conn.name,
+            host=conn.host,
+            port=conn.port,
+            service_name=conn.service_name,
+            username=conn.username,
+            password=conn.password
+        )
+    elif conn.database_type == "postgresql":
+        return create_database_mcp_config(
+            "postgresql",
+            conn.name,
+            host=conn.host,
+            port=conn.port,
+            database=conn.database,
+            username=conn.username,
+            password=conn.password
+        )
+    elif conn.database_type == "mysql":
+        return create_database_mcp_config(
+            "mysql",
+            conn.name,
+            host=conn.host,
+            port=conn.port,
+            database=conn.database,
+            username=conn.username,
+            password=conn.password
+        )
+    else:
+        raise ValueError(f"Unsupported database type: {conn.database_type}")
+
 
 
 def select_database_type() -> Optional[str]:

@@ -253,8 +253,12 @@ class TestDatabaseToolsInToolList:
 
         config = MCPServerConfig(
             name="analytics_db",
-            command="uvx",
-            args=["postgres-mcp-server"],
+            command="npx",
+            args=[
+                "-y",
+                "@modelcontextprotocol/server-postgres",
+                "postgresql://user:pass@localhost:5432/analytics",
+            ],
             database_type="postgresql",
         )
 

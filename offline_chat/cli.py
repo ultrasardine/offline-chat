@@ -9,6 +9,9 @@ from typing import Optional
 
 from offline_chat.agent import Agent
 from offline_chat.database_config_cli import configure_database_access
+from offline_chat.database.manager import DatabaseConnectionManager
+from offline_chat.database.result import Ok, Err
+from offline_chat.database_menu import show_database_menu
 from offline_chat.exceptions import (
     AgentExistsError,
     AgentNotFoundError,
@@ -21,6 +24,16 @@ from offline_chat.manager import AgentManager
 from offline_chat.mcp_config import MCPServerConfig
 from offline_chat.mcp_presets import get_all_available_presets
 from offline_chat.session import ChatSession
+
+# Import agent update menu from cli package
+import sys
+from pathlib import Path
+# Add cli directory to path if not already there
+cli_dir = Path(__file__).parent.parent / "cli"
+if str(cli_dir) not in sys.path:
+    sys.path.insert(0, str(cli_dir))
+
+from agent_update_menu import show_update_agent_menu
 
 
 def format_user_message(content: str) -> str:
@@ -65,6 +78,8 @@ class CLI:
         "View agent details",
         "Chat with agent",
         "View conversation history",
+        "Update agent",
+        "Manage database connections",
         "Delete agent",
         "Exit",
     ]
@@ -79,9 +94,41 @@ class CLI:
             manager: Optional AgentManager instance. If not provided,
                 creates a new one with default paths.
         """
-        self.manager = manager or AgentManager()
+        self.db_manager = DatabaseConnectionManager()
+        self.manager = manager or AgentManager(db_manager=self.db_manager)
         self.session = ChatSession(self.manager)
         self._running = True
+
+    def _run_migration_check(self) -> None:
+        """Run migration check for agents with inline database configurations.
+        
+        This method is called automatically on application startup to migrate
+        any agents with old-style inline database configurations to the new
+        centralized connection management system.
+        
+        If any agents are migrated, displays the results to the user.
+        """
+        try:
+            # Call the migration method
+            migration_results = self.manager.migrate_inline_configs()
+            
+            # Display results if any agents were migrated
+            if migration_results:
+                print("\n" + "=" * 40)
+                print("Database Configuration Migration")
+                print("=" * 40)
+                print(f"\nMigrated {len(migration_results)} agent(s) to centralized database connections:")
+                
+                for agent_name, connection_name in migration_results.items():
+                    print(f"  • {agent_name} -> {connection_name}")
+                
+                print("\nYour agents now use the centralized connection management system.")
+                print("You can manage connections via 'Manage database connections' menu.")
+                print("=" * 40)
+        except Exception as e:
+            # Don't let migration errors prevent app startup
+            print(f"\nWarning: Error during database configuration migration: {e}")
+            print("The application will continue normally.")
 
     def run(self) -> None:
         """Start the CLI application.
@@ -91,6 +138,9 @@ class CLI:
         """
         print("\nWelcome to Offline Chat!")
         print("=" * 40)
+
+        # Run migration check on startup
+        self._run_migration_check()
 
         try:
             while self._running:
@@ -107,8 +157,12 @@ class CLI:
                 elif choice == 5:
                     self.view_history_flow()
                 elif choice == 6:
-                    self.delete_agent_flow()
+                    self.update_agent_flow()
                 elif choice == 7:
+                    self.manage_database_connections_flow()
+                elif choice == 8:
+                    self.delete_agent_flow()
+                elif choice == 9:
                     self._running = False
                     print("\nGoodbye!")
                 else:
@@ -200,7 +254,7 @@ class CLI:
             mcp_servers = self._prompt_mcp_servers()
 
             # Prompt for database configurations
-            database_configs = configure_database_access()
+            database_configs = configure_database_access(self.db_manager)
 
             # Combine MCP servers and database configs
             all_mcp_servers = mcp_servers + database_configs
@@ -255,37 +309,34 @@ class CLI:
             # Web search indicator
             web_search_status = "[Web Search]" if agent.web_search_enabled else ""
 
-            # Separate database servers from other MCP servers
-            database_servers = [
-                s for s in agent.mcp_servers if hasattr(s, "database_type") and s.database_type
-            ]
-            other_mcp_servers = [
-                s
-                for s in agent.mcp_servers
-                if not (hasattr(s, "database_type") and s.database_type)
-            ]
-
             # MCP servers indicator (non-database)
             mcp_status = ""
-            if other_mcp_servers:
-                server_names = [s.name for s in other_mcp_servers if not s.disabled]
+            if agent.mcp_servers:
+                server_names = [s.name for s in agent.mcp_servers if not s.disabled]
                 if server_names:
                     mcp_status = f"[MCP: {', '.join(server_names)}]"
 
-            # Database indicator
+            # Database connections indicator (new centralized system)
             db_status = ""
-            if database_servers:
+            if agent.connection_assignments:
                 db_info = []
-                for db in database_servers:
-                    if not db.disabled:
-                        db_type = db.database_type
-                        db_info.append(f"{db_type}({db.name})")
+                for assignment in agent.connection_assignments:
+                    result = self.db_manager.get_connection(assignment.connection_name)
+                    if isinstance(result, Ok):
+                        conn = result.value
+                        access = assignment.access_level.value.replace('_', ' ').title()
+                        db_info.append(f"{conn.database_type}:{conn.name}({access})")
                 if db_info:
-                    db_status = f"[Databases: {', '.join(db_info)}]"
+                    db_status = f"[DB: {', '.join(db_info)}]"
                 else:
-                    db_status = "[No database access]"
-            else:
-                db_status = "[No database access]"
+                    db_status = "[DB: connections not found]"
+            elif agent.mcp_servers:
+                # Backward compatibility: check for database-type MCP servers
+                db_servers = [s for s in agent.mcp_servers 
+                             if hasattr(s, 'database_type') and s.database_type and not s.disabled]
+                if db_servers:
+                    db_info = [f"{s.database_type}:{s.name}" for s in db_servers]
+                    db_status = f"[Databases: {', '.join(db_info)}]"
 
             print(f"\n  Name: {agent.name} {web_search_status} {mcp_status} {db_status}".rstrip())
             print(f"  Display: {agent.display_name}")
@@ -325,59 +376,88 @@ class CLI:
         print("\nPurpose/Persona:")
         print(f"  {agent.system_prompt}")
 
-        # Separate database servers from other MCP servers
-        database_servers = [
-            s for s in agent.mcp_servers if hasattr(s, "database_type") and s.database_type
-        ]
-        other_mcp_servers = [
-            s for s in agent.mcp_servers if not (hasattr(s, "database_type") and s.database_type)
-        ]
-
-        # Display non-database MCP servers
-        if other_mcp_servers:
+        # Display MCP servers (non-database)
+        if agent.mcp_servers:
             print("\nMCP Servers:")
-            for server in other_mcp_servers:
+            for server in agent.mcp_servers:
                 status = "disabled" if server.disabled else "enabled"
                 print(f"  - {server.name} ({status})")
                 print(f"    Command: {server.command} {' '.join(server.args)}")
                 if server.env:
                     print(f"    Environment: {len(server.env)} variable(s)")
 
-        # Display database configurations with masked passwords
-        if database_servers:
-            print("\nDatabase Access:")
+        # Display database connections (new centralized system)
+        if agent.connection_assignments:
+            print("\nDatabase Connections:")
 
-            for db_config in database_servers:
-                status = "disabled" if db_config.disabled else "enabled"
-                print(f"\n  Database: {db_config.name} ({status})")
-                print(f"  Type: {db_config.database_type}")
-
-                # Display connection details based on database type
-                if db_config.database_type == "oracle":
-                    if db_config.oracle_connection_name:
-                        print(f"  Connection: {db_config.oracle_connection_name}")
-                    elif db_config.oracle_tns_name:
-                        print(f"  TNS Name: {db_config.oracle_tns_name}")
-                        print(f"  Username: {db_config.database_user}")
-                        print("  Password: ****")
-                    else:
-                        print(f"  Host: {db_config.database_host}")
-                        print(f"  Port: {db_config.database_port}")
-                        print(f"  Service: {db_config.database_name}")
-                        print(f"  Username: {db_config.database_user}")
-                        print("  Password: ****")
-
-                elif db_config.database_type == "sqlite":
-                    print(f"  Path: {db_config.database_path}")
-
-                elif db_config.database_type in ["postgresql", "mysql"]:
-                    print(f"  Host: {db_config.database_host}")
-                    print(f"  Port: {db_config.database_port}")
-                    print(f"  Database: {db_config.database_name}")
-                    print(f"  Username: {db_config.database_user}")
-                    print("  Password: ****")
+            for assignment in agent.connection_assignments:
+                # Try to resolve the connection to get details
+                result = self.db_manager.get_connection(assignment.connection_name)
+                
+                if isinstance(result, Ok):
+                    conn = result.value
+                    print(f"\n  Connection: {conn.name}")
+                    print(f"  Type: {conn.database_type}")
+                    print(f"  Access Level: {assignment.access_level.value}")
+                    
+                    if assignment.allowed_tables:
+                        print(f"  Allowed Tables: {', '.join(assignment.allowed_tables)}")
+                    
+                    # Display connection details based on database type
+                    if conn.database_type == "sqlite":
+                        print(f"  Path: {conn.file_path}")
+                    elif conn.database_type in ["postgresql", "mysql", "oracle"]:
+                        if conn.host:
+                            print(f"  Host: {conn.host}")
+                        if conn.port:
+                            print(f"  Port: {conn.port}")
+                        if conn.database or conn.service_name:
+                            db_name = conn.database or conn.service_name
+                            print(f"  Database: {db_name}")
+                        if conn.username:
+                            print(f"  Username: {conn.username}")
+                            print("  Password: ****")
+                else:
+                    # Connection not found in store
+                    print(f"\n  Connection: {assignment.connection_name} [NOT FOUND]")
+                    print(f"  Access Level: {assignment.access_level.value}")
+                    if assignment.allowed_tables:
+                        print(f"  Allowed Tables: {', '.join(assignment.allowed_tables)}")
+        elif agent.mcp_servers:
+            # Backward compatibility: check for database-type MCP servers
+            db_servers = [s for s in agent.mcp_servers 
+                         if hasattr(s, 'database_type') and s.database_type and not s.disabled]
+            if db_servers:
+                print("\nDatabase Connections (Legacy):")
+                for server in db_servers:
+                    print(f"\n  Name: {server.name}")
+                    print(f"  Type: {server.database_type}")
+                    print(f"  Command: {server.command} {' '.join(server.args)}")
+                    
+                    # Show type-specific details
+                    if server.database_type == "oracle":
+                        if hasattr(server, 'oracle_connection_name') and server.oracle_connection_name:
+                            print(f"  Connection: {server.oracle_connection_name}")
+                        if hasattr(server, 'database_user') and server.database_user:
+                            print(f"  Username: {server.database_user}")
+                            print("  Password: ****")
+                    elif server.database_type == "sqlite":
+                        if hasattr(server, 'database_path') and server.database_path:
+                            print(f"  Path: {server.database_path}")
+                    elif server.database_type in ["postgresql", "mysql"]:
+                        if hasattr(server, 'database_host') and server.database_host:
+                            print(f"  Host: {server.database_host}")
+                        if hasattr(server, 'database_port') and server.database_port:
+                            print(f"  Port: {server.database_port}")
+                        if hasattr(server, 'database_name') and server.database_name:
+                            print(f"  Database: {server.database_name}")
+                        if hasattr(server, 'database_user') and server.database_user:
+                            print(f"  Username: {server.database_user}")
+                            print("  Password: ****")
+            else:
+                print("\nDatabase Connections: No database connections assigned")
         else:
-            print("\nDatabase Access: No database access")
+            print("\nDatabase Connections: No database connections assigned")
 
         print("\n" + "=" * 40)
 
@@ -843,5 +923,31 @@ class CLI:
 
         except AgentNotFoundError as e:
             print(f"\nError: {e}")
+        except OfflineChatError as e:
+            print(f"\nError: {e}")
+
+    def update_agent_flow(self) -> None:
+        """Handle agent update workflow.
+
+        Displays the agent update menu which allows updating agent
+        configuration including database connections and guidelines.
+        """
+        try:
+            show_update_agent_menu(self.manager, self.db_manager)
+        except KeyboardInterrupt:
+            print("\n\nReturning to main menu...")
+        except OfflineChatError as e:
+            print(f"\nError: {e}")
+
+    def manage_database_connections_flow(self) -> None:
+        """Handle database connection management workflow.
+
+        Displays the database connection management menu which allows
+        creating, listing, updating, and deleting database connections.
+        """
+        try:
+            show_database_menu(self.db_manager)
+        except KeyboardInterrupt:
+            print("\n\nReturning to main menu...")
         except OfflineChatError as e:
             print(f"\nError: {e}")

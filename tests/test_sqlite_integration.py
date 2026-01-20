@@ -134,9 +134,9 @@ def test_create_agent_with_sqlite_database(temp_agents_dir, temp_history_dir, te
     # Verify configuration properties
     assert sqlite_config.database_type == "sqlite"
     assert sqlite_config.database_path == temp_sqlite_db
-    assert sqlite_config.command == "uvx"
-    assert "mcp-server-sqlite" in sqlite_config.args or "sqlite-mcp-server" in sqlite_config.args
-    assert "--db-path" in sqlite_config.args or temp_sqlite_db in sqlite_config.args
+    assert sqlite_config.command == "npx"
+    assert "mcp-server-sqlite-npx" in sqlite_config.args
+    assert temp_sqlite_db in sqlite_config.args
 
     # Create agent with SQLite database
     agent = Agent(

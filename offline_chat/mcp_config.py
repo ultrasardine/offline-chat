@@ -95,10 +95,9 @@ class MCPServerConfig:
         PostgreSQL:
             >>> config = MCPServerConfig(
             ...     name="analytics_db",
-            ...     command="uvx",
-            ...     args=["postgres-mcp-server", "--host", "localhost",
-            ...           "--port", "5432", "--database", "analytics", "--user", "analyst"],
-            ...     env={"PGPASSWORD": "password"},
+            ...     command="npx",
+            ...     args=["-y", "@modelcontextprotocol/server-postgres",
+            ...           "postgresql://analyst:password@localhost:5432/analytics"],
             ...     database_type="postgresql",
             ...     database_host="localhost",
             ...     database_port=5432,
@@ -110,8 +109,8 @@ class MCPServerConfig:
         SQLite:
             >>> config = MCPServerConfig(
             ...     name="local_db",
-            ...     command="uvx",
-            ...     args=["sqlite-mcp-server", "--db-path", "/data/app.db"],
+            ...     command="npx",
+            ...     args=["-y", "mcp-server-sqlite-npx", "/data/app.db"],
             ...     database_type="sqlite",
             ...     database_path="/data/app.db"
             ... )

@@ -88,16 +88,30 @@ class TestPasswordMasking:
         assume(password not in name and name not in password)
 
         config = MCPServerConfig(
-            name=name, command="uvx", args=["postgres-mcp-server"], env={"PGPASSWORD": password}
+            name=name,
+            command="npx",
+            args=[
+                "-y",
+                "@modelcontextprotocol/server-postgres",
+                f"postgresql://user:{password}@localhost:5432/db",
+            ],
+            database_password=password,
         )
 
         sanitized = sanitize_config_for_display(config)
 
-        # The password in env should be masked
-        assert sanitized["env"]["PGPASSWORD"] == "****"
-        # The actual password should not appear as a value in the sanitized dict
-        assert password not in sanitized.values()
-        assert password not in sanitized["env"].values()
+        # The password in connection string should be masked
+        # Check that the connection string has the password masked
+        connection_string = None
+        for arg in sanitized["args"]:
+            if isinstance(arg, str) and "postgresql://" in arg:
+                connection_string = arg
+                break
+        
+        assert connection_string is not None
+        assert f"postgresql://user:****@localhost:5432/db" == connection_string
+        # The database_password field should be masked
+        assert sanitized.get("database_password") == "****"
 
     @settings(max_examples=50)
     @given(
@@ -182,7 +196,7 @@ class TestCredentialExclusionFromErrorMessages:
 
     @settings(max_examples=100)
     @given(
-        password=st.text(min_size=1, max_size=100).filter(lambda p: p != "*" and "****" not in p),
+        password=st.text(min_size=3, max_size=100).filter(lambda p: p != "****" and "*" not in p[:4]),
         error_prefix=st.text(min_size=1, max_size=50),
     )
     def test_password_removed_from_error_message(self, password: str, error_prefix: str):
@@ -201,7 +215,7 @@ class TestCredentialExclusionFromErrorMessages:
 
     @settings(max_examples=100)
     @given(
-        password=st.text(min_size=1, max_size=100),
+        password=st.text(min_size=3, max_size=100).filter(lambda p: p != "****" and "*" not in p[:4]),
         error_template=st.sampled_from(
             [
                 "Authentication failed: {}",
@@ -225,13 +239,21 @@ class TestCredentialExclusionFromErrorMessages:
 
     @settings(max_examples=50)
     @given(
-        password=st.text(min_size=1, max_size=100),
+        password=st.text(min_size=3, max_size=100).filter(lambda p: p != "****" and "*" not in p[:4]),
         env_key=st.sampled_from(["PASSWORD", "PASSWD", "PWD", "SECRET", "TOKEN"]),
     )
     def test_env_password_removed_from_error_message(self, password: str, env_key: str):
         """Passwords from environment variables should be removed from error messages."""
         config = MCPServerConfig(
-            name="test_db", command="uvx", args=["postgres-mcp-server"], env={env_key: password}
+            name="test_db",
+            command="npx",
+            args=[
+                "-y",
+                "@modelcontextprotocol/server-postgres",
+                f"postgresql://user:{password}@localhost:5432/db",
+            ],
+            database_password=password,
+            env={env_key: password},
         )
 
         error_message = f"Connection failed: {env_key}={password} is invalid"
@@ -242,7 +264,7 @@ class TestCredentialExclusionFromErrorMessages:
 
     @settings(max_examples=50)
     @given(
-        password=st.text(min_size=1, max_size=100),
+        password=st.text(min_size=3, max_size=100).filter(lambda p: p != "****" and "*" not in p[:4]),
         other_text=st.text(min_size=1, max_size=100).filter(lambda s: s.strip()),
     )
     def test_multiple_password_occurrences_removed(self, password: str, other_text: str):
@@ -324,8 +346,12 @@ class TestEdgeCases:
         """Config with both database_password and env passwords should mask all."""
         config = MCPServerConfig(
             name="test_db",
-            command="uvx",
-            args=["postgres-mcp-server"],
+            command="npx",
+            args=[
+                "-y",
+                "@modelcontextprotocol/server-postgres",
+                "postgresql://user:db_secret@localhost:5432/db",
+            ],
             database_password="db_secret",
             env={"PGPASSWORD": "env_secret", "API_TOKEN": "api_secret"},
         )

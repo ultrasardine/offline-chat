@@ -197,9 +197,8 @@ class TestSQLiteConfigurationAcceptance:
         assert config.database_type == "sqlite"
         assert config.name == name
         assert config.database_path == path
-        assert config.command == "uvx"
-        assert "sqlite-mcp-server" in config.args
-        assert "--db-path" in config.args
+        assert config.command == "npx"
+        assert "mcp-server-sqlite-npx" in config.args
         assert path in config.args
 
     def test_sqlite_missing_path_raises_error(self):
@@ -250,9 +249,12 @@ class TestPostgreSQLMySQLConfigurationAcceptance:
         assert config.database_name == database
         assert config.database_user == username
         assert config.database_password == password
-        assert config.command == "uvx"
-        assert "postgres-mcp-server" in config.args
-        assert config.env.get("PGPASSWORD") == password
+        assert config.command == "npx"
+        assert "-y" in config.args
+        assert "@modelcontextprotocol/server-postgres" in config.args
+        # Connection string should be in args
+        connection_string = f"postgresql://{username}:{password}@{host}:{port}/{database}"
+        assert connection_string in config.args
 
     @settings(max_examples=50)
     @given(
@@ -408,8 +410,8 @@ class TestSpecificDatabaseConfigurations:
         assert config.name == "local_db"
         assert config.database_type == "sqlite"
         assert config.database_path == "/data/app.db"
-        assert config.command == "uvx"
-        assert config.args == ["sqlite-mcp-server", "--db-path", "/data/app.db"]
+        assert config.command == "npx"
+        assert config.args == ["-y", "mcp-server-sqlite-npx", "/data/app.db"]
 
     def test_postgresql_basic(self):
         """PostgreSQL with all params should create correct config."""
@@ -430,7 +432,13 @@ class TestSpecificDatabaseConfigurations:
         assert config.database_name == "analytics"
         assert config.database_user == "analyst"
         assert config.database_password == "secret"
-        assert config.env["PGPASSWORD"] == "secret"
+        # PostgreSQL now uses connection string in args, not env
+        assert config.command == "npx"
+        assert "-y" in config.args
+        assert "@modelcontextprotocol/server-postgres" in config.args
+        # Connection string should be in args
+        connection_string = f"postgresql://analyst:secret@localhost:5432/analytics"
+        assert connection_string in config.args
 
     def test_mysql_basic(self):
         """MySQL with all params should create correct config."""
@@ -465,7 +473,9 @@ class TestSpecificDatabaseConfigurations:
         )
 
         assert config.database_password == ""
-        assert config.env["PGPASSWORD"] == ""
+        # PostgreSQL now uses connection string, not env
+        connection_string = "postgresql://testuser:@localhost:5432/testdb"
+        assert connection_string in config.args
 
     def test_default_ports_used(self):
         """Default ports should be used when not specified."""

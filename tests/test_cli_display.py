@@ -138,6 +138,14 @@ def test_list_agents_shows_database_status(agent):
         alphabet=st.characters(
             whitelist_categories=("Lu", "Ll", "Nd"), whitelist_characters="!@#$%^&*"
         ),
+    ).filter(
+        # Filter out passwords that are substrings of common text or vice versa
+        lambda p: (
+            p not in ["localhost", "testdb", "testuser", "****", "connection", "database", "assigned"]
+            and len(p) >= 8  # Ensure minimum length
+            and not any(word in p.lower() for word in ["localhost", "testdb", "testuser", "connection", "database", "assigned"])
+            and not any(p.lower() in word for word in ["localhost", "testdb", "testuser", "connection", "database", "assigned", "connections"])
+        )
     ),
 )
 @pytest.mark.property_test
@@ -350,8 +358,9 @@ def test_list_agents_shows_no_database_access_for_agent_without_databases():
             cli.list_agents_flow()
             output = fake_out.getvalue()
 
-        # Verify "No database access" is shown
-        assert "No database access" in output
+        # Verify no database status is shown (no DB indicator when no databases)
+        assert "[DB:" not in output
+        assert "[Databases:" not in output
 
 
 def test_list_agents_shows_no_database_access_for_agent_with_only_non_db_mcp():
@@ -391,8 +400,9 @@ def test_list_agents_shows_no_database_access_for_agent_with_only_non_db_mcp():
             cli.list_agents_flow()
             output = fake_out.getvalue()
 
-        # Verify "No database access" is shown
-        assert "No database access" in output
+        # Verify no database status is shown (no DB indicator when no databases)
+        assert "[DB:" not in output
+        assert "[Databases:" not in output
         # Verify the non-database MCP server is shown separately
         assert "MCP:" in output
         assert "filesystem" in output
@@ -429,8 +439,8 @@ def test_agent_details_shows_no_database_access_message():
                 cli.view_agent_details_flow()
             output = fake_out.getvalue()
 
-    # Verify "No database access" is shown
-    assert "Database Access: No database access" in output
+    # Verify "No database connections assigned" is shown
+    assert "No database connections assigned" in output
 
 
 def test_list_agents_handles_disabled_databases():
