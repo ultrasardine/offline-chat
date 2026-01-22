@@ -324,6 +324,8 @@ make history AGENT=german-tutor
 
 Import `offline_chat` into your Python project to programmatically manage agents and chat sessions.
 
+> **Model Selection Tip**: For agents that use tools (database access, web search, MCP servers), use `qwen2.5:latest` for the best tool calling support. For simple conversational agents without tools, `llama3:latest` or `llama3.2:latest` work well. See the [Troubleshooting](#troubleshooting) section for detailed model recommendations.
+
 #### Installation in Your Project
 
 ```bash
@@ -346,7 +348,7 @@ manager = AgentManager()
 agent = Agent(
     name="code-helper",
     display_name="Code Helper",
-    base_model="llama3:latest",
+    base_model="qwen2.5:latest",  # Use qwen2.5 for best tool calling support
     system_prompt="You are a helpful coding assistant.",
     temperature=0.7,
     language="English",  # Language for responses (default: English)
@@ -762,7 +764,7 @@ rag_config = RAGConfig(
 agent = Agent(
     name="python-expert",
     display_name="Python Expert",
-    base_model="llama3:latest",
+    base_model="qwen2.5:latest",  # Use qwen2.5 for best performance
     system_prompt="You are a Python expert who answers questions based on documentation.",
     temperature=0.7,
     rag_config=rag_config
@@ -1008,7 +1010,7 @@ manager = AgentManager()
 agent = Agent(
     name="docs-assistant",
     display_name="Documentation Assistant",
-    base_model="llama3:latest",
+    base_model="qwen2.5:latest",  # Use qwen2.5 for best performance
     system_prompt="You help users understand documentation.",
     temperature=0.5,
     rag_config=RAGConfig(
@@ -1701,7 +1703,7 @@ oracle_config = create_database_mcp_config(
 agent = Agent(
     name="data-analyst",
     display_name="Data Analyst",
-    base_model="llama3.1:latest",
+    base_model="qwen2.5:latest",  # Use qwen2.5 for best tool calling with databases
     system_prompt="You are a data analyst who can query databases.",
     temperature=0.7,
     mcp_servers=[oracle_config]
@@ -1783,7 +1785,7 @@ postgres_config = create_database_mcp_config(
 agent = Agent(
     name="data-analyst",
     display_name="Data Analyst",
-    base_model="llama3.1:latest",
+    base_model="qwen2.5:latest",  # Use qwen2.5 for best tool calling with databases
     system_prompt="You are a data analyst.",
     temperature=0.7,
     mcp_servers=[postgres_config]
@@ -1951,7 +1953,7 @@ sqlite_config = create_database_mcp_config(
 agent = Agent(
     name="multi-db-analyst",
     display_name="Multi-Database Analyst",
-    base_model="llama3.1:latest",
+    base_model="qwen2.5:latest",  # Use qwen2.5 for best tool calling with databases
     system_prompt="You are a data analyst with access to multiple databases.",
     temperature=0.7,
     mcp_servers=[oracle_config, postgres_config, sqlite_config]
@@ -2356,7 +2358,7 @@ async def create_sales_analyst():
     agent = Agent(
         name="sales-analyst",
         display_name="Sales Data Analyst",
-        base_model="llama3.1:latest",
+        base_model="qwen2.5:latest",  # Use qwen2.5 for best tool calling with databases
         system_prompt="""You are a sales data analyst with access to the company's 
         sales database. Help analyze sales trends, customer behavior, and revenue 
         metrics. Always provide data-driven insights and visualize trends when possible.""",
@@ -2431,7 +2433,7 @@ async def create_integration_analyst():
     agent = Agent(
         name="integration-analyst",
         display_name="Data Integration Analyst",
-        base_model="llama3.1:latest",
+        base_model="qwen2.5:latest",  # Use qwen2.5 for best tool calling with databases
         system_prompt="""You are a data integration analyst with access to multiple 
         databases: production Oracle database, PostgreSQL data warehouse, and local 
         SQLite cache. Help users query and correlate data across these systems.""",
@@ -2487,7 +2489,7 @@ async def create_schema_explorer():
     agent = Agent(
         name="schema-explorer",
         display_name="Database Schema Explorer",
-        base_model="llama3.1:latest",
+        base_model="qwen2.5:latest",  # Use qwen2.5 for best tool calling with databases
         system_prompt="""You are a database schema expert. Help users understand 
         database structure, relationships between tables, and suggest optimal queries. 
         Always start by exploring the schema before answering questions.""",
@@ -3206,7 +3208,7 @@ from offline_chat.database_config import create_database_mcp_config
 
 manager = AgentManager()
 oracle_config = create_database_mcp_config("oracle", "prod_db", connection_name="PROD")
-agent = Agent(name="analyst", display_name="Analyst", base_model="llama3.1:latest",
+agent = Agent(name="analyst", display_name="Analyst", base_model="qwen2.5:latest",
               system_prompt="You are a data analyst.", temperature=0.3,
               mcp_servers=[oracle_config])
 manager.create_agent(agent)
