@@ -2669,6 +2669,48 @@ This happens when the agent's system prompt doesn't emphasize tool usage, or whe
    manager.update_agent("agent-name", {"base_model": "qwen2.5:latest"})
    ```
 
+**Agent gives incomplete responses or stops mid-sentence**:
+
+The agent announces it will use a tool (e.g., "Let me run a query...") but then stops without actually calling the tool or providing results.
+
+**Common causes**:
+1. Model has weak tool calling support
+2. TypeError when processing tool calls (if `tool_calls` is `None` instead of `[]`)
+3. Missing debug logging causing silent failures
+
+**Solution**:
+1. **Use a model with strong tool calling support** (most important):
+   - **Best**: `qwen2.5:latest` - Excellent tool calling, fast, reliable
+   - **Good**: `llama3.2:latest` - Reliable tool calling
+   - **Avoid**: `mistral:latest` - Fast but weak tool calling for database work
+   - **Avoid**: `llama3.1:latest` - Very limited tool support
+
+2. **Update the agent's base model**:
+   ```bash
+   # Via CLI
+   make run
+   # Select "Update agent" → Choose agent → "Update base model" → Enter "qwen2.5:latest"
+   
+   # Via library
+   from offline_chat import AgentManager
+   manager = AgentManager()
+   manager.update_agent("agent-name", {"base_model": "qwen2.5:latest"})
+   ```
+
+3. **Ensure the model is available**:
+   ```bash
+   # Pull the model if not already available
+   ollama pull qwen2.5:latest
+   ```
+
+4. **Check for errors in logs**:
+   ```python
+   import logging
+   logging.basicConfig(level=logging.DEBUG)
+   ```
+
+**Note**: This issue was resolved in recent versions by fixing TypeError handling when `tool_calls` is `None` and adding proper debug logging. If you're still experiencing issues after updating to a better model, ensure you're running the latest version of the code.
+
 **Agent stops mid-task or hits iteration limit**:
 
 The agent loop has a 20-iteration safety limit to prevent infinite loops. For complex queries requiring many tool calls, the agent will automatically summarize findings and prompt for follow-up questions.
