@@ -19,6 +19,14 @@ from offline_chat.fetch import WebFetchTool
 from offline_chat.history import ConversationHistory, HistoryStore, Message
 from offline_chat.manager import AgentManager
 from offline_chat.mcp_client import MCPClientManager
+from offline_chat.rag.orchestrator import RAGOrchestrator
+from offline_chat.rag.vector_store import VectorStore
+from offline_chat.rag.embedding_generator import EmbeddingGenerator
+from offline_chat.rag.context_retriever import ContextRetriever
+from offline_chat.rag.document_processor import DocumentProcessor
+from offline_chat.rag.prompt_augmenter import PromptAugmenter
+from offline_chat.rag.web_scraper import WebScraper
+from offline_chat.rag.database_integration import DatabaseIntegration
 from offline_chat.tools import WebSearchTool
 
 logger = logging.getLogger(__name__)
@@ -63,6 +71,7 @@ class ChatSession:
         self._mcp_manager: Optional[MCPClientManager] = None
         self._on_tool_call: Optional[Callable[[str], None]] = None
         self._database_connections: dict[str, str] = {}  # Maps server name to database type
+        self._rag_orchestrator: Optional[RAGOrchestrator] = None
 
     def start(self, agent_name: str) -> bool:
         """Start a chat session with the specified agent.
@@ -86,8 +95,96 @@ class ChatSession:
 
         # Load existing conversation history
         self.history = self.history_store.load(agent_name)
+        
+        # Initialize RAG orchestrator if RAG is enabled
+        self._initialize_rag_orchestrator()
 
         return True
+
+    def _initialize_rag_orchestrator(self) -> None:
+        """Initialize RAG orchestrator if RAG is enabled for the agent.
+        
+        This method sets up all RAG components:
+        - Vector store
+        - Embedding generator
+        - Context retriever
+        - Document processor
+        - Prompt augmenter
+        - Web scraper (if MCP client available)
+        - Database integration (if database path available)
+        
+        If initialization fails, logs a warning and continues without RAG
+        (graceful degradation to non-RAG mode).
+        """
+        if not self.agent or not self.agent.rag_config or not self.agent.rag_config.enabled:
+            self._rag_orchestrator = None
+            return
+        
+        try:
+            logger.info(f"Initializing RAG orchestrator for agent '{self.agent.name}'")
+            
+            # Get data directory from manager
+            data_dir = self.manager.data_dir / "rag"
+            
+            # Initialize vector store
+            vector_store = VectorStore(data_dir)
+            
+            # Initialize embedding generator
+            embedding_generator = EmbeddingGenerator(
+                model_name=self.agent.rag_config.embedding_model
+            )
+            
+            # Initialize context retriever
+            context_retriever = ContextRetriever(
+                vector_store=vector_store,
+                embedding_generator=embedding_generator
+            )
+            
+            # Initialize document processor
+            document_processor = DocumentProcessor(
+                chunk_size=self.agent.rag_config.chunk_size,
+                chunk_overlap=self.agent.rag_config.chunk_overlap
+            )
+            
+            # Initialize prompt augmenter
+            prompt_augmenter = PromptAugmenter()
+            
+            # Initialize web scraper if MCP client is available
+            web_scraper = None
+            if self._mcp_manager:
+                web_scraper = WebScraper(self._mcp_manager)
+            
+            # Initialize database integration
+            # For now, we'll use a simple SQLite integration
+            # This can be extended to support other database types
+            database_integration = None
+            # Check if there's a database path we can use
+            # This is a simplified approach - in production, you'd want to
+            # properly configure database connections
+            db_path = self.manager.data_dir / "sample_company.db"
+            if db_path.exists():
+                database_integration = DatabaseIntegration(str(db_path))
+            
+            # Create RAG orchestrator
+            self._rag_orchestrator = RAGOrchestrator(
+                agent_config=self.agent,
+                vector_store=vector_store,
+                embedding_generator=embedding_generator,
+                context_retriever=context_retriever,
+                document_processor=document_processor,
+                prompt_augmenter=prompt_augmenter,
+                web_scraper=web_scraper,
+                database_integration=database_integration
+            )
+            
+            logger.info(f"RAG orchestrator initialized successfully for agent '{self.agent.name}'")
+            
+        except Exception as e:
+            logger.warning(
+                f"Failed to initialize RAG orchestrator for agent '{self.agent.name}': {e}. "
+                f"Continuing without RAG capabilities."
+            )
+            self._rag_orchestrator = None
 
     async def start_async(self, agent_name: str) -> bool:
         """Start a chat session with async MCP server connections.
@@ -212,25 +309,14 @@ class ChatSession:
         tool_list = ", ".join(tool_names)
 
         tool_instructions = (
-            f"\n\n=== TOOL USAGE INSTRUCTIONS ===\n"
-            f"Available tools: {tool_list}\n\n"
-            "CRITICAL RULES - READ CAREFULLY:\n"
-            "1. You MUST use the available tools to answer questions. DO NOT explain what you would do.\n"
-            "2. NEVER write SQL queries in code blocks like ```sql SELECT * FROM table```\n"
-            "3. NEVER write JSON in your responses like {\"name\": \"tool_name\", \"parameters\": {...}}\n"
-            "4. NEVER say things like 'Let me execute this query' or 'I will run this SQL'\n"
-            "5. When you need data, the system will AUTOMATICALLY call the tools for you.\n"
-            "6. When you receive tool results, immediately use them to answer the question.\n"
-            "7. ONLY respond with natural language answers based on tool results.\n"
-            "8. If a tool returns an error, try a different approach or ask for clarification.\n\n"
-            "WRONG BEHAVIOR:\n"
-            "❌ 'Let me run this query: SELECT * FROM orders'\n"
-            "❌ 'Here is the SQL: ```sql SELECT customer_id FROM orders```'\n"
-            "❌ '{\"name\": \"read_query\", \"parameters\": {...}}'\n\n"
-            "CORRECT BEHAVIOR:\n"
-            "✓ Think about what data you need, the system calls the tool automatically\n"
-            "✓ When you get results, immediately answer: 'The top customer is...'\n"
-            "✓ Speak naturally like a human analyst, not a programmer\n\n"
+            f"\n\n=== AVAILABLE TOOLS ===\n"
+            f"{tool_list}\n\n"
+            "=== CRITICAL RULES ===\n"
+            "1. Call tools silently - NEVER announce what you're doing\n"
+            "2. After calling a tool, wait for results before responding\n"
+            "3. When you get results, answer directly without explaining the process\n"
+            "4. NEVER say: 'Let me', 'I'll call', 'Using tool', 'I will query'\n"
+            "5. NEVER write SQL or JSON in your response\n\n"
             "Remember: You are an analyst having a conversation. The tools work invisibly. "
             "Just think about what data you need, and answer based on the results you receive."
         )
@@ -438,6 +524,7 @@ class ChatSession:
         self.history = None
         self._mcp_manager = None
         self._database_connections.clear()
+        self._rag_orchestrator = None
 
     async def end_async(self) -> None:
         """End session and disconnect MCP servers.
@@ -471,6 +558,10 @@ class ChatSession:
         history, sends it to Ollama, handles tool calls if any, and streams
         the final response. Only user messages and final assistant responses
         are persisted to history.
+        
+        If RAG is enabled for the agent, routes the query through the RAG
+        orchestrator for context retrieval and prompt augmentation. Falls back
+        to standard Ollama chat if RAG is disabled or unavailable.
 
         For sessions with MCP tools, use send_message_async() instead.
 
@@ -494,6 +585,101 @@ class ChatSession:
             timestamp=datetime.now(),
         )
         self.history.messages.append(user_message)
+        
+        # Check if RAG is enabled and orchestrator is available
+        if self._rag_orchestrator is not None:
+            # Use RAG-enhanced query processing
+            yield from self._send_message_with_rag(content)
+        else:
+            # Use standard Ollama chat
+            yield from self._send_message_standard(content)
+    
+    def _send_message_with_rag(self, content: str) -> Iterator[str]:
+        """Send a message using RAG-enhanced query processing.
+        
+        This method:
+        1. Processes the query through RAG orchestrator to retrieve context
+        2. Gets the augmented prompt with context and RAG instructions
+        3. Sends the augmented prompt to Ollama for generation
+        4. Stores source citations in conversation history
+        5. Falls back to standard mode if RAG fails
+        
+        Args:
+            content: The user's query
+            
+        Yields:
+            Response chunks as they are received from Ollama
+        """
+        try:
+            # Process query through RAG orchestrator
+            logger.info(f"Processing query with RAG for agent '{self.agent.name}'")
+            rag_response = self._rag_orchestrator.process_query(
+                query=content,
+                conversation_history=self.history.messages,
+                generate_response=False  # We'll handle generation ourselves for streaming
+            )
+            
+            # Check if RAG returned None (fallback to non-RAG mode)
+            if rag_response is None:
+                logger.warning("RAG orchestrator returned None, falling back to standard mode")
+                yield from self._send_message_standard(content)
+                return
+            
+            # Get the augmented prompt
+            augmented_prompt = self._rag_orchestrator.get_augmented_prompt(
+                query=content,
+                retrieval_result=rag_response.retrieval_result
+            )
+            
+            # Build messages for Ollama
+            # Use the augmented prompt as the user message
+            messages: list[dict[str, Any]] = [
+                {"role": "system", "content": self._get_system_prompt()},
+            ]
+            
+            # Add conversation history (excluding the last user message we just added)
+            for msg in self.history.messages[:-1]:
+                messages.append({"role": msg.role, "content": msg.content})
+            
+            # Add the augmented prompt as the current user message
+            messages.append({"role": "user", "content": augmented_prompt})
+            
+            # Stream the response
+            full_response = ""
+            for chunk in self._stream_response_no_history(messages):
+                full_response += chunk
+                yield chunk
+            
+            # Save to history with source citations
+            assistant_message = Message(
+                role="assistant",
+                content=full_response,
+                timestamp=datetime.now(),
+                sources=rag_response.sources  # Store source citations
+            )
+            self.history.messages.append(assistant_message)
+            
+            logger.info(
+                f"RAG-enhanced response generated with {len(rag_response.sources)} source(s)"
+            )
+            
+        except Exception as e:
+            logger.error(f"Error in RAG-enhanced message processing: {e}", exc_info=True)
+            logger.warning("Falling back to standard mode due to RAG error")
+            # Fall back to standard mode
+            yield from self._send_message_standard(content)
+    
+    def _send_message_standard(self, content: str) -> Iterator[str]:
+        """Send a message using standard Ollama chat (no RAG).
+        
+        This is the original send_message logic extracted into a separate method.
+        
+        Args:
+            content: The user's query
+            
+        Yields:
+            Response chunks as they are received from Ollama
+        """
 
         # Build messages list for Ollama with enhanced system prompt
         messages: list[dict[str, Any]] = [{"role": "system", "content": self._get_system_prompt()}]
@@ -535,11 +721,19 @@ class ChatSession:
                     raise
 
                 message = response.get("message", {})
-                tool_calls = message.get("tool_calls", [])
+                tool_calls = message.get("tool_calls", []) or []  # Handle None
+
+                # Debug: Check if response is complete
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"Iteration {iteration}: done={response.get('done')}, "
+                               f"content_len={len(message.get('content', ''))}, "
+                               f"tool_calls={len(tool_calls)}")
 
                 if not tool_calls:
-                    # No tool calls - yield the final response
+                    # No tool calls - this is the final response
                     response_content = message.get("content", "")
+                    
+                    # Response is complete - yield and save to history
                     if response_content:
                         # Filter out any JSON tool call syntax
                         response_content = self._filter_json_tool_calls(response_content)
@@ -634,6 +828,10 @@ class ChatSession:
 
         Async version of send_message() for use with MCP tools.
         Implements agent loop for tool calling with async MCP tool execution.
+        
+        If RAG is enabled for the agent, routes the query through the RAG
+        orchestrator for context retrieval and prompt augmentation. Falls back
+        to standard Ollama chat if RAG is disabled or unavailable.
 
         Args:
             content: The message content to send.
@@ -655,6 +853,102 @@ class ChatSession:
             timestamp=datetime.now(),
         )
         self.history.messages.append(user_message)
+        
+        # Check if RAG is enabled and orchestrator is available
+        if self._rag_orchestrator is not None:
+            # Use RAG-enhanced query processing
+            return await self._send_message_async_with_rag(content)
+        else:
+            # Use standard Ollama chat
+            return await self._send_message_async_standard(content)
+    
+    async def _send_message_async_with_rag(self, content: str) -> list[str]:
+        """Send a message asynchronously using RAG-enhanced query processing.
+        
+        This method:
+        1. Processes the query through RAG orchestrator to retrieve context
+        2. Gets the augmented prompt with context and RAG instructions
+        3. Sends the augmented prompt to Ollama for generation
+        4. Stores source citations in conversation history
+        5. Falls back to standard mode if RAG fails
+        
+        Args:
+            content: The user's query
+            
+        Returns:
+            List of response chunks
+        """
+        try:
+            # Process query through RAG orchestrator
+            logger.info(f"Processing query with RAG for agent '{self.agent.name}'")
+            rag_response = self._rag_orchestrator.process_query(
+                query=content,
+                conversation_history=self.history.messages,
+                generate_response=False  # We'll handle generation ourselves
+            )
+            
+            # Check if RAG returned None (fallback to non-RAG mode)
+            if rag_response is None:
+                logger.warning("RAG orchestrator returned None, falling back to standard mode")
+                return await self._send_message_async_standard(content)
+            
+            # Get the augmented prompt
+            augmented_prompt = self._rag_orchestrator.get_augmented_prompt(
+                query=content,
+                retrieval_result=rag_response.retrieval_result
+            )
+            
+            # Build messages for Ollama
+            # Use the augmented prompt as the user message
+            messages: list[dict[str, Any]] = [
+                {"role": "system", "content": self._get_system_prompt()},
+            ]
+            
+            # Add conversation history (excluding the last user message we just added)
+            for msg in self.history.messages[:-1]:
+                messages.append({"role": msg.role, "content": msg.content})
+            
+            # Add the augmented prompt as the current user message
+            messages.append({"role": "user", "content": augmented_prompt})
+            
+            # Collect the response
+            response_chunks: list[str] = []
+            for chunk in self._stream_response_no_history(messages):
+                response_chunks.append(chunk)
+            
+            # Save to history with source citations
+            full_response = "".join(response_chunks)
+            assistant_message = Message(
+                role="assistant",
+                content=full_response,
+                timestamp=datetime.now(),
+                sources=rag_response.sources  # Store source citations
+            )
+            self.history.messages.append(assistant_message)
+            
+            logger.info(
+                f"RAG-enhanced response generated with {len(rag_response.sources)} source(s)"
+            )
+            
+            return response_chunks
+            
+        except Exception as e:
+            logger.error(f"Error in RAG-enhanced message processing: {e}", exc_info=True)
+            logger.warning("Falling back to standard mode due to RAG error")
+            # Fall back to standard mode
+            return await self._send_message_async_standard(content)
+    
+    async def _send_message_async_standard(self, content: str) -> list[str]:
+        """Send a message asynchronously using standard Ollama chat (no RAG).
+        
+        This is the original send_message_async logic extracted into a separate method.
+        
+        Args:
+            content: The user's query
+            
+        Returns:
+            List of response chunks
+        """
 
         # Build messages list for Ollama with enhanced system prompt
         messages: list[dict[str, Any]] = [{"role": "system", "content": self._get_system_prompt()}]
@@ -699,7 +993,14 @@ class ChatSession:
                     raise
 
                 message = response.get("message", {})
-                tool_calls = message.get("tool_calls", [])
+                tool_calls = message.get("tool_calls", []) or []  # Handle None
+                
+                # Debug logging
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"Iteration {iteration}: tool_calls={len(tool_calls)}, "
+                               f"content_len={len(message.get('content', ''))}")
+                    if not tool_calls and message.get('content'):
+                        logger.debug(f"No tool calls. Content preview: {message.get('content')[:100]}...")
 
                 if not tool_calls:
                     # No tool calls - collect the final response
@@ -851,6 +1152,28 @@ class ChatSession:
                 return ""
         
         return filtered
+
+    def _stream_response_no_history(self, messages: list[dict[str, Any]]) -> Iterator[str]:
+        """Stream response without saving to history.
+        
+        This is a helper method for RAG-enhanced responses where we want to
+        control when and how the response is saved to history (with source citations).
+
+        Args:
+            messages: Messages to send to Ollama.
+
+        Yields:
+            Response chunks.
+        """
+        stream = ollama.chat(
+            model=self.agent.name,
+            messages=messages,
+            stream=True,
+        )
+
+        for chunk in stream:
+            chunk_content = chunk.get("message", {}).get("content", "")
+            yield chunk_content
 
     def _stream_response(self, messages: list[dict[str, Any]]) -> Iterator[str]:
         """Stream response without tools.

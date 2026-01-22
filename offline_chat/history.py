@@ -9,6 +9,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+# Import SourceCitation for type hints
+from offline_chat.rag.models import SourceCitation
+
 
 @dataclass
 class Message:
@@ -18,11 +21,13 @@ class Message:
         role: The role of the message sender ("user" or "assistant").
         content: The message content.
         timestamp: When the message was sent.
+        sources: Optional list of source citations for RAG-enhanced responses.
     """
 
     role: str
     content: str
     timestamp: datetime = field(default_factory=datetime.now)
+    sources: list[SourceCitation] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize message to dictionary.
@@ -30,15 +35,59 @@ class Message:
         Returns:
             Dictionary representation of the message.
         """
-        return {
+        result = {
             "role": self.role,
             "content": self.content,
             "timestamp": self.timestamp.isoformat(),
         }
+        
+        # Only include sources if they exist (RAG-enhanced messages)
+        if self.sources is not None:
+            result["sources"] = [
+                {
+                    "source_type": source.source_type,
+                    "identifier": source.identifier,
+                    "relevance_score": source.relevance_score,
+                }
+                for source in self.sources
+            ]
+        
+        return result
+    
+    def format_for_display(self, agent_display_name: str = "Agent") -> str:
+        """Format message for display in conversation history.
+        
+        For RAG-enhanced messages (those with sources), includes source citations
+        in the formatted output to show which knowledge sources were consulted.
+        
+        Args:
+            agent_display_name: The display name of the agent (for assistant messages).
+        
+        Returns:
+            Formatted string ready for display in terminal.
+        """
+        timestamp_str = self.timestamp.strftime("%H:%M")
+        
+        # Format the main message
+        if self.role == "user":
+            formatted = f"[{timestamp_str}] You: {self.content}"
+        else:
+            formatted = f"[{timestamp_str}] {agent_display_name}: {self.content}"
+        
+        # Add source citations if this is a RAG-enhanced message
+        if self.sources is not None and len(self.sources) > 0:
+            formatted += "\n  Sources:"
+            for source in self.sources:
+                formatted += f"\n    - {source.format_for_display()}"
+        
+        return formatted
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Message":
         """Deserialize message from dictionary.
+
+        Maintains backward compatibility with non-RAG conversation histories
+        by treating missing 'sources' field as None.
 
         Args:
             data: Dictionary containing message data.
@@ -46,10 +95,23 @@ class Message:
         Returns:
             Message instance.
         """
+        # Parse sources if present (RAG-enhanced messages)
+        sources = None
+        if "sources" in data and data["sources"] is not None:
+            sources = [
+                SourceCitation(
+                    source_type=source["source_type"],
+                    identifier=source["identifier"],
+                    relevance_score=source["relevance_score"],
+                )
+                for source in data["sources"]
+            ]
+        
         return cls(
             role=data["role"],
             content=data["content"],
             timestamp=datetime.fromisoformat(data["timestamp"]),
+            sources=sources,
         )
 
 

@@ -417,6 +417,52 @@ class TestModelfileGeneration:
         # The modelfile should still be valid (SYSTEM directive present)
         assert "SYSTEM" in modelfile
 
+    def test_modelfile_escapes_newlines_in_system_prompt(self):
+        """Modelfile should properly escape newlines in system prompt."""
+        agent = Agent(
+            name="test-agent",
+            display_name="Test",
+            base_model="llama3:latest",
+            system_prompt="Line 1\nLine 2\nLine 3",
+            temperature=0.5,
+        )
+
+        modelfile = agent.to_modelfile()
+
+        # Newlines should be escaped as \n
+        assert '\\n' in modelfile
+        assert 'Line 1\\nLine 2\\nLine 3' in modelfile
+        # Should NOT contain actual newlines in the SYSTEM directive value
+        lines = modelfile.split('\n')
+        system_line = [l for l in lines if l.startswith('SYSTEM')][0]
+        # The SYSTEM line itself should be a single line
+        assert system_line.startswith('SYSTEM "')
+        assert system_line.endswith('"')
+
+    def test_modelfile_escapes_complex_system_prompt(self):
+        """Modelfile should escape complex prompts with multiple special characters."""
+        agent = Agent(
+            name="test-agent",
+            display_name="Test",
+            base_model="llama3:latest",
+            system_prompt='WRONG:\nUser: "What?"\nYou: "Let me check..." ❌\n\nRIGHT:\nYou: "Answer" ✓',
+            temperature=0.5,
+        )
+
+        modelfile = agent.to_modelfile()
+
+        # Should escape newlines and quotes
+        assert '\\n' in modelfile
+        assert '\\"' in modelfile
+        # Should preserve unicode characters
+        assert '❌' in modelfile
+        assert '✓' in modelfile
+        # Should be a valid single-line SYSTEM directive
+        lines = modelfile.split('\n')
+        system_line = [l for l in lines if l.startswith('SYSTEM')][0]
+        assert system_line.startswith('SYSTEM "')
+        assert system_line.endswith('"')
+
 
 # Strategy for generating valid MCP server names
 def valid_server_name_strategy():

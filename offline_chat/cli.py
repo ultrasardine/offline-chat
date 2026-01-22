@@ -5,6 +5,7 @@ with the Offline Chat application.
 """
 
 import asyncio
+import logging
 from typing import Optional
 
 from offline_chat.agent import Agent
@@ -23,10 +24,13 @@ from offline_chat.exceptions import (
 from offline_chat.manager import AgentManager
 from offline_chat.mcp_config import MCPServerConfig
 from offline_chat.mcp_presets import get_all_available_presets
+from offline_chat.rag_menu import show_rag_menu
 from offline_chat.session import ChatSession
 
 # Import agent update menu from cli package
 import sys
+
+logger = logging.getLogger(__name__)
 from pathlib import Path
 # Add cli directory to path if not already there
 cli_dir = Path(__file__).parent.parent / "cli"
@@ -80,6 +84,7 @@ class CLI:
         "View conversation history",
         "Update agent",
         "Manage database connections",
+        "Manage RAG knowledge sources",
         "Delete agent",
         "Exit",
     ]
@@ -161,8 +166,10 @@ class CLI:
                 elif choice == 7:
                     self.manage_database_connections_flow()
                 elif choice == 8:
-                    self.delete_agent_flow()
+                    self.manage_rag_knowledge_sources_flow()
                 elif choice == 9:
+                    self.delete_agent_flow()
+                elif choice == 10:
                     self._running = False
                     print("\nGoodbye!")
                 else:
@@ -776,6 +783,9 @@ class CLI:
                             response_started = True
                         print(chunk, end="", flush=True)
                     print()
+                    
+                    # Display source citations if available (RAG-enhanced response)
+                    self._display_source_citations()
 
                 except KeyboardInterrupt:
                     print("\n\nSaving conversation...", end=" ", flush=True)
@@ -868,6 +878,10 @@ class CLI:
                     # Send message using async method
                     response_chunks = await self.session.send_message_async(user_input)
 
+                    # Debug: Log response info
+                    logger.debug(f"Received {len(response_chunks)} chunks, "
+                               f"total chars: {sum(len(c) for c in response_chunks)}")
+
                     # Display response
                     if response_chunks:
                         if self._tool_indicator_shown:
@@ -876,6 +890,9 @@ class CLI:
                         for chunk in response_chunks:
                             print(chunk, end="", flush=True)
                         print()
+                    
+                    # Display source citations if available (RAG-enhanced response)
+                    self._display_source_citations()
 
                 except KeyboardInterrupt:
                     print("\n\nSaving conversation...", end=" ", flush=True)
@@ -951,3 +968,44 @@ class CLI:
             print("\n\nReturning to main menu...")
         except OfflineChatError as e:
             print(f"\nError: {e}")
+    
+    def manage_rag_knowledge_sources_flow(self) -> None:
+        """Handle RAG knowledge source management workflow.
+
+        Displays the RAG management menu which allows adding, re-indexing,
+        and listing knowledge sources for agents.
+        """
+        try:
+            show_rag_menu(self.manager)
+        except KeyboardInterrupt:
+            print("\n\nReturning to main menu...")
+        except OfflineChatError as e:
+            print(f"\nError: {e}")
+
+    def _display_source_citations(self) -> None:
+        """Display source citations for the last assistant message if available.
+        
+        This method checks if the last message in the conversation history
+        has source citations (indicating a RAG-enhanced response) and displays
+        them in a formatted way.
+        """
+        if not self.session.is_active or not self.session.history:
+            return
+        
+        # Get the last message
+        messages = self.session.history.messages
+        if not messages:
+            return
+        
+        last_message = messages[-1]
+        
+        # Check if it's an assistant message with sources
+        if last_message.role != "assistant" or not last_message.sources:
+            return
+        
+        # Display sources
+        print("\n" + "-" * 40)
+        print("Sources consulted:")
+        for i, source in enumerate(last_message.sources, 1):
+            print(f"  {i}. {source.format_for_display()}")
+        print("-" * 40)

@@ -5,7 +5,7 @@
 # Usage: make <target>
 # Run 'make help' to see all available targets
 
-.PHONY: help install install-dev run test test-verbose test-coverage test-pbt lint lint-fix format format-check clean clean-all check all bump bump-minor bump-major changelog agents models history agent-info connections migrate
+.PHONY: help install install-dev run test test-verbose test-coverage test-pbt lint lint-fix format format-check clean clean-all check all bump bump-minor bump-major changelog agents models history agent-info examples connections migrate rag-status rag-sources verify-rag demo clean-data dev
 
 .DEFAULT_GOAL := help
 
@@ -25,10 +25,13 @@ help: ## Display this help message with all available targets
 	@grep -E '^(run):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Agent Management:"
-	@grep -E '^(agents|models|history|agent-info):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^(agents|models|history|agent-info|examples):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Database Management:"
 	@grep -E '^(connections|migrate):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@echo ""
+	@echo "RAG Management:"
+	@grep -E '^(rag-status|rag-sources|verify-rag|demo):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Testing:"
 	@grep -E '^(test|test-verbose|test-coverage|test-pbt):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -72,6 +75,11 @@ agents: ## List all created agents
 	print('\nCreated Agents:\n' + '='*50) if agents else print('\nNo agents created yet.'); \
 	[print(f'  {a.name:<20} {a.display_name:<25} ({a.base_model})') for a in agents]; \
 	print()"
+
+examples: ## Run RAG agent examples
+	@echo "\nRunning RAG agent examples..."
+	@echo "=============================="
+	@uv run python examples_rag_agents.py
 
 models: ## List available Ollama models
 	@echo "\nAvailable Ollama Models:"
@@ -123,6 +131,44 @@ migrate: ## Run migration from inline database configs to centralized connection
 	print(f'\nMigration complete: {len(results)} agent(s) migrated') if results else print('\nNo agents require migration'); \
 	[print(f'  {agent} -> {conn}') for agent, conn in results.items()]; \
 	print()"
+
+# ============================================================================
+# RAG Management
+# ============================================================================
+
+rag-status: ## Show RAG status for all agents
+	@uv run python -c "from offline_chat import AgentManager; m = AgentManager(); agents = m.list_agents(); \
+	rag_agents = [a for a in agents if a.rag_config and a.rag_config.enabled]; \
+	print('\nRAG-Enabled Agents:\n' + '='*50) if rag_agents else print('\nNo RAG-enabled agents found.'); \
+	[print(f'\n  {a.display_name} ({a.name})\n    Sources: {len(a.rag_config.knowledge_sources)}, Top-K: {a.rag_config.top_k}, Min Similarity: {a.rag_config.min_similarity}') for a in rag_agents]; \
+	print()"
+
+rag-sources: ## List knowledge sources for an agent (usage: make rag-sources AGENT=agent-name)
+	@if [ -z "$(AGENT)" ]; then \
+		echo "Usage: make rag-sources AGENT=agent-name"; \
+		echo ""; \
+		echo "Available RAG-enabled agents:"; \
+		uv run python -c "from offline_chat import AgentManager; m = AgentManager(); \
+		rag_agents = [a for a in m.list_agents() if a.rag_config and a.rag_config.enabled]; \
+		[print(f'  {a.name}') for a in rag_agents] if rag_agents else print('  No RAG-enabled agents found')"; \
+	else \
+		uv run python -c "from offline_chat import AgentManager; from offline_chat.database.result import is_ok, unwrap, unwrap_err; \
+		m = AgentManager(); result = m.list_knowledge_sources('$(AGENT)'); \
+		sources = unwrap(result) if is_ok(result) else []; \
+		print(f'\nKnowledge Sources for $(AGENT):\n' + '='*50) if sources else print('\nNo knowledge sources found for $(AGENT).'); \
+		[print(f'  [{s.status}] {s.source_type}: {s.identifier}') for s in sources]; \
+		print()" || echo "Agent '$(AGENT)' not found or RAG not enabled"; \
+	fi
+
+verify-rag: ## Verify RAG setup and dependencies
+	@echo "\nVerifying RAG setup..."
+	@echo "======================"
+	@uv run python verify_rag_setup.py
+
+demo: ## Run demo agent setup script
+	@echo "\nRunning demo setup..."
+	@echo "====================="
+	@bash setup_demo_agent.sh
 
 # ============================================================================
 # Testing

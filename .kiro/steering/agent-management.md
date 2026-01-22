@@ -11,6 +11,12 @@ class AgentConfig:
     base_model: str              # Ollama base model (e.g., "llama3:latest")
     system_prompt: str           # Persona and purpose definition
     temperature: float = 0.7     # Response creativity (0.0-1.0)
+    language: str = "English"    # Response language
+    web_search_enabled: bool = False  # Enable web search tools
+    mcp_servers: list = []       # MCP server configurations
+    connection_assignments: list = []  # Database connection assignments
+    guidelines: list = []        # Behavioral guidelines
+    rag_config: RAGConfig | None = None  # Optional RAG configuration
     created_at: datetime         # Creation timestamp
 ```
 
@@ -24,9 +30,12 @@ data/
 │   └── code-reviewer/
 │       ├── config.json
 │       └── Modelfile
-└── history/
-    ├── german-tutor.json    # Conversation history
-    └── code-reviewer.json
+├── history/
+│   ├── german-tutor.json    # Conversation history
+│   └── code-reviewer.json
+└── rag/
+    ├── german-tutor/        # RAG vector store (if RAG enabled)
+    └── code-reviewer/
 ```
 
 ## Agent Lifecycle

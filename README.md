@@ -9,6 +9,7 @@ A terminal-based chatbot application that uses local Ollama models. Create perso
 - **Local & Private**: All processing happens locally using Ollama - no data leaves your machine
 - **Web Search**: Enable agents to search the web and fetch pages for current information
 - **Database Access**: Connect agents to Oracle, PostgreSQL, MySQL, or SQLite databases for data analysis
+- **RAG (Retrieval-Augmented Generation)**: Enable agents to query external documents, web pages, and database tables as knowledge sources
 - **MCP Server Integration**: Connect agents to Model Context Protocol servers for extended tool capabilities
 - **Library Support**: Use as a CLI tool or import as a Python library
 
@@ -199,7 +200,8 @@ Update Options for: german-tutor
   1. Update base model
   2. Update database connections
   3. Manage guidelines
-  4. Back to agent selection
+  4. Configure RAG capabilities
+  5. Back to agent selection
 
 Select option: 
 ```
@@ -245,6 +247,60 @@ This is particularly useful when:
 - Fixing issues with models that have limited tool support
 
 **Note**: Make sure to pull the new model with `ollama pull <model-name>` before using it.
+
+#### Configuring RAG Capabilities
+
+Select option `4` to enable or configure RAG (Retrieval-Augmented Generation) for an agent:
+
+```
+Configure RAG: german-tutor
+========================================
+
+RAG Status: ✗ Disabled
+
+Would you like to enable RAG for this agent?
+
+Enable RAG? (y/N): y
+
+Enable RAG Configuration
+----------------------------------------
+Top-K (number of chunks to retrieve) [5]: 
+Minimum similarity threshold (0.0-1.0) [0.3]: 
+Chunk size (characters) [512]: 
+Chunk overlap (characters) [50]: 
+
+Embedding models:
+  1. all-MiniLM-L6-v2 (fast, recommended)
+  2. all-mpnet-base-v2 (better quality, slower)
+  3. paraphrase-multilingual-MiniLM-L12-v2 (multilingual)
+Select embedding model [1]: 
+
+Configuring RAG... Done!
+
+✓ RAG configured successfully for 'german-tutor'.
+
+⚠️  Important: RAG is currently DISABLED
+   RAG will be automatically enabled when you add knowledge sources.
+
+Next steps:
+  1. Add knowledge sources via 'Manage RAG knowledge sources' menu
+  2. Ingest the sources to build the vector store
+  3. RAG will be enabled automatically
+  4. Start chatting with RAG-enhanced responses
+```
+
+For agents with RAG already enabled, you can:
+- **Modify RAG parameters**: Adjust top-k, similarity threshold, chunk size, and overlap
+- **Disable RAG**: Turn off RAG while keeping knowledge sources and vector store intact
+
+**RAG Configuration Options**:
+- **Top-K**: Number of relevant chunks to retrieve (1-20, default: 5)
+- **Min Similarity**: Minimum similarity score for retrieval (0.0-1.0, default: 0.3)
+- **Chunk Size**: Size of text chunks in characters (100-2000, default: 512)
+- **Chunk Overlap**: Overlap between chunks in characters (0-500, default: 50)
+- **Embedding Model**: Sentence transformer model for generating embeddings
+
+See the [RAG section](#rag-retrieval-augmented-generation) for more details on RAG capabilities and knowledge source management.
 
 ### Viewing Agent Information
 
@@ -383,6 +439,42 @@ result = manager.update_agent(
         "Focus on actionable insights"
     ]}
 )
+
+# Enable RAG on an existing agent
+from offline_chat.rag.models import RAGConfig
+
+result = manager.update_agent(
+    "python-expert",
+    {"rag_config": RAGConfig(
+        enabled=True,
+        top_k=8,
+        min_similarity=0.25,
+        chunk_size=512,
+        chunk_overlap=50,
+        embedding_model="all-MiniLM-L6-v2",
+        knowledge_sources=[]
+    )}
+)
+
+# Modify RAG parameters on a RAG-enabled agent
+result = manager.update_agent(
+    "python-expert",
+    {"rag_config": RAGConfig(
+        enabled=True,
+        top_k=10,  # Increased from 8
+        min_similarity=0.4,  # Increased from 0.25
+        chunk_size=512,
+        chunk_overlap=50,
+        embedding_model="all-MiniLM-L6-v2",
+        knowledge_sources=[]  # Preserve existing sources
+    )}
+)
+
+# Disable RAG (keeps vector store and knowledge sources intact)
+result = manager.update_agent(
+    "python-expert",
+    {"rag_config": None}
+)
 ```
 
 **Supported update fields**:
@@ -394,6 +486,7 @@ result = manager.update_agent(
 - `connection_assignments` (list) - Database connection assignments
 - `mcp_servers` (list) - MCP server configurations
 - `guidelines` (list[str]) - Agent guidelines
+- `rag_config` (RAGConfig | None) - RAG configuration for knowledge retrieval
 
 **Note**: When updating `base_model`, the Ollama model is automatically recreated with the new base model. Make sure the new model is available in Ollama (`ollama pull <model-name>`) before updating.
 
@@ -527,6 +620,7 @@ Each agent is defined by:
 | `language` | Language for agent responses | `English` |
 | `web_search_enabled` | Enable web search and fetch tools | `False` |
 | `mcp_servers` | List of MCP server configurations | `[]` |
+| `rag_config` | Optional RAG configuration for knowledge retrieval | `None` |
 
 ### Example Agents
 
@@ -549,6 +643,628 @@ System Prompt: You are an expert code reviewer. Analyze code for bugs,
 security issues, and style violations. Provide constructive feedback.
 Temperature: 0.3
 Language: English
+```
+
+## Data Storage
+
+Agent data is stored in `~/.offline-chat/` by default:
+
+```
+~/.offline-chat/
+├── agents/                    # Agent configurations
+│   └── {agent_name}/
+│       ├── config.json        # Agent settings
+│       └── Modelfile          # Ollama Modelfile
+├── history/                   # Conversation histories
+│   └── {agent_name}.json
+└── data/
+    └── rag/                   # RAG vector store data
+        └── {agent_name}/      # Per-agent vector collections
+```
+
+## RAG (Retrieval-Augmented Generation)
+
+Agents can be configured with RAG capabilities to retrieve and use information from external knowledge sources during conversations. This allows agents to provide accurate, context-aware responses based on your documents, web pages, and database tables.
+
+### Understanding RAG Concepts
+
+Before configuring RAG, it's helpful to understand these key concepts:
+
+#### What is RAG?
+
+**Retrieval-Augmented Generation (RAG)** is a technique that enhances AI responses by retrieving relevant information from external sources before generating an answer. Instead of relying solely on the model's training data, RAG allows your agent to:
+- Access up-to-date information from documents and databases
+- Provide accurate answers based on your specific data
+- Cite sources for transparency and verification
+
+#### Key RAG Parameters Explained
+
+**Top-K (Number of Chunks to Retrieve)**
+- **What it is**: How many relevant text chunks to retrieve from your knowledge base
+- **Example**: If set to 5, the agent will find the 5 most relevant pieces of information
+- **When to adjust**:
+  - Increase (7-10) for complex questions needing more context
+  - Decrease (3-5) for simple questions or faster responses
+- **Default**: 5 chunks
+
+**Minimum Similarity Threshold**
+- **What it is**: How similar a chunk must be to your question to be included (0.0 = no match, 1.0 = perfect match)
+- **Example**: With 0.3 threshold, only chunks scoring 0.3 or higher are used
+- **When to adjust**:
+  - Lower (0.2-0.3) to retrieve more loosely related information
+  - Raise (0.4-0.5) to only get highly relevant matches
+- **Default**: 0.3
+
+**Chunk Size**
+- **What it is**: How many characters each piece of text contains when documents are split
+- **Example**: A 512-character chunk is roughly 1-2 paragraphs
+- **When to adjust**:
+  - Larger (800-1000) for documents with long, connected ideas
+  - Smaller (256-400) for structured data or short facts
+- **Default**: 512 characters
+
+**Chunk Overlap**
+- **What it is**: How many characters overlap between consecutive chunks to preserve context
+- **Example**: With 50-character overlap, the last 50 characters of one chunk appear in the next
+- **When to adjust**:
+  - Increase (100-150) to preserve more context across chunk boundaries
+  - Decrease (0-25) for independent facts or structured data
+- **Default**: 50 characters
+
+**Embedding Model**
+- **What it is**: The AI model that converts text into numerical vectors for similarity comparison
+- **Available options**:
+  - `all-MiniLM-L6-v2`: Fast, good quality, recommended for most use cases
+  - `all-mpnet-base-v2`: Better quality but slower, for critical applications
+  - `paraphrase-multilingual-MiniLM-L12-v2`: For non-English content
+- **Default**: all-MiniLM-L6-v2
+
+### How RAG Works
+
+1. **Ingestion**: Documents, web pages, or database rows are chunked and embedded into a vector store
+2. **Retrieval**: When you ask a question, relevant chunks are retrieved based on semantic similarity
+3. **Augmentation**: Retrieved context is added to the prompt with source attribution
+4. **Generation**: The agent responds based only on the provided context, citing sources
+
+### RAG Configuration
+
+RAG is configured per-agent using the `RAGConfig` dataclass:
+
+```python
+from offline_chat import Agent, AgentManager
+from offline_chat.rag.models import RAGConfig, KnowledgeSource
+
+manager = AgentManager()
+
+# Create RAG configuration
+rag_config = RAGConfig(
+    enabled=True,                          # Enable RAG for this agent
+    top_k=5,                               # Number of chunks to retrieve
+    min_similarity=0.3,                    # Minimum similarity threshold (0.0-1.0)
+    chunk_size=512,                        # Size of text chunks in characters
+    chunk_overlap=50,                      # Overlap between chunks
+    embedding_model="all-MiniLM-L6-v2",   # Sentence transformer model
+    knowledge_sources=[                    # List of knowledge sources
+        KnowledgeSource(
+            source_type="web",
+            identifier="https://docs.python.org/3/",
+            status="pending"
+        ),
+        KnowledgeSource(
+            source_type="database",
+            identifier="products",         # Table name
+            status="pending"
+        )
+    ]
+)
+
+# Create agent with RAG
+agent = Agent(
+    name="python-expert",
+    display_name="Python Expert",
+    base_model="llama3:latest",
+    system_prompt="You are a Python expert who answers questions based on documentation.",
+    temperature=0.7,
+    rag_config=rag_config
+)
+manager.create_agent(agent)
+# Vector collection is automatically created when the agent is created
+```
+
+**Note**: When you create an agent with RAG enabled, a vector collection is automatically created in the vector store. The collection is named after the agent and configured with the appropriate embedding dimensions. You can then ingest knowledge sources to populate the collection.
+
+**Best Practice**: If you're adding knowledge sources incrementally, consider starting with `enabled=False` and letting the system enable RAG automatically when you add and ingest your first knowledge source. This ensures RAG is only active when there's actual content to retrieve from.
+
+### Enabling RAG on Existing Agents
+
+You can enable RAG on agents that were created without it, or modify RAG settings on existing RAG-enabled agents:
+
+```python
+from offline_chat import AgentManager
+from offline_chat.rag.models import RAGConfig
+from offline_chat.database.result import is_ok, unwrap_err
+
+manager = AgentManager()
+
+# Enable RAG on an existing agent
+rag_config = RAGConfig(
+    enabled=True,
+    top_k=5,
+    min_similarity=0.3,
+    chunk_size=512,
+    chunk_overlap=50,
+    embedding_model="all-MiniLM-L6-v2",
+    knowledge_sources=[]  # Start with empty sources, add later
+)
+
+result = manager.update_agent("existing-agent", {"rag_config": rag_config})
+
+if is_ok(result):
+    print("✓ RAG enabled successfully")
+    # Now add knowledge sources and ingest them
+else:
+    print(f"✗ Failed: {unwrap_err(result)}")
+
+# Modify RAG parameters on a RAG-enabled agent
+updated_config = RAGConfig(
+    enabled=True,
+    top_k=10,  # Increased from 5
+    min_similarity=0.4,  # Increased from 0.3
+    chunk_size=512,
+    chunk_overlap=50,
+    embedding_model="all-MiniLM-L6-v2",
+    knowledge_sources=[]  # Preserve existing sources
+)
+
+result = manager.update_agent("existing-agent", {"rag_config": updated_config})
+
+# Disable RAG (keeps vector store and knowledge sources intact)
+result = manager.update_agent("existing-agent", {"rag_config": None})
+
+if is_ok(result):
+    print("✓ RAG disabled - vector store and sources preserved")
+    # Can re-enable later without re-ingesting
+```
+
+**Important Notes**:
+- Enabling RAG creates a vector collection if it doesn't exist
+- **Best Practice**: Start with `enabled=False` and let the system enable RAG automatically when you add knowledge sources
+- Disabling RAG (setting to `None`) keeps the vector store and knowledge sources intact
+- You can re-enable RAG later without re-ingesting sources
+- Modifying parameters (top_k, min_similarity, etc.) takes effect immediately
+- Changing chunk_size or chunk_overlap requires re-ingesting sources to take effect
+
+### Knowledge Source Types
+
+**Web Sources**:
+- Scrape and index content from URLs
+- Automatically extracts text from HTML
+- Supports retry logic and rate limiting
+
+**Database Sources**:
+- Index rows from database tables
+- Converts rows to text representations
+- Preserves column names and values
+
+### RAG Parameters Reference
+
+| Parameter | Description | Default | Recommended Range |
+|-----------|-------------|---------|-------------------|
+| `enabled` | Enable/disable RAG for this agent | `False` | `True`/`False` |
+| `top_k` | Number of most relevant chunks to retrieve per query | `5` | 3-10 (higher for complex topics) |
+| `min_similarity` | Minimum similarity score (0.0-1.0) for a chunk to be included | `0.3` | 0.2-0.5 (lower = more results) |
+| `chunk_size` | Size of each text chunk in characters | `512` | 256-1000 (larger for connected ideas) |
+| `chunk_overlap` | Characters that overlap between consecutive chunks | `50` | 0-150 (higher preserves context) |
+| `embedding_model` | Sentence transformer model for generating embeddings | `"all-MiniLM-L6-v2"` | See embedding model options above |
+
+**Tuning Tips**:
+- Start with defaults and adjust based on response quality
+- If responses lack context, increase `top_k` or lower `min_similarity`
+- If responses include irrelevant information, decrease `top_k` or raise `min_similarity`
+- For technical documentation, use larger `chunk_size` (800-1000)
+- For FAQs or structured data, use smaller `chunk_size` (256-400)
+
+### Managing Knowledge Sources
+
+After creating a RAG-enabled agent, you can add, re-index, and list knowledge sources programmatically:
+
+#### Adding Knowledge Sources
+
+Add new knowledge sources to an agent and optionally trigger immediate ingestion:
+
+```python
+from offline_chat import AgentManager
+from offline_chat.database.result import is_ok, unwrap, unwrap_err
+
+manager = AgentManager()
+
+# Add a web source with immediate ingestion
+result = manager.add_knowledge_source(
+    agent_name="python-expert",
+    source_type="web",
+    identifier="https://docs.python.org/3/tutorial/",
+    ingest=True,  # Trigger ingestion immediately (default: True)
+    progress_callback=lambda msg: print(f"  {msg}")  # Optional progress updates
+)
+
+if is_ok(result):
+    print("Knowledge source added and ingested successfully!")
+else:
+    print(f"Error: {unwrap_err(result)}")
+
+# Add a database source without immediate ingestion
+result = manager.add_knowledge_source(
+    agent_name="data-analyst",
+    source_type="database",
+    identifier="sales_table",
+    ingest=False  # Add to config but don't ingest yet
+)
+
+if is_ok(result):
+    print("Knowledge source added. Run re-index to ingest content.")
+```
+
+**Parameters**:
+- `agent_name` (str): Name of the agent to update
+- `source_type` (str): Type of source - `"web"` or `"database"`
+- `identifier` (str): URL for web sources, table name for database sources
+- `ingest` (bool): If `True`, trigger ingestion immediately (default: `True`)
+- `progress_callback` (callable): Optional callback function for progress updates
+
+**Returns**: `Result[None, str]` - Success or error message
+
+#### Re-indexing Knowledge Sources
+
+Re-index existing knowledge sources to update their content:
+
+```python
+from offline_chat import AgentManager
+from offline_chat.database.result import is_ok, unwrap_err
+
+manager = AgentManager()
+
+# Re-index a web source (useful when content has changed)
+result = manager.reindex_knowledge_source(
+    agent_name="python-expert",
+    source_identifier="https://docs.python.org/3/tutorial/",
+    progress_callback=lambda msg: print(f"  {msg}")
+)
+
+if is_ok(result):
+    print("Knowledge source re-indexed successfully!")
+else:
+    print(f"Error: {unwrap_err(result)}")
+
+# Re-index a database source
+result = manager.reindex_knowledge_source(
+    agent_name="data-analyst",
+    source_identifier="sales_table"
+)
+```
+
+**Parameters**:
+- `agent_name` (str): Name of the agent
+- `source_identifier` (str): URL or table name of the source to re-index
+- `progress_callback` (callable): Optional callback function for progress updates
+
+**Returns**: `Result[None, str]` - Success or error message
+
+**Note**: Re-indexing clears old embeddings and re-ingests the content. This is useful when:
+- Web page content has been updated
+- Database table data has changed
+- You want to refresh the knowledge base
+
+#### Listing Knowledge Sources
+
+List all configured knowledge sources for an agent with their status:
+
+```python
+from offline_chat import AgentManager
+from offline_chat.database.result import is_ok, unwrap, unwrap_err
+
+manager = AgentManager()
+
+# List all knowledge sources for an agent
+result = manager.list_knowledge_sources("python-expert")
+
+if is_ok(result):
+    sources = unwrap(result)
+    
+    print(f"Knowledge sources for 'python-expert': {len(sources)}")
+    for source in sources:
+        print(f"\n  Type: {source.source_type}")
+        print(f"  Identifier: {source.identifier}")
+        print(f"  Status: {source.status}")
+        
+        if source.last_indexed:
+            print(f"  Last indexed: {source.last_indexed.strftime('%Y-%m-%d %H:%M:%S')}")
+        
+        if source.error_message:
+            print(f"  Error: {source.error_message}")
+else:
+    print(f"Error: {unwrap_err(result)}")
+```
+
+**Parameters**:
+- `agent_name` (str): Name of the agent
+
+**Returns**: `Result[list[KnowledgeSource], str]` - List of knowledge sources or error message
+
+**Knowledge Source Status Values**:
+- `"pending"` - Source added but not yet ingested
+- `"active"` - Source successfully ingested and available
+- `"failed"` - Ingestion failed (check `error_message` for details)
+
+#### Complete Management Example
+
+```python
+from offline_chat import Agent, AgentManager
+from offline_chat.rag.models import RAGConfig
+from offline_chat.database.result import is_ok, unwrap, unwrap_err
+
+manager = AgentManager()
+
+# Create RAG-enabled agent
+agent = Agent(
+    name="docs-assistant",
+    display_name="Documentation Assistant",
+    base_model="llama3:latest",
+    system_prompt="You help users understand documentation.",
+    temperature=0.5,
+    rag_config=RAGConfig(
+        enabled=True,
+        top_k=5,
+        min_similarity=0.3,
+        knowledge_sources=[]  # Start with empty sources
+    )
+)
+manager.create_agent(agent)
+
+# Add multiple knowledge sources
+sources_to_add = [
+    ("web", "https://docs.python.org/3/tutorial/"),
+    ("web", "https://docs.python.org/3/library/"),
+    ("database", "documentation_table")
+]
+
+for source_type, identifier in sources_to_add:
+    print(f"\nAdding {source_type} source: {identifier}")
+    result = manager.add_knowledge_source(
+        agent_name="docs-assistant",
+        source_type=source_type,
+        identifier=identifier,
+        ingest=True,
+        progress_callback=lambda msg: print(f"  {msg}")
+    )
+    
+    if is_ok(result):
+        print("  ✓ Success")
+    else:
+        print(f"  ✗ Failed: {unwrap_err(result)}")
+
+# List all sources with their status
+print("\n" + "="*50)
+print("Knowledge Sources Summary")
+print("="*50)
+
+result = manager.list_knowledge_sources("docs-assistant")
+if is_ok(result):
+    sources = unwrap(result)
+    for source in sources:
+        status_icon = {
+            "active": "✓",
+            "failed": "✗",
+            "pending": "○"
+        }.get(source.status, "?")
+        
+        print(f"\n[{status_icon}] {source.source_type}: {source.identifier}")
+        print(f"    Status: {source.status}")
+        if source.last_indexed:
+            print(f"    Last indexed: {source.last_indexed.strftime('%Y-%m-%d %H:%M')}")
+        if source.error_message:
+            print(f"    Error: {source.error_message}")
+
+# Re-index a specific source if needed
+print("\n" + "="*50)
+print("Re-indexing a source")
+print("="*50)
+
+result = manager.reindex_knowledge_source(
+    agent_name="docs-assistant",
+    source_identifier="https://docs.python.org/3/tutorial/",
+    progress_callback=lambda msg: print(f"  {msg}")
+)
+
+if is_ok(result):
+    print("✓ Re-indexing complete")
+else:
+    print(f"✗ Re-indexing failed: {unwrap_err(result)}")
+```
+
+### Using RAG in Chat Sessions
+
+When chatting with a RAG-enabled agent, responses are based on retrieved context:
+
+```python
+from offline_chat import AgentManager, ChatSession
+
+manager = AgentManager()
+session = ChatSession(manager)
+
+session.start("python-expert")
+
+# Agent retrieves relevant context and cites sources
+for chunk in session.send_message("How do I use list comprehensions?"):
+    print(chunk, end="", flush=True)
+
+session.end()
+```
+
+The agent will:
+1. Retrieve relevant chunks from knowledge sources
+2. Include context in the prompt with source attribution
+3. Respond based only on the provided context
+4. Cite sources in the response
+
+### RAG Instructions
+
+RAG-enabled agents are automatically instructed to:
+- Respond only based on provided context
+- Cite sources for all information
+- Acknowledge when information is insufficient
+- Never fabricate or hallucinate information
+- Quote or paraphrase directly from context
+
+### Vector Store
+
+RAG uses ChromaDB for vector storage:
+- Persistent storage in `~/.offline-chat/data/rag/`
+- One collection per agent
+- Automatic embedding generation using sentence-transformers
+- Efficient similarity search with configurable thresholds
+
+### Example: Documentation Assistant
+
+```python
+from offline_chat import Agent, AgentManager
+from offline_chat.rag.models import RAGConfig, KnowledgeSource
+
+rag_config = RAGConfig(
+    enabled=True,
+    top_k=8,
+    min_similarity=0.4,
+    knowledge_sources=[
+        KnowledgeSource(
+            source_type="web",
+            identifier="https://docs.python.org/3/tutorial/",
+            status="pending"
+        ),
+        KnowledgeSource(
+            source_type="web",
+            identifier="https://docs.python.org/3/library/",
+            status="pending"
+        )
+    ]
+)
+
+agent = Agent(
+    name="python-docs",
+    display_name="Python Documentation Assistant",
+    base_model="llama3:latest",
+    system_prompt="You help users understand Python by referencing official documentation.",
+    temperature=0.5,
+    rag_config=rag_config
+)
+```
+
+### RAG Examples
+
+The `examples_rag_agents.py` script demonstrates how to create RAG-enabled agents with different types of knowledge sources. Run it to see complete examples:
+
+```bash
+uv run python examples_rag_agents.py
+```
+
+**Example 1: Web Sources Only**
+- Agent that answers questions about Python using official documentation
+- Demonstrates web scraping and indexing
+- Shows how to configure RAG parameters for web content
+
+**Example 2: Database Sources Only**
+- Agent that analyzes company sales data from database tables
+- Demonstrates database table indexing
+- Shows optimal RAG settings for structured data (smaller chunks, lower threshold)
+
+**Example 3: Mixed Sources (Web + Database)**
+- Agent that combines external documentation with internal data
+- Demonstrates multi-source knowledge integration
+- Shows how to handle diverse content types
+
+**Example 4: Interactive Chat Demo**
+- Complete workflow from agent creation to chat interaction
+- Demonstrates knowledge source ingestion
+- Shows source citation in responses
+
+Each example includes:
+- Complete agent configuration with RAG settings
+- Knowledge source definitions
+- Usage instructions and sample questions
+- Best practices for different source types
+
+See the script for full implementation details and copy-paste ready code.
+
+### RAG Error Handling and Resilience
+
+The RAG system includes robust error handling to ensure reliable operation:
+
+**Automatic Fallback to Non-RAG Mode**:
+- If the vector store is unavailable, the agent automatically falls back to standard chat
+- Logs warnings for debugging while continuing to function
+- No user intervention required
+
+**Graceful Ingestion Failures**:
+- Web scraping failures (404, timeouts, network errors) are logged but don't stop other sources
+- Embedding generation failures are caught and reported per-source
+- Failed sources are marked with status and error messages for troubleshooting
+
+**Corrupted Collection Recovery**:
+```python
+from offline_chat import AgentManager
+from offline_chat.rag.orchestrator import RAGOrchestrator
+from offline_chat.rag.vector_store import VectorStore
+from pathlib import Path
+
+# Check collection health
+manager = AgentManager()
+agent = manager.get_agent("python-expert")
+
+# Create RAG components
+data_dir = Path.home() / ".offline-chat" / "data" / "rag"
+vector_store = VectorStore(data_dir)
+
+# Check if collection is corrupted
+is_corrupted, error_msg = vector_store.is_collection_corrupted(agent.name)
+if is_corrupted:
+    print(f"Collection corrupted: {error_msg}")
+    
+    # Rebuild the collection
+    success, message = vector_store.rebuild_collection(
+        collection_name=agent.name,
+        embedding_dimension=384,
+        force=False  # Only rebuild if corrupted
+    )
+    
+    if success:
+        print(message)
+        # Re-ingest knowledge sources to restore data
+    else:
+        print(f"Rebuild failed: {message}")
+```
+
+**Mixed Success Handling**:
+- When ingesting multiple sources, failures in one don't affect others
+- Each source gets an individual success/failure status
+- Partial ingestion is supported - successfully indexed sources remain available
+
+**Error Indicators**:
+```python
+from offline_chat.rag.models import KnowledgeSource
+
+# After ingestion, check source status
+source = KnowledgeSource(
+    source_type="web",
+    identifier="https://example.com/docs",
+    status="pending"
+)
+
+results = orchestrator.ingest_knowledge_sources([source])
+
+for result in results:
+    if result.success:
+        print(f"✓ {result.source.identifier}: {result.chunks_processed} chunks")
+    else:
+        print(f"✗ {result.source.identifier}: {result.error_message}")
+        print(f"  Status: {result.source.status}")
 ```
 
 ## Data Storage
@@ -2779,6 +3495,9 @@ make test-pbt
 
 # Run with coverage
 make test-coverage
+
+# Verify RAG infrastructure setup (for RAG development)
+uv run python verify_rag_setup.py
 ```
 
 #### Test Structure
@@ -2935,17 +3654,72 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for commit message guidelines.
 
 - ✅ **MCP Server Integration**: Connect agents to Model Context Protocol servers for extended tool capabilities
 - ✅ **Database Access**: Query Oracle, PostgreSQL, MySQL, and SQLite databases with read-only access, schema discovery, and audit logging
+- ✅ **RAG (Retrieval-Augmented Generation)**: Query external documents, web pages, and database tables as knowledge sources with automatic source citation
 
 ### Future Features
 
 Features under consideration:
 
-- **RAG (Retrieval Augmented Generation)**: Allow agents to query external documents and knowledge bases
 - **Multi-agent Conversations**: Support conversations between multiple agents
 - **Export/Import Agents**: Share agent configurations between users
 - **Agent Templates**: Pre-configured agent templates for common use cases
 - **Tool Usage Analytics**: Track and visualize tool usage patterns across sessions
 - **Database Write Access**: Optional write operations with explicit user confirmation
+
+## Third-Party Dependencies
+
+Offline Chat uses several open-source libraries to provide its functionality. All dependencies use permissive open-source licenses.
+
+For detailed license information, see [DEPENDENCIES.md](DEPENDENCIES.md).
+
+### Core Dependencies
+
+| Package | Version | License | Purpose |
+|---------|---------|---------|---------|
+| [ollama](https://github.com/ollama/ollama-python) | >=0.4.0 | MIT | Python client for Ollama API |
+| [requests](https://github.com/psf/requests) | >=2.32.0 | Apache 2.0 | HTTP library for web requests |
+| [beautifulsoup4](https://www.crummy.com/software/BeautifulSoup/) | >=4.12.0 | MIT | HTML/XML parsing for web scraping |
+| [mcp](https://github.com/modelcontextprotocol/python-sdk) | >=1.0.0 | MIT | Model Context Protocol SDK |
+
+### Web Search Dependencies
+
+| Package | Version | License | Purpose |
+|---------|---------|---------|---------|
+| [ddgs](https://github.com/deedy5/duckduckgo_search) | >=7.0.0 | MIT | DuckDuckGo search integration |
+
+### RAG Dependencies
+
+| Package | Version | License | Purpose |
+|---------|---------|---------|---------|
+| [chromadb](https://github.com/chroma-core/chroma) | >=1.4.1 | Apache 2.0 | Vector database for embeddings |
+| [sentence-transformers](https://github.com/UKPLab/sentence-transformers) | >=5.2.0 | Apache 2.0 | Local embedding generation |
+
+### Development Dependencies
+
+| Package | Version | License | Purpose |
+|---------|---------|---------|---------|
+| [pytest](https://github.com/pytest-dev/pytest) | >=8.0.0 | MIT | Testing framework |
+| [hypothesis](https://github.com/HypothesisWorks/hypothesis) | >=6.100.0 | MPL 2.0 | Property-based testing |
+| [ruff](https://github.com/astral-sh/ruff) | >=0.8.0 | MIT | Linting and formatting |
+| [commitizen](https://github.com/commitizen-tools/commitizen) | >=4.0.0 | MIT | Commit message standardization |
+
+### License Compliance
+
+All dependencies use permissive open-source licenses (MIT, Apache 2.0, MPL 2.0) that allow:
+- Commercial use
+- Modification
+- Distribution
+- Private use
+
+**RAG-Specific Compliance**:
+- **ChromaDB** (Apache 2.0): Vector database with no usage restrictions
+- **sentence-transformers** (Apache 2.0): Local embedding models with no API dependencies
+- **No proprietary dependencies**: All RAG components are fully open-source
+
+For detailed license information, see each package's repository or run:
+```bash
+uv pip show <package-name>
+```
 
 ## License
 
