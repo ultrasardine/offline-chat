@@ -1,3 +1,9 @@
+## [1.0.1](https://github.com/ultrasardine/offline-chat/compare/v1.0.0...v1.0.1) (2026-01-29)
+
+### Bug Fixes
+
+* configure ruff to ignore E501 and apply formatting ([30cb637](https://github.com/ultrasardine/offline-chat/commit/30cb637d5dc5a1c18e973b8eda0a272321d25330))
+
 ## 1.0.0 (2026-01-29)
 
 ### ⚠ BREAKING CHANGES
