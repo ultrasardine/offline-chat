@@ -98,22 +98,26 @@ Version is maintained in:
 
 ## Pull Request Process
 
-1. Create a feature branch from `main`:
+1. Fork the repository on GitHub
+
+2. Create a feature branch from `main`:
    ```bash
    git checkout -b feat/my-feature
    ```
 
-2. Make your changes following the coding standards
+3. Make your changes following the coding standards
 
-3. Ensure all tests pass:
+4. Ensure all tests pass:
    ```bash
    make check
    make test
    ```
 
-4. Commit using conventional commit format
+5. Commit using conventional commit format
 
-5. Push and create a pull request
+6. Push to your fork and create a pull request to the main repository
+
+7. Wait for CI checks to pass and address any review feedback
 
 ## Code Quality
 
@@ -150,4 +154,10 @@ make test-pbt
 
 ## Questions?
 
-Open an issue for questions or discussions about contributing.
+Open an issue on GitHub for questions or discussions about contributing.
+
+## Community
+
+- **Issues**: Report bugs or request features via [GitHub Issues](https://github.com/ultrasardine/offline-chat/issues)
+- **Discussions**: Join conversations in [GitHub Discussions](https://github.com/ultrasardine/offline-chat/discussions)
+- **Code of Conduct**: Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before participating

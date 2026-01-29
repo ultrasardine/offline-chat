@@ -1,6 +1,23 @@
 # Offline Chat
 
+[![CI](https://github.com/ultrasardine/offline-chat/workflows/CI/badge.svg)](https://github.com/ultrasardine/offline-chat/actions)
+[![Release](https://github.com/ultrasardine/offline-chat/workflows/Release/badge.svg)](https://github.com/ultrasardine/offline-chat/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+
 A terminal-based chatbot application that uses local Ollama models. Create personalized AI agents with specific personas, system prompts, and maintain conversation history across sessions.
+
+## Table of Contents
+
+- [Features](#features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Usage](#usage)
+- [Contributing](#contributing)
+- [License](#license)
+- [Support](#support)
 
 ## Features
 
@@ -3767,4 +3784,33 @@ uv pip show <package-name>
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on:
+
+- Code of Conduct
+- Development setup
+- Commit message conventions
+- Pull request process
+- Testing guidelines
+
+## Support
+
+- **Documentation**: Check the [README](README.md) for comprehensive usage guides
+- **Issues**: Report bugs or request features via [GitHub Issues](https://github.com/ultrasardine/offline-chat/issues)
+- **Discussions**: Join conversations in [GitHub Discussions](https://github.com/ultrasardine/offline-chat/discussions)
+- **Security**: Report security vulnerabilities via [Security Policy](SECURITY.md)
+
+## Acknowledgments
+
+- Built with [Ollama](https://ollama.ai/) for local LLM inference
+- Uses [Model Context Protocol](https://modelcontextprotocol.io/) for extensibility
+- Inspired by the need for private, local AI assistants
+
+## Star History
+
+If you find this project useful, please consider giving it a star ⭐
+
+[![Star History Chart](https://api.star-history.com/svg?repos=ultrasardine/offline-chat&type=Date)](https://star-history.com/#ultrasardine/offline-chat&Date)
