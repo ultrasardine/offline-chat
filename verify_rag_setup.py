@@ -16,7 +16,7 @@ def check_packages():
         "sentence_transformers": "Sentence Transformers for embeddings",
         "hypothesis": "Hypothesis for property-based testing",
     }
-    
+
     all_ok = True
     for package, description in packages.items():
         try:
@@ -25,14 +25,14 @@ def check_packages():
         except ImportError as e:
             print(f"  ✗ {package}: FAILED - {e}")
             all_ok = False
-    
+
     return all_ok
 
 
 def check_directory_structure():
     """Verify all required directories exist."""
     print("\nChecking directory structure...")
-    
+
     required_dirs = [
         "offline_chat/rag",
         "tests/rag",
@@ -42,7 +42,7 @@ def check_directory_structure():
         "tests/rag/fixtures",
         "data/rag",
     ]
-    
+
     all_ok = True
     for dir_path in required_dirs:
         path = Path(dir_path)
@@ -51,14 +51,14 @@ def check_directory_structure():
         else:
             print(f"  ✗ {dir_path}: MISSING")
             all_ok = False
-    
+
     return all_ok
 
 
 def check_module_files():
     """Verify all required module files exist."""
     print("\nChecking module files...")
-    
+
     required_files = [
         "offline_chat/rag/__init__.py",
         "offline_chat/rag/models.py",
@@ -70,7 +70,7 @@ def check_module_files():
         "offline_chat/rag/orchestrator.py",
         "offline_chat/rag/web_scraper.py",
     ]
-    
+
     all_ok = True
     for file_path in required_files:
         path = Path(file_path)
@@ -79,14 +79,14 @@ def check_module_files():
         else:
             print(f"  ✗ {file_path}: MISSING")
             all_ok = False
-    
+
     return all_ok
 
 
 def check_test_files():
     """Verify all required test files exist."""
     print("\nChecking test files...")
-    
+
     required_files = [
         "tests/rag/__init__.py",
         "tests/rag/unit/__init__.py",
@@ -107,7 +107,7 @@ def check_test_files():
         "tests/rag/property/test_prompt_properties.py",
         "tests/rag/integration/test_rag_orchestrator.py",
     ]
-    
+
     all_ok = True
     for file_path in required_files:
         path = Path(file_path)
@@ -116,7 +116,7 @@ def check_test_files():
         else:
             print(f"  ✗ {file_path}: MISSING")
             all_ok = False
-    
+
     return all_ok
 
 
@@ -125,32 +125,32 @@ def main():
     print("=" * 70)
     print("RAG Infrastructure Setup Verification")
     print("=" * 70)
-    
+
     checks = [
         ("Package Imports", check_packages),
         ("Directory Structure", check_directory_structure),
         ("Module Files", check_module_files),
         ("Test Files", check_test_files),
     ]
-    
+
     results = []
     for name, check_func in checks:
         result = check_func()
         results.append((name, result))
-    
+
     print("\n" + "=" * 70)
     print("Summary")
     print("=" * 70)
-    
+
     all_passed = True
     for name, result in results:
         status = "✓ PASSED" if result else "✗ FAILED"
         print(f"{name}: {status}")
         if not result:
             all_passed = False
-    
+
     print("=" * 70)
-    
+
     if all_passed:
         print("\n✓ All checks passed! RAG infrastructure is ready.")
         return 0

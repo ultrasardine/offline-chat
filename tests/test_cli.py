@@ -95,41 +95,42 @@ class TestMessageDisplayFormatting:
 
 class TestCLIMigrationCheck:
     """Tests for CLI migration check on startup.
-    
+
     Validates: Requirements 9.1
     """
-    
+
     def test_migration_check_called_on_startup(self, tmp_path, monkeypatch):
         """Test that migration check is called when CLI starts."""
-        from unittest.mock import Mock, patch, MagicMock
+        from unittest.mock import MagicMock, patch
+
         from offline_chat.cli import CLI
         from offline_chat.manager import AgentManager
-        from offline_chat.database.manager import DatabaseConnectionManager
-        
+
         # Create a mock manager with migrate_inline_configs method
         mock_manager = MagicMock(spec=AgentManager)
         mock_manager.migrate_inline_configs.return_value = {}
         mock_manager.history_store = MagicMock()
-        
+
         # Create CLI with mock manager
         cli = CLI(manager=mock_manager)
-        
+
         # Mock the display_menu to exit immediately
         with patch.object(cli, 'display_menu', side_effect=KeyboardInterrupt):
             try:
                 cli.run()
             except KeyboardInterrupt:
                 pass
-        
+
         # Verify migration check was called
         mock_manager.migrate_inline_configs.assert_called_once()
-    
+
     def test_migration_check_displays_results(self, tmp_path, monkeypatch, capsys):
         """Test that migration results are displayed to user."""
         from unittest.mock import MagicMock, patch
+
         from offline_chat.cli import CLI
         from offline_chat.manager import AgentManager
-        
+
         # Create a mock manager that returns migration results
         mock_manager = MagicMock(spec=AgentManager)
         mock_manager.migrate_inline_configs.return_value = {
@@ -137,79 +138,81 @@ class TestCLIMigrationCheck:
             'another-agent': 'another-agent-postgresql'
         }
         mock_manager.history_store = MagicMock()
-        
+
         # Create CLI with mock manager
         cli = CLI(manager=mock_manager)
-        
+
         # Mock the display_menu to exit immediately
         with patch.object(cli, 'display_menu', side_effect=KeyboardInterrupt):
             try:
                 cli.run()
             except KeyboardInterrupt:
                 pass
-        
+
         # Capture output
         captured = capsys.readouterr()
-        
+
         # Verify migration results are displayed
         assert "Database Configuration Migration" in captured.out
         assert "Migrated 2 agent(s)" in captured.out
         assert "test-agent -> test-agent-oracle" in captured.out
         assert "another-agent -> another-agent-postgresql" in captured.out
         assert "centralized connection management system" in captured.out
-    
+
     def test_migration_check_no_results(self, tmp_path, monkeypatch, capsys):
         """Test that no output is shown when no agents need migration."""
         from unittest.mock import MagicMock, patch
+
         from offline_chat.cli import CLI
         from offline_chat.manager import AgentManager
-        
+
         # Create a mock manager that returns empty results
         mock_manager = MagicMock(spec=AgentManager)
         mock_manager.migrate_inline_configs.return_value = {}
         mock_manager.history_store = MagicMock()
-        
+
         # Create CLI with mock manager
         cli = CLI(manager=mock_manager)
-        
+
         # Mock the display_menu to exit immediately
         with patch.object(cli, 'display_menu', side_effect=KeyboardInterrupt):
             try:
                 cli.run()
             except KeyboardInterrupt:
                 pass
-        
+
         # Capture output
         captured = capsys.readouterr()
-        
+
         # Verify no migration message is displayed
         assert "Database Configuration Migration" not in captured.out
         assert "Migrated" not in captured.out or "Migrated 0" not in captured.out
-    
+
     def test_migration_check_handles_errors_gracefully(self, tmp_path, monkeypatch, capsys):
         """Test that migration errors don't prevent app startup."""
         from unittest.mock import MagicMock, patch
+
         from offline_chat.cli import CLI
         from offline_chat.manager import AgentManager
-        
+
         # Create a mock manager that raises an error
         mock_manager = MagicMock(spec=AgentManager)
         mock_manager.migrate_inline_configs.side_effect = Exception("Test migration error")
         mock_manager.history_store = MagicMock()
-        
+
         # Create CLI with mock manager
         cli = CLI(manager=mock_manager)
-        
+
         # Mock the display_menu to exit immediately
         with patch.object(cli, 'display_menu', side_effect=KeyboardInterrupt):
             try:
                 cli.run()
             except KeyboardInterrupt:
                 pass
-        
+
         # Capture output
         captured = capsys.readouterr()
-        
+
         # Verify error is displayed but app continues
         assert "Warning: Error during database configuration migration" in captured.out
         assert "Test migration error" in captured.out

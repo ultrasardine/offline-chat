@@ -1,21 +1,20 @@
 """Unit tests and property-based tests for ConnectionValidator."""
 
-import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from offline_chat.database import (
-    DatabaseConnection,
     ConnectionValidator,
-    is_ok,
+    DatabaseConnection,
     is_err,
+    is_ok,
     unwrap_err,
 )
 
 
 class TestValidateOracle:
     """Tests for validate_oracle() method."""
-    
+
     def test_validate_oracle_success(self):
         """Test validating a valid Oracle connection."""
         conn = DatabaseConnection(
@@ -27,10 +26,10 @@ class TestValidateOracle:
             username="testuser",
             password="testpass"
         )
-        
+
         result = ConnectionValidator.validate_oracle(conn)
         assert is_ok(result), f"Expected Ok, got Err: {unwrap_err(result) if is_err(result) else ''}"
-    
+
     def test_validate_oracle_missing_host(self):
         """Test that missing host field is rejected."""
         conn = DatabaseConnection(
@@ -42,13 +41,13 @@ class TestValidateOracle:
             username="testuser",
             password="testpass"
         )
-        
+
         result = ConnectionValidator.validate_oracle(conn)
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "Missing required field 'host'" in error_msg
         assert "oracle" in error_msg
-    
+
     def test_validate_oracle_missing_port(self):
         """Test that missing port field is rejected."""
         conn = DatabaseConnection(
@@ -60,12 +59,12 @@ class TestValidateOracle:
             username="testuser",
             password="testpass"
         )
-        
+
         result = ConnectionValidator.validate_oracle(conn)
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "Missing required field 'port'" in error_msg
-    
+
     def test_validate_oracle_missing_service_name(self):
         """Test that missing service_name field is rejected."""
         conn = DatabaseConnection(
@@ -77,12 +76,12 @@ class TestValidateOracle:
             username="testuser",
             password="testpass"
         )
-        
+
         result = ConnectionValidator.validate_oracle(conn)
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "Missing required field 'service_name'" in error_msg
-    
+
     def test_validate_oracle_missing_username(self):
         """Test that missing username field is rejected."""
         conn = DatabaseConnection(
@@ -94,12 +93,12 @@ class TestValidateOracle:
             username=None,
             password="testpass"
         )
-        
+
         result = ConnectionValidator.validate_oracle(conn)
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "Missing required field 'username'" in error_msg
-    
+
     def test_validate_oracle_missing_password(self):
         """Test that missing password field is rejected."""
         conn = DatabaseConnection(
@@ -111,12 +110,12 @@ class TestValidateOracle:
             username="testuser",
             password=None
         )
-        
+
         result = ConnectionValidator.validate_oracle(conn)
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "Missing required field 'password'" in error_msg
-    
+
     def test_validate_oracle_empty_string_fields(self):
         """Test that empty string fields are rejected."""
         conn = DatabaseConnection(
@@ -128,12 +127,12 @@ class TestValidateOracle:
             username="testuser",
             password="testpass"
         )
-        
+
         result = ConnectionValidator.validate_oracle(conn)
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "Missing required field 'host'" in error_msg
-    
+
     def test_validate_oracle_invalid_port_zero(self):
         """Test that port 0 is rejected."""
         conn = DatabaseConnection(
@@ -145,12 +144,12 @@ class TestValidateOracle:
             username="testuser",
             password="testpass"
         )
-        
+
         result = ConnectionValidator.validate_oracle(conn)
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "Invalid port number" in error_msg
-    
+
     def test_validate_oracle_invalid_port_negative(self):
         """Test that negative port is rejected."""
         conn = DatabaseConnection(
@@ -162,12 +161,12 @@ class TestValidateOracle:
             username="testuser",
             password="testpass"
         )
-        
+
         result = ConnectionValidator.validate_oracle(conn)
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "Invalid port number" in error_msg
-    
+
     def test_validate_oracle_invalid_port_too_large(self):
         """Test that port > 65535 is rejected."""
         conn = DatabaseConnection(
@@ -179,12 +178,12 @@ class TestValidateOracle:
             username="testuser",
             password="testpass"
         )
-        
+
         result = ConnectionValidator.validate_oracle(conn)
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "Invalid port number" in error_msg
-    
+
     def test_validate_oracle_wrong_database_type(self):
         """Test that wrong database type is rejected."""
         conn = DatabaseConnection(
@@ -196,7 +195,7 @@ class TestValidateOracle:
             username="testuser",
             password="testpass"
         )
-        
+
         result = ConnectionValidator.validate_oracle(conn)
         assert is_err(result)
         error_msg = unwrap_err(result)
@@ -206,7 +205,7 @@ class TestValidateOracle:
 
 class TestValidatePostgreSQL:
     """Tests for validate_postgresql() method."""
-    
+
     def test_validate_postgresql_success(self):
         """Test validating a valid PostgreSQL connection."""
         conn = DatabaseConnection(
@@ -218,10 +217,10 @@ class TestValidatePostgreSQL:
             username="testuser",
             password="testpass"
         )
-        
+
         result = ConnectionValidator.validate_postgresql(conn)
         assert is_ok(result)
-    
+
     def test_validate_postgresql_missing_host(self):
         """Test that missing host field is rejected."""
         conn = DatabaseConnection(
@@ -233,13 +232,13 @@ class TestValidatePostgreSQL:
             username="testuser",
             password="testpass"
         )
-        
+
         result = ConnectionValidator.validate_postgresql(conn)
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "Missing required field 'host'" in error_msg
         assert "postgresql" in error_msg
-    
+
     def test_validate_postgresql_missing_database(self):
         """Test that missing database field is rejected."""
         conn = DatabaseConnection(
@@ -251,12 +250,12 @@ class TestValidatePostgreSQL:
             username="testuser",
             password="testpass"
         )
-        
+
         result = ConnectionValidator.validate_postgresql(conn)
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "Missing required field 'database'" in error_msg
-    
+
     def test_validate_postgresql_invalid_port(self):
         """Test that invalid port is rejected."""
         conn = DatabaseConnection(
@@ -268,7 +267,7 @@ class TestValidatePostgreSQL:
             username="testuser",
             password="testpass"
         )
-        
+
         result = ConnectionValidator.validate_postgresql(conn)
         assert is_err(result)
         error_msg = unwrap_err(result)
@@ -277,7 +276,7 @@ class TestValidatePostgreSQL:
 
 class TestValidateMySQL:
     """Tests for validate_mysql() method."""
-    
+
     def test_validate_mysql_success(self):
         """Test validating a valid MySQL connection."""
         conn = DatabaseConnection(
@@ -289,10 +288,10 @@ class TestValidateMySQL:
             username="testuser",
             password="testpass"
         )
-        
+
         result = ConnectionValidator.validate_mysql(conn)
         assert is_ok(result)
-    
+
     def test_validate_mysql_missing_host(self):
         """Test that missing host field is rejected."""
         conn = DatabaseConnection(
@@ -304,13 +303,13 @@ class TestValidateMySQL:
             username="testuser",
             password="testpass"
         )
-        
+
         result = ConnectionValidator.validate_mysql(conn)
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "Missing required field 'host'" in error_msg
         assert "mysql" in error_msg
-    
+
     def test_validate_mysql_missing_database(self):
         """Test that missing database field is rejected."""
         conn = DatabaseConnection(
@@ -322,7 +321,7 @@ class TestValidateMySQL:
             username="testuser",
             password="testpass"
         )
-        
+
         result = ConnectionValidator.validate_mysql(conn)
         assert is_err(result)
         error_msg = unwrap_err(result)
@@ -331,7 +330,7 @@ class TestValidateMySQL:
 
 class TestValidateSQLite:
     """Tests for validate_sqlite() method."""
-    
+
     def test_validate_sqlite_success(self):
         """Test validating a valid SQLite connection."""
         conn = DatabaseConnection(
@@ -339,10 +338,10 @@ class TestValidateSQLite:
             database_type="sqlite",
             file_path="/path/to/database.db"
         )
-        
+
         result = ConnectionValidator.validate_sqlite(conn)
         assert is_ok(result)
-    
+
     def test_validate_sqlite_missing_file_path(self):
         """Test that missing file_path field is rejected."""
         conn = DatabaseConnection(
@@ -350,13 +349,13 @@ class TestValidateSQLite:
             database_type="sqlite",
             file_path=None
         )
-        
+
         result = ConnectionValidator.validate_sqlite(conn)
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "Missing required field 'file_path'" in error_msg
         assert "sqlite" in error_msg
-    
+
     def test_validate_sqlite_empty_file_path(self):
         """Test that empty file_path is rejected."""
         conn = DatabaseConnection(
@@ -364,12 +363,12 @@ class TestValidateSQLite:
             database_type="sqlite",
             file_path=""
         )
-        
+
         result = ConnectionValidator.validate_sqlite(conn)
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "Missing required field 'file_path'" in error_msg
-    
+
     def test_validate_sqlite_whitespace_file_path(self):
         """Test that whitespace-only file_path is rejected."""
         conn = DatabaseConnection(
@@ -377,12 +376,12 @@ class TestValidateSQLite:
             database_type="sqlite",
             file_path="   "
         )
-        
+
         result = ConnectionValidator.validate_sqlite(conn)
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "Missing required field 'file_path'" in error_msg
-    
+
     def test_validate_sqlite_wrong_database_type(self):
         """Test that wrong database type is rejected."""
         conn = DatabaseConnection(
@@ -390,7 +389,7 @@ class TestValidateSQLite:
             database_type="mysql",
             file_path="/path/to/database.db"
         )
-        
+
         result = ConnectionValidator.validate_sqlite(conn)
         assert is_err(result)
         error_msg = unwrap_err(result)
@@ -400,7 +399,7 @@ class TestValidateSQLite:
 
 class TestTestConnection:
     """Tests for test_connection() method."""
-    
+
     def test_test_connection_placeholder(self):
         """Test that test_connection returns Ok (placeholder implementation)."""
         conn = DatabaseConnection(
@@ -408,7 +407,7 @@ class TestTestConnection:
             database_type="sqlite",
             file_path="/path/to/db.db"
         )
-        
+
         result = ConnectionValidator.test_connection(conn)
         assert is_ok(result), "Placeholder implementation should return Ok"
 
@@ -416,7 +415,8 @@ class TestTestConnection:
 # Property-Based Tests
 
 # Helper strategy for non-whitespace text
-non_whitespace_text = lambda min_size=1, max_size=100: st.text(
+def non_whitespace_text(min_size=1, max_size=100):
+    return st.text(
     min_size=min_size, max_size=max_size
 ).filter(lambda s: s.strip() != "")
 
@@ -433,7 +433,7 @@ def test_property_oracle_required_fields_validation(host, port, service_name, us
     """
     **Property 4: Required Fields Validation by Database Type**
     **Validates: Requirements 2.4, 8.2, 8.3**
-    
+
     For any Oracle connection with all required fields present and valid,
     validation should succeed.
     """
@@ -446,7 +446,7 @@ def test_property_oracle_required_fields_validation(host, port, service_name, us
         username=username,
         password=password
     )
-    
+
     result = ConnectionValidator.validate_oracle(conn)
     assert is_ok(result), f"Valid Oracle connection should pass validation, got: {unwrap_err(result) if is_err(result) else ''}"
 
@@ -463,7 +463,7 @@ def test_property_postgresql_required_fields_validation(host, port, database, us
     """
     **Property 4: Required Fields Validation by Database Type**
     **Validates: Requirements 2.4, 8.4**
-    
+
     For any PostgreSQL connection with all required fields present and valid,
     validation should succeed.
     """
@@ -476,7 +476,7 @@ def test_property_postgresql_required_fields_validation(host, port, database, us
         username=username,
         password=password
     )
-    
+
     result = ConnectionValidator.validate_postgresql(conn)
     assert is_ok(result), f"Valid PostgreSQL connection should pass validation, got: {unwrap_err(result) if is_err(result) else ''}"
 
@@ -493,7 +493,7 @@ def test_property_mysql_required_fields_validation(host, port, database, usernam
     """
     **Property 4: Required Fields Validation by Database Type**
     **Validates: Requirements 2.4, 8.5**
-    
+
     For any MySQL connection with all required fields present and valid,
     validation should succeed.
     """
@@ -506,7 +506,7 @@ def test_property_mysql_required_fields_validation(host, port, database, usernam
         username=username,
         password=password
     )
-    
+
     result = ConnectionValidator.validate_mysql(conn)
     assert is_ok(result), f"Valid MySQL connection should pass validation, got: {unwrap_err(result) if is_err(result) else ''}"
 
@@ -519,7 +519,7 @@ def test_property_sqlite_required_fields_validation(file_path):
     """
     **Property 4: Required Fields Validation by Database Type**
     **Validates: Requirements 2.4, 8.6**
-    
+
     For any SQLite connection with file_path present and non-empty (after stripping whitespace),
     validation should succeed.
     """
@@ -528,7 +528,7 @@ def test_property_sqlite_required_fields_validation(file_path):
         database_type="sqlite",
         file_path=file_path
     )
-    
+
     result = ConnectionValidator.validate_sqlite(conn)
     assert is_ok(result), f"Valid SQLite connection should pass validation, got: {unwrap_err(result) if is_err(result) else ''}"
 
@@ -541,7 +541,7 @@ def test_property_oracle_missing_required_field_fails(missing_field):
     """
     **Property 4: Required Fields Validation by Database Type**
     **Validates: Requirements 2.4, 8.2, 8.3**
-    
+
     For any Oracle connection missing a required field, validation should fail
     with a descriptive error message.
     """
@@ -555,13 +555,13 @@ def test_property_oracle_missing_required_field_fails(missing_field):
         "username": "user",
         "password": "pass"
     }
-    
+
     # Set the missing field to None
     fields[missing_field] = None
-    
+
     conn = DatabaseConnection(**fields)
     result = ConnectionValidator.validate_oracle(conn)
-    
+
     assert is_err(result), f"Oracle connection missing '{missing_field}' should fail validation"
     error_msg = unwrap_err(result)
     assert "Missing required field" in error_msg
@@ -576,7 +576,7 @@ def test_property_postgresql_missing_required_field_fails(missing_field):
     """
     **Property 4: Required Fields Validation by Database Type**
     **Validates: Requirements 2.4, 8.4**
-    
+
     For any PostgreSQL connection missing a required field, validation should fail
     with a descriptive error message.
     """
@@ -589,12 +589,12 @@ def test_property_postgresql_missing_required_field_fails(missing_field):
         "username": "user",
         "password": "pass"
     }
-    
+
     fields[missing_field] = None
-    
+
     conn = DatabaseConnection(**fields)
     result = ConnectionValidator.validate_postgresql(conn)
-    
+
     assert is_err(result), f"PostgreSQL connection missing '{missing_field}' should fail validation"
     error_msg = unwrap_err(result)
     assert "Missing required field" in error_msg
@@ -609,7 +609,7 @@ def test_property_mysql_missing_required_field_fails(missing_field):
     """
     **Property 4: Required Fields Validation by Database Type**
     **Validates: Requirements 2.4, 8.5**
-    
+
     For any MySQL connection missing a required field, validation should fail
     with a descriptive error message.
     """
@@ -622,12 +622,12 @@ def test_property_mysql_missing_required_field_fails(missing_field):
         "username": "user",
         "password": "pass"
     }
-    
+
     fields[missing_field] = None
-    
+
     conn = DatabaseConnection(**fields)
     result = ConnectionValidator.validate_mysql(conn)
-    
+
     assert is_err(result), f"MySQL connection missing '{missing_field}' should fail validation"
     error_msg = unwrap_err(result)
     assert "Missing required field" in error_msg
@@ -642,13 +642,13 @@ def test_property_invalid_port_numbers_rejected(port):
     """
     **Property 4: Required Fields Validation by Database Type**
     **Validates: Requirements 2.4, 8.3, 8.4, 8.5**
-    
+
     For any port number outside the valid range (1-65535), validation should fail.
     """
     # Skip valid ports
     if 1 <= port <= 65535:
         return
-    
+
     conn = DatabaseConnection(
         name="test-conn",
         database_type="postgresql",
@@ -658,7 +658,7 @@ def test_property_invalid_port_numbers_rejected(port):
         username="user",
         password="pass"
     )
-    
+
     result = ConnectionValidator.validate_postgresql(conn)
     assert is_err(result), f"Port {port} should be rejected"
     error_msg = unwrap_err(result)
@@ -673,7 +673,7 @@ def test_property_error_message_quality(db_type):
     """
     **Property 27: Error Message Quality**
     **Validates: Requirements 8.7**
-    
+
     For any failed connection validation, the error message should be non-empty
     and contain descriptive information about what failed.
     """
@@ -682,7 +682,7 @@ def test_property_error_message_quality(db_type):
         name="test-conn",
         database_type=db_type
     )
-    
+
     # Call appropriate validator
     if db_type == "oracle":
         result = ConnectionValidator.validate_oracle(conn)
@@ -692,10 +692,10 @@ def test_property_error_message_quality(db_type):
         result = ConnectionValidator.validate_mysql(conn)
     else:  # sqlite
         result = ConnectionValidator.validate_sqlite(conn)
-    
+
     # Should fail validation
     assert is_err(result), f"Invalid {db_type} connection should fail validation"
-    
+
     # Error message should be descriptive
     error_msg = unwrap_err(result)
     assert isinstance(error_msg, str), "Error message should be a string"

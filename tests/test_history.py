@@ -235,7 +235,7 @@ class TestHistoryStoreOperations:
 
 class TestMessageWithSourceCitations:
     """Tests for Message dataclass with RAG source citations.
-    
+
     Feature: rag-capabilities
     Validates: Requirements 11.1, 11.3, 11.4, 11.5
     """
@@ -244,7 +244,7 @@ class TestMessageWithSourceCitations:
     @given(message=valid_rag_message_strategy())
     def test_rag_message_serialization_round_trip(self, message: Message):
         """RAG-enhanced Message to_dict and from_dict should preserve sources.
-        
+
         Property 19: Conversation History Round-Trip with RAG Metadata
         Validates: Requirements 11.1, 11.3, 11.4
         """
@@ -254,11 +254,11 @@ class TestMessageWithSourceCitations:
         assert restored.role == message.role
         assert restored.content == message.content
         assert restored.timestamp == message.timestamp
-        
+
         # Verify sources are preserved
         assert restored.sources is not None
         assert len(restored.sources) == len(message.sources)
-        
+
         for original_source, restored_source in zip(message.sources, restored.sources):
             assert restored_source.source_type == original_source.source_type
             assert restored_source.identifier == original_source.identifier
@@ -266,7 +266,7 @@ class TestMessageWithSourceCitations:
 
     def test_backward_compatibility_with_non_rag_messages(self):
         """Messages without sources field should deserialize correctly.
-        
+
         Validates: Requirement 11.5 - Backward compatibility
         """
         # Simulate old message format without sources field
@@ -275,16 +275,16 @@ class TestMessageWithSourceCitations:
             "content": "Hello, how are you?",
             "timestamp": "2025-01-13T10:30:00",
         }
-        
+
         message = Message.from_dict(old_format_data)
-        
+
         assert message.role == "user"
         assert message.content == "Hello, how are you?"
         assert message.sources is None
 
     def test_message_with_none_sources_serializes_without_sources_field(self):
         """Non-RAG messages should not include sources in serialized output.
-        
+
         Validates: Requirement 11.5 - Backward compatibility
         """
         message = Message(
@@ -293,9 +293,9 @@ class TestMessageWithSourceCitations:
             timestamp=datetime(2025, 1, 13, 10, 30, 5),
             sources=None,
         )
-        
+
         data = message.to_dict()
-        
+
         assert "sources" not in data
         assert data["role"] == "assistant"
         assert data["content"] == "I'm doing well, thank you!"
@@ -308,13 +308,13 @@ class TestMessageWithSourceCitations:
             timestamp=datetime(2025, 1, 13, 10, 30, 5),
             sources=[],
         )
-        
+
         data = message.to_dict()
-        
+
         # Empty list should still be included
         assert "sources" in data
         assert data["sources"] == []
-        
+
         # Round-trip should preserve empty list
         restored = Message.from_dict(data)
         assert restored.sources == []
@@ -333,17 +333,17 @@ class TestMessageWithSourceCitations:
                 relevance_score=0.87,
             ),
         ]
-        
+
         message = Message(
             role="assistant",
             content="Based on the documentation and database...",
             timestamp=datetime(2025, 1, 13, 10, 30, 5),
             sources=sources,
         )
-        
+
         data = message.to_dict()
         restored = Message.from_dict(data)
-        
+
         assert len(restored.sources) == 2
         assert restored.sources[0].source_type == "web"
         assert restored.sources[0].identifier == "https://example.com/article"
@@ -353,18 +353,18 @@ class TestMessageWithSourceCitations:
 
 class TestConversationHistoryWithRAG:
     """Tests for ConversationHistory with RAG-enhanced messages.
-    
+
     Feature: rag-capabilities
     Validates: Requirements 11.1, 11.2, 11.3, 11.4, 11.5
     """
 
     def test_mixed_rag_and_non_rag_messages(self, tmp_path: Path):
         """History with both RAG and non-RAG messages should serialize correctly.
-        
+
         Validates: Requirement 11.5 - Backward compatibility
         """
         store = HistoryStore(history_dir=tmp_path)
-        
+
         history = ConversationHistory(
             agent_name="test-agent",
             messages=[
@@ -395,10 +395,10 @@ class TestConversationHistoryWithRAG:
             ],
             last_updated=datetime(2025, 1, 13, 10, 31, 0),
         )
-        
+
         store.save(history)
         restored = store.load("test-agent")
-        
+
         assert len(restored.messages) == 3
         assert restored.messages[0].sources is None
         assert restored.messages[1].sources is not None
@@ -414,37 +414,37 @@ class TestConversationHistoryWithRAG:
         self, agent_name: str, rag_messages: list[Message]
     ):
         """History with RAG messages should preserve all source citations.
-        
+
         Property 19: Conversation History Round-Trip with RAG Metadata
         Validates: Requirements 11.1, 11.3, 11.4
         """
         import tempfile
-        
+
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_path = Path(tmp_dir)
             store = HistoryStore(history_dir=tmp_path)
-            
+
             history = ConversationHistory(
                 agent_name=agent_name,
                 messages=rag_messages,
                 last_updated=datetime.now(),
             )
-            
+
             store.save(history)
             restored = store.load(agent_name)
-            
+
             assert len(restored.messages) == len(history.messages)
-            
+
             for original_msg, restored_msg in zip(history.messages, restored.messages):
                 assert restored_msg.role == original_msg.role
                 assert restored_msg.content == original_msg.content
                 assert restored_msg.timestamp == original_msg.timestamp
-                
+
                 # Verify sources are preserved
                 if original_msg.sources is not None:
                     assert restored_msg.sources is not None
                     assert len(restored_msg.sources) == len(original_msg.sources)
-                    
+
                     for orig_src, rest_src in zip(
                         original_msg.sources, restored_msg.sources
                     ):
@@ -454,7 +454,7 @@ class TestConversationHistoryWithRAG:
 
     def test_source_citation_completeness(self):
         """Source citations should include all required fields.
-        
+
         Property 15: Source Citation Completeness
         Validates: Requirements 6.3, 6.4
         """
@@ -464,25 +464,25 @@ class TestConversationHistoryWithRAG:
             identifier="https://example.com/docs",
             relevance_score=0.88,
         )
-        
+
         assert web_source.source_type == "web"
         assert web_source.identifier == "https://example.com/docs"
         assert 0.0 <= web_source.relevance_score <= 1.0
-        
+
         # Test database source
         db_source = SourceCitation(
             source_type="database",
             identifier="users_table",
             relevance_score=0.75,
         )
-        
+
         assert db_source.source_type == "database"
         assert db_source.identifier == "users_table"
         assert 0.0 <= db_source.relevance_score <= 1.0
-    
+
     def test_message_format_for_display_with_sources(self):
         """RAG-enhanced messages should format with source citations.
-        
+
         Validates: Requirement 11.2 - Display includes sources
         """
         # Create a RAG-enhanced message
@@ -503,27 +503,27 @@ class TestConversationHistoryWithRAG:
                 ),
             ],
         )
-        
+
         # Format for display
         formatted = message.format_for_display(agent_display_name="Python Expert")
-        
+
         # Verify the formatted output includes the message content
         assert "Python is a high-level programming language." in formatted
-        
+
         # Verify it includes the timestamp
         assert "14:30" in formatted
-        
+
         # Verify it includes the agent name
         assert "Python Expert" in formatted
-        
+
         # Verify it includes source citations
         assert "Sources:" in formatted
         assert "[Web] https://python.org/about" in formatted
         assert "[Database] programming_languages" in formatted
-    
+
     def test_message_format_for_display_without_sources(self):
         """Non-RAG messages should format without source citations.
-        
+
         Validates: Requirement 11.5 - Backward compatibility
         """
         # Create a non-RAG message
@@ -533,19 +533,19 @@ class TestConversationHistoryWithRAG:
             timestamp=datetime(2025, 1, 13, 14, 29, 0),
             sources=None,
         )
-        
+
         # Format for display
         formatted = message.format_for_display()
-        
+
         # Verify the formatted output includes the message content
         assert "What is Python?" in formatted
-        
+
         # Verify it includes the timestamp
         assert "14:29" in formatted
-        
+
         # Verify it includes "You:" for user messages
         assert "You:" in formatted
-        
+
         # Verify it does NOT include source citations
         assert "Sources:" not in formatted
         assert "[Web]" not in formatted

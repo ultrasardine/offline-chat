@@ -17,11 +17,11 @@ def temp_db():
     """Create a temporary SQLite database for testing."""
     with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
         db_path = f.name
-    
+
     # Create a test database with sample data
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    
+
     # Create a users table
     cursor.execute("""
         CREATE TABLE users (
@@ -31,7 +31,7 @@ def temp_db():
             age INTEGER
         )
     """)
-    
+
     # Insert sample data
     cursor.executemany(
         "INSERT INTO users (name, email, age) VALUES (?, ?, ?)",
@@ -41,7 +41,7 @@ def temp_db():
             ("Charlie", None, 35),
         ]
     )
-    
+
     # Create an empty table
     cursor.execute("""
         CREATE TABLE empty_table (
@@ -49,12 +49,12 @@ def temp_db():
             data TEXT
         )
     """)
-    
+
     conn.commit()
     conn.close()
-    
+
     yield db_path
-    
+
     # Cleanup
     Path(db_path).unlink()
 
@@ -108,15 +108,15 @@ def test_fetch_table_rows(temp_db):
     """Test fetching rows from a table."""
     db_integration = DatabaseIntegration(temp_db)
     rows = db_integration.fetch_table_rows("users")
-    
+
     assert len(rows) == 3
     assert all(isinstance(row, dict) for row in rows)
-    
+
     # Check first row
     assert rows[0]["name"] == "Alice"
     assert rows[0]["email"] == "alice@example.com"
     assert rows[0]["age"] == 30
-    
+
     # Check row with NULL value
     assert rows[2]["name"] == "Charlie"
     assert rows[2]["email"] is None
@@ -126,7 +126,7 @@ def test_fetch_table_rows_with_limit(temp_db):
     """Test fetching rows with a limit."""
     db_integration = DatabaseIntegration(temp_db)
     rows = db_integration.fetch_table_rows("users", limit=2)
-    
+
     assert len(rows) == 2
 
 
@@ -134,7 +134,7 @@ def test_fetch_table_rows_empty_table(temp_db):
     """Test fetching rows from an empty table."""
     db_integration = DatabaseIntegration(temp_db)
     rows = db_integration.fetch_table_rows("empty_table")
-    
+
     assert rows == []
 
 
@@ -156,9 +156,9 @@ def test_get_table_as_chunks(temp_db):
     """Test converting table rows to DocumentChunks."""
     db_integration = DatabaseIntegration(temp_db)
     chunks = db_integration.get_table_as_chunks("users")
-    
+
     assert len(chunks) == 3
-    
+
     # Check first chunk
     assert chunks[0].source_type == "database"
     assert chunks[0].source_identifier == "users"
@@ -166,7 +166,7 @@ def test_get_table_as_chunks(temp_db):
     assert "Table: users" in chunks[0].text
     assert "name: Alice" in chunks[0].text
     assert "email: alice@example.com" in chunks[0].text
-    
+
     # Check metadata - row data is flattened with row_ prefix
     assert chunks[0].metadata["table_name"] == "users"
     assert chunks[0].metadata["row_name"] == "Alice"
@@ -177,7 +177,7 @@ def test_get_table_as_chunks_with_limit(temp_db):
     """Test converting limited table rows to DocumentChunks."""
     db_integration = DatabaseIntegration(temp_db)
     chunks = db_integration.get_table_as_chunks("users", limit=1)
-    
+
     assert len(chunks) == 1
 
 
@@ -185,7 +185,7 @@ def test_get_table_as_chunks_empty_table(temp_db):
     """Test converting empty table returns empty list."""
     db_integration = DatabaseIntegration(temp_db)
     chunks = db_integration.get_table_as_chunks("empty_table")
-    
+
     assert chunks == []
 
 
@@ -193,7 +193,7 @@ def test_list_tables(temp_db):
     """Test listing all tables in the database."""
     db_integration = DatabaseIntegration(temp_db)
     tables = db_integration.list_tables()
-    
+
     assert "users" in tables
     assert "empty_table" in tables
     assert len(tables) == 2
@@ -203,7 +203,7 @@ def test_get_table_info(temp_db):
     """Test getting table information."""
     db_integration = DatabaseIntegration(temp_db)
     info = db_integration.get_table_info("users")
-    
+
     assert info["columns"] == ["id", "name", "email", "age"]
     assert info["row_count"] == 3
 
@@ -212,7 +212,7 @@ def test_get_table_info_empty_table(temp_db):
     """Test getting info for empty table."""
     db_integration = DatabaseIntegration(temp_db)
     info = db_integration.get_table_info("empty_table")
-    
+
     assert info["columns"] == ["id", "data"]
     assert info["row_count"] == 0
 

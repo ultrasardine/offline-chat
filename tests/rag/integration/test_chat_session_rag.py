@@ -5,26 +5,27 @@ Tests the complete workflow of chat sessions with RAG capabilities,
 including context retrieval, prompt augmentation, and source citation display.
 """
 
-import pytest
-from pathlib import Path
-from datetime import datetime
-from unittest.mock import Mock, patch, MagicMock
-import tempfile
 import shutil
+import tempfile
+from datetime import datetime
+from pathlib import Path
+from unittest.mock import Mock, patch
 
-from offline_chat.session import ChatSession
-from offline_chat.manager import AgentManager
+import pytest
+
 from offline_chat.agent import Agent
-from offline_chat.history import Message, ConversationHistory
+from offline_chat.history import ConversationHistory
+from offline_chat.manager import AgentManager
 from offline_chat.rag.models import (
-    RAGConfig,
+    DocumentChunk,
     KnowledgeSource,
+    RAGConfig,
     RAGResponse,
-    SourceCitation,
     RetrievalResult,
     SearchResult,
-    DocumentChunk,
+    SourceCitation,
 )
+from offline_chat.session import ChatSession
 
 
 @pytest.fixture
@@ -92,36 +93,36 @@ def mock_manager(temp_data_dir, rag_enabled_agent, non_rag_agent):
 
 class TestRAGEnabledChatSession:
     """Test chat sessions with RAG enabled."""
-    
+
     def test_chat_session_with_rag_enabled_agent(self, mock_manager, rag_enabled_agent):
         """Test that chat session initializes RAG orchestrator for RAG-enabled agent.
-        
+
         Validates: Requirements 5.5, 11.1
         """
         session = ChatSession(mock_manager)
-        
+
         # Start session with RAG-enabled agent
         session.start("test-rag-agent")
-        
+
         # Verify agent is loaded
         assert session.agent is not None
         assert session.agent.name == "test-rag-agent"
         assert session.agent.rag_config is not None
         assert session.agent.rag_config.enabled is True
-        
+
         # Verify RAG orchestrator is initialized
         # Note: In real implementation, this would be initialized
         # For now, we're testing the structure
         assert hasattr(session, "_rag_orchestrator")
-    
+
     def test_send_message_routes_through_rag(self, mock_manager, rag_enabled_agent):
         """Test that messages are routed through RAG orchestrator when enabled.
-        
+
         Validates: Requirements 5.5
         """
         session = ChatSession(mock_manager)
         session.start("test-rag-agent")
-        
+
         # Mock the RAG orchestrator
         mock_rag_orchestrator = Mock()
         mock_retrieval_result = RetrievalResult(
@@ -156,9 +157,9 @@ class TestRAGEnabledChatSession:
         )
         mock_rag_orchestrator.process_query.return_value = mock_rag_response
         mock_rag_orchestrator.get_augmented_prompt.return_value = "Augmented prompt with context"
-        
+
         session._rag_orchestrator = mock_rag_orchestrator
-        
+
         # Mock Ollama response
         with patch("offline_chat.session.ollama.chat") as mock_ollama:
             # Mock streaming response
@@ -167,17 +168,17 @@ class TestRAGEnabledChatSession:
                 {"message": {"content": "based "}},
                 {"message": {"content": "on context"}},
             ])
-            
+
             # Send a message
             response_chunks = list(session.send_message("test query"))
-            
+
             # Verify RAG orchestrator was called
             mock_rag_orchestrator.process_query.assert_called_once()
             mock_rag_orchestrator.get_augmented_prompt.assert_called_once()
-            
+
             # Verify response was generated
             assert len(response_chunks) > 0
-            
+
             # Verify source citations were stored in history
             assert len(session.history.messages) == 2  # user + assistant
             assistant_message = session.history.messages[-1]
@@ -185,15 +186,15 @@ class TestRAGEnabledChatSession:
             assert assistant_message.sources is not None
             assert len(assistant_message.sources) == 1
             assert assistant_message.sources[0].identifier == "https://example.com/docs"
-    
+
     def test_source_citations_stored_in_history(self, mock_manager, rag_enabled_agent):
         """Test that source citations are stored in conversation history.
-        
+
         Validates: Requirements 11.1
         """
         session = ChatSession(mock_manager)
         session.start("test-rag-agent")
-        
+
         # Mock the RAG orchestrator
         mock_rag_orchestrator = Mock()
         mock_retrieval_result = RetrievalResult(
@@ -244,9 +245,9 @@ class TestRAGEnabledChatSession:
         )
         mock_rag_orchestrator.process_query.return_value = mock_rag_response
         mock_rag_orchestrator.get_augmented_prompt.return_value = "Augmented prompt"
-        
+
         session._rag_orchestrator = mock_rag_orchestrator
-        
+
         # Mock Ollama response
         with patch("offline_chat.session.ollama.chat") as mock_ollama:
             # Mock streaming response
@@ -255,20 +256,20 @@ class TestRAGEnabledChatSession:
                 {"message": {"content": "with "}},
                 {"message": {"content": "multiple sources"}},
             ])
-            
+
             # Send a message
             list(session.send_message("test query"))
-            
+
             # Verify source citations in history
             assistant_message = session.history.messages[-1]
             assert assistant_message.sources is not None
             assert len(assistant_message.sources) == 2
-            
+
             # Verify web source
             web_source = next(s for s in assistant_message.sources if s.source_type == "web")
             assert web_source.identifier == "https://example.com/page1"
             assert web_source.relevance_score == 0.9
-            
+
             # Verify database source
             db_source = next(s for s in assistant_message.sources if s.source_type == "database")
             assert db_source.identifier == "products_table"
@@ -277,23 +278,23 @@ class TestRAGEnabledChatSession:
 
 class TestFallbackBehavior:
     """Test fallback to non-RAG mode when RAG fails."""
-    
+
     def test_fallback_when_rag_orchestrator_returns_none(self, mock_manager, rag_enabled_agent):
         """Test fallback to standard mode when RAG orchestrator returns None.
-        
+
         This happens when the vector store is unavailable.
-        
+
         Validates: Requirements 14.1
         """
         session = ChatSession(mock_manager)
         session.start("test-rag-agent")
-        
+
         # Mock the RAG orchestrator to return None (vector store unavailable)
         mock_rag_orchestrator = Mock()
         mock_rag_orchestrator.process_query.return_value = None
-        
+
         session._rag_orchestrator = mock_rag_orchestrator
-        
+
         # Mock Ollama response for standard mode
         with patch("offline_chat.session.ollama.chat") as mock_ollama:
             # Mock streaming response
@@ -302,34 +303,34 @@ class TestFallbackBehavior:
                 {"message": {"content": "response "}},
                 {"message": {"content": "without RAG"}},
             ])
-            
+
             # Send a message
             response_chunks = list(session.send_message("test query"))
-            
+
             # Verify RAG orchestrator was called
             mock_rag_orchestrator.process_query.assert_called_once()
-            
+
             # Verify response was generated (fallback to standard mode)
             assert len(response_chunks) > 0
-            
+
             # Verify no source citations in history (standard mode)
             assistant_message = session.history.messages[-1]
             assert assistant_message.sources is None or len(assistant_message.sources) == 0
-    
+
     def test_fallback_when_rag_orchestrator_raises_exception(self, mock_manager, rag_enabled_agent):
         """Test fallback to standard mode when RAG orchestrator raises exception.
-        
+
         Validates: Requirements 14.1
         """
         session = ChatSession(mock_manager)
         session.start("test-rag-agent")
-        
+
         # Mock the RAG orchestrator to raise an exception
         mock_rag_orchestrator = Mock()
         mock_rag_orchestrator.process_query.side_effect = Exception("RAG error")
-        
+
         session._rag_orchestrator = mock_rag_orchestrator
-        
+
         # Mock Ollama response for standard mode
         with patch("offline_chat.session.ollama.chat") as mock_ollama:
             # Mock streaming response
@@ -338,41 +339,41 @@ class TestFallbackBehavior:
                 {"message": {"content": "response "}},
                 {"message": {"content": "after error"}},
             ])
-            
+
             # Send a message - should not raise exception
             response_chunks = list(session.send_message("test query"))
-            
+
             # Verify response was generated (fallback to standard mode)
             assert len(response_chunks) > 0
-            
+
             # Verify no source citations in history (standard mode)
             assistant_message = session.history.messages[-1]
             assert assistant_message.sources is None or len(assistant_message.sources) == 0
-    
+
     def test_standard_mode_when_rag_not_enabled(self, mock_manager, non_rag_agent):
         """Test that standard mode is used when RAG is not enabled.
-        
+
         Validates: Requirements 5.5
         """
         session = ChatSession(mock_manager)
         session.start("test-standard-agent")
-        
+
         # Verify RAG orchestrator is not initialized
         assert session._rag_orchestrator is None
-        
+
         # Mock Ollama response
         with patch("offline_chat.session.ollama.chat") as mock_ollama:
             # Mock streaming response
             mock_ollama.return_value = iter([
                 {"message": {"content": "Standard response"}},
             ])
-            
+
             # Send a message
             response_chunks = list(session.send_message("test query"))
-            
+
             # Verify response was generated
             assert len(response_chunks) > 0
-            
+
             # Verify no source citations in history
             assistant_message = session.history.messages[-1]
             assert assistant_message.sources is None or len(assistant_message.sources) == 0
@@ -380,10 +381,10 @@ class TestFallbackBehavior:
 
 class TestSourceCitationDisplay:
     """Test source citation display in chat interface."""
-    
+
     def test_source_citation_format(self):
         """Test that source citations are formatted correctly for display.
-        
+
         Validates: Requirements 11.2
         """
         # Web source
@@ -393,7 +394,7 @@ class TestSourceCitationDisplay:
             relevance_score=0.85,
         )
         assert web_citation.format_for_display() == "[Web] https://example.com/docs"
-        
+
         # Database source
         db_citation = SourceCitation(
             source_type="database",
@@ -401,10 +402,10 @@ class TestSourceCitationDisplay:
             relevance_score=0.75,
         )
         assert db_citation.format_for_display() == "[Database] products_table"
-    
+
     def test_source_citation_with_relevance(self):
         """Test that source citations can be formatted with relevance scores.
-        
+
         Validates: Requirements 11.2
         """
         citation = SourceCitation(
@@ -419,16 +420,16 @@ class TestSourceCitationDisplay:
 
 class TestAsyncRAGChat:
     """Test async chat sessions with RAG."""
-    
+
     @pytest.mark.skip(reason="Async tests require pytest-asyncio plugin")
     async def test_async_send_message_with_rag(self, mock_manager, rag_enabled_agent):
         """Test async message sending with RAG enabled.
-        
+
         Validates: Requirements 5.5
         """
         session = ChatSession(mock_manager)
         await session.start_async("test-rag-agent")
-        
+
         # Mock the RAG orchestrator
         mock_rag_orchestrator = Mock()
         mock_retrieval_result = RetrievalResult(
@@ -463,9 +464,9 @@ class TestAsyncRAGChat:
         )
         mock_rag_orchestrator.process_query.return_value = mock_rag_response
         mock_rag_orchestrator.get_augmented_prompt.return_value = "Augmented prompt"
-        
+
         session._rag_orchestrator = mock_rag_orchestrator
-        
+
         # Mock Ollama response
         with patch("offline_chat.session.ollama.chat") as mock_ollama:
             # Mock streaming response
@@ -474,16 +475,16 @@ class TestAsyncRAGChat:
                 {"message": {"content": "response "}},
                 {"message": {"content": "with RAG"}},
             ])
-            
+
             # Send a message asynchronously
             response_chunks = await session.send_message_async("test query")
-            
+
             # Verify RAG orchestrator was called
             mock_rag_orchestrator.process_query.assert_called_once()
-            
+
             # Verify response was generated
             assert len(response_chunks) > 0
-            
+
             # Verify source citations were stored
             assistant_message = session.history.messages[-1]
             assert assistant_message.sources is not None

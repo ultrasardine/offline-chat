@@ -8,11 +8,11 @@ from .models import DocumentChunk, SearchResult
 class PromptAugmenter:
     """
     Construct augmented prompts with retrieved context.
-    
+
     This class formats context chunks with source attribution and creates
     prompts that instruct the agent to respond based only on provided context.
     """
-    
+
     # RAG instructions that enforce context-only responses and prevent hallucination
     RAG_INSTRUCTIONS = """
 IMPORTANT INSTRUCTIONS FOR RESPONDING:
@@ -23,7 +23,7 @@ IMPORTANT INSTRUCTIONS FOR RESPONDING:
 5. When answering, quote or paraphrase directly from the provided context rather than generating novel claims.
 6. If you are uncertain about any part of your answer, acknowledge the uncertainty explicitly.
 """
-    
+
     def augment_prompt(
         self,
         query: str,
@@ -32,19 +32,19 @@ IMPORTANT INSTRUCTIONS FOR RESPONDING:
     ) -> str:
         """
         Create an augmented prompt with context and instructions.
-        
+
         Args:
             query: Original user query
             context_chunks: Retrieved context chunks (SearchResult or DocumentChunk objects)
             system_prompt: Agent's base system prompt
-            
+
         Returns:
             Augmented prompt string ready for Ollama
         """
         # Handle empty context
         if not context_chunks:
             return self._create_no_context_prompt(query, system_prompt)
-        
+
         # Extract DocumentChunk from SearchResult if needed
         chunks = []
         for item in context_chunks:
@@ -55,7 +55,7 @@ IMPORTANT INSTRUCTIONS FOR RESPONDING:
             else:
                 # Handle any other type by trying to access chunk attribute
                 chunks.append(getattr(item, 'chunk', item))
-        
+
         # Build the augmented prompt
         prompt_parts = [
             system_prompt,
@@ -65,13 +65,13 @@ IMPORTANT INSTRUCTIONS FOR RESPONDING:
             "CONTEXT INFORMATION:",
             "=" * 80,
         ]
-        
+
         # Add formatted context chunks
         for i, chunk in enumerate(chunks, start=1):
             formatted_chunk = self.format_context_chunk(chunk, i)
             prompt_parts.append(formatted_chunk)
             prompt_parts.append("-" * 80)
-        
+
         # Add the user query
         prompt_parts.extend([
             "",
@@ -80,9 +80,9 @@ IMPORTANT INSTRUCTIONS FOR RESPONDING:
             "",
             "YOUR RESPONSE (remember to cite sources):"
         ])
-        
+
         return "\n".join(prompt_parts)
-    
+
     def format_context_chunk(
         self,
         chunk: DocumentChunk,
@@ -90,11 +90,11 @@ IMPORTANT INSTRUCTIONS FOR RESPONDING:
     ) -> str:
         """
         Format a single context chunk with source attribution.
-        
+
         Args:
             chunk: Document chunk to format
             index: Index of the chunk in the context list
-            
+
         Returns:
             Formatted chunk string with source information
         """
@@ -105,7 +105,7 @@ IMPORTANT INSTRUCTIONS FOR RESPONDING:
             source_label = f"Database Table: {chunk.source_identifier}"
         else:
             source_label = f"Source: {chunk.source_identifier}"
-        
+
         # Format the chunk with clear attribution
         formatted = [
             f"[Context {index}]",
@@ -114,17 +114,17 @@ IMPORTANT INSTRUCTIONS FOR RESPONDING:
             "",
             chunk.text
         ]
-        
+
         return "\n".join(formatted)
-    
+
     def _create_no_context_prompt(self, query: str, system_prompt: str) -> str:
         """
         Create a prompt when no context is available.
-        
+
         Args:
             query: Original user query
             system_prompt: Agent's base system prompt
-            
+
         Returns:
             Prompt instructing the agent to state no information is available
         """
@@ -140,5 +140,5 @@ IMPORTANT INSTRUCTIONS FOR RESPONDING:
             "",
             "YOUR RESPONSE:"
         ]
-        
+
         return "\n".join(prompt_parts)

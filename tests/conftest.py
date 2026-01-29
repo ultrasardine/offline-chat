@@ -33,7 +33,7 @@ def temp_history_dir(temp_data_dir: Path):
 @pytest.fixture(autouse=True)
 def mock_getpass_globally():
     """Automatically mock getpass for all tests to prevent password prompts.
-    
+
     This fixture patches getpass at the module level where it's imported.
     Tests with explicit @patch decorators will override this default.
     """

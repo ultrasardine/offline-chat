@@ -9,12 +9,12 @@ Properties tested:
 **Validates: Requirements 3.3, 10.2, 10.3**
 """
 
+
 import pytest
-from hypothesis import given, strategies as st, settings
-from datetime import datetime
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 from offline_chat.database.connection import DatabaseConnection
-
 
 # ============================================================================
 # Hypothesis Strategies
@@ -77,7 +77,7 @@ non_sensitive_keys = st.text(
     min_size=1,
     max_size=20
 ).filter(lambda s: not any(
-    sensitive in s.lower() 
+    sensitive in s.lower()
     for sensitive in ['password', 'token', 'key', 'secret', 'credential']
 ))
 
@@ -95,9 +95,9 @@ non_sensitive_keys = st.text(
 @pytest.mark.property_test
 def test_property_9_password_field_masking(name, database_type, password):
     """Property 9: Sensitive Field Masking (Password Field)
-    
+
     **Validates: Requirements 3.3, 10.2, 10.3**
-    
+
     For any connection with a password field, displaying the connection should
     mask the password with asterisks, and the actual password value should not
     appear in the masked output.
@@ -110,18 +110,18 @@ def test_property_9_password_field_masking(name, database_type, password):
         host="localhost" if database_type != "sqlite" else None,
         port=5432 if database_type != "sqlite" else None,
     )
-    
+
     # Get masked representation
     masked = connection.mask_sensitive_fields()
-    
+
     # Verify password is masked
     assert masked["password"] == "********", \
         f"Password should be masked with '********', got '{masked['password']}'"
-    
+
     # Verify actual password does not appear in the password field
     assert masked["password"] != password, \
-        f"Actual password should not appear in password field"
-    
+        "Actual password should not appear in password field"
+
     # Verify password is not in sensitive string fields (but may appear in numbers, etc.)
     sensitive_string_fields = ["password", "username", "host", "database", "service_name", "file_path"]
     for key in sensitive_string_fields:
@@ -143,9 +143,9 @@ def test_property_9_additional_params_sensitive_masking(
     name, database_type, sensitive_key, sensitive_value
 ):
     """Property 9: Sensitive Field Masking (Additional Params - Sensitive)
-    
+
     **Validates: Requirements 3.3, 10.2, 10.3**
-    
+
     For any connection with sensitive fields in additional_params (containing
     'password', 'token', 'key', 'secret', 'credential'), the values should be
     masked with asterisks, and actual values should not appear in the output.
@@ -158,17 +158,17 @@ def test_property_9_additional_params_sensitive_masking(
         host="localhost" if database_type != "sqlite" else None,
         port=5432 if database_type != "sqlite" else None,
     )
-    
+
     # Get masked representation
     masked = connection.mask_sensitive_fields()
-    
+
     # Verify sensitive value in additional_params is masked
     assert sensitive_key in masked["additional_params"], \
         f"Sensitive key '{sensitive_key}' should be present in masked output"
-    
+
     assert masked["additional_params"][sensitive_key] == "********", \
         f"Sensitive value for '{sensitive_key}' should be masked with '********'"
-    
+
     # Verify actual sensitive value does not appear unmasked in additional_params
     for key, value in masked["additional_params"].items():
         if key == sensitive_key:
@@ -177,7 +177,7 @@ def test_property_9_additional_params_sensitive_masking(
         elif isinstance(value, str) and len(sensitive_value) > 1:
             # Only check for values longer than 1 char to avoid false positives
             assert value != sensitive_value, \
-                f"Sensitive value should not appear unmasked in additional_params"
+                "Sensitive value should not appear unmasked in additional_params"
 
 
 @given(
@@ -192,9 +192,9 @@ def test_property_9_additional_params_non_sensitive_preserved(
     name, database_type, non_sensitive_key, non_sensitive_value
 ):
     """Property 9: Sensitive Field Masking (Additional Params - Non-Sensitive)
-    
+
     **Validates: Requirements 3.3, 10.2, 10.3**
-    
+
     For any connection with non-sensitive fields in additional_params, the
     values should be preserved as-is and not masked.
     """
@@ -206,14 +206,14 @@ def test_property_9_additional_params_non_sensitive_preserved(
         host="localhost" if database_type != "sqlite" else None,
         port=5432 if database_type != "sqlite" else None,
     )
-    
+
     # Get masked representation
     masked = connection.mask_sensitive_fields()
-    
+
     # Verify non-sensitive value is preserved
     assert non_sensitive_key in masked["additional_params"], \
         f"Non-sensitive key '{non_sensitive_key}' should be present in masked output"
-    
+
     assert masked["additional_params"][non_sensitive_key] == non_sensitive_value, \
         f"Non-sensitive value should be preserved, expected '{non_sensitive_value}', " \
         f"got '{masked['additional_params'][non_sensitive_key]}'"
@@ -242,16 +242,16 @@ def test_property_9_multiple_sensitive_fields_masking(
     name, database_type, password, sensitive_params, non_sensitive_params
 ):
     """Property 9: Sensitive Field Masking (Multiple Sensitive Fields)
-    
+
     **Validates: Requirements 3.3, 10.2, 10.3**
-    
+
     For any connection with multiple sensitive fields (password and multiple
     sensitive additional_params), all sensitive values should be masked while
     non-sensitive values are preserved.
     """
     # Combine sensitive and non-sensitive params
     all_params = {**sensitive_params, **non_sensitive_params}
-    
+
     # Create a connection with multiple sensitive fields
     connection = DatabaseConnection(
         name=name,
@@ -261,18 +261,18 @@ def test_property_9_multiple_sensitive_fields_masking(
         host="localhost" if database_type != "sqlite" else None,
         port=5432 if database_type != "sqlite" else None,
     )
-    
+
     # Get masked representation
     masked = connection.mask_sensitive_fields()
-    
+
     # Verify password is masked
     assert masked["password"] == "********", \
         "Password should be masked"
-    
+
     # Verify actual password does not appear in password field
     assert masked["password"] != password, \
         "Actual password should not appear in password field"
-    
+
     # Verify all sensitive params are masked
     for key, value in sensitive_params.items():
         assert masked["additional_params"][key] == "********", \
@@ -280,7 +280,7 @@ def test_property_9_multiple_sensitive_fields_masking(
         # Verify the actual value is not the masked value
         assert value != "********" or masked["additional_params"][key] == "********", \
             f"Sensitive value for '{key}' should be masked"
-    
+
     # Verify all non-sensitive params are preserved
     for key, value in non_sensitive_params.items():
         assert masked["additional_params"][key] == value, \
@@ -299,9 +299,9 @@ def test_property_9_non_sensitive_fields_preserved(
     name, database_type, hostname, port
 ):
     """Property 9: Sensitive Field Masking (Non-Sensitive Fields Preserved)
-    
+
     **Validates: Requirements 3.3, 10.2, 10.3**
-    
+
     For any connection, non-sensitive fields (name, database_type, host, port)
     should be preserved as-is in the masked output.
     """
@@ -313,21 +313,21 @@ def test_property_9_non_sensitive_fields_preserved(
         port=port if database_type != "sqlite" else None,
         password="secret123",  # Add a password to ensure masking works
     )
-    
+
     # Get masked representation
     masked = connection.mask_sensitive_fields()
-    
+
     # Verify non-sensitive fields are preserved
     assert masked["name"] == name, \
         f"Name should be preserved, expected '{name}', got '{masked['name']}'"
-    
+
     assert masked["database_type"] == database_type, \
-        f"Database type should be preserved"
-    
+        "Database type should be preserved"
+
     if database_type != "sqlite":
         assert masked["host"] == hostname, \
             f"Host should be preserved, expected '{hostname}', got '{masked['host']}'"
-        
+
         assert masked["port"] == port, \
             f"Port should be preserved, expected {port}, got {masked['port']}"
 
@@ -340,9 +340,9 @@ def test_property_9_non_sensitive_fields_preserved(
 @pytest.mark.property_test
 def test_property_9_no_password_field_handling(name, database_type):
     """Property 9: Sensitive Field Masking (No Password Field)
-    
+
     **Validates: Requirements 3.3, 10.2, 10.3**
-    
+
     For any connection without a password field (password is None), the masked
     output should handle this gracefully without errors.
     """
@@ -354,10 +354,10 @@ def test_property_9_no_password_field_handling(name, database_type):
         host="localhost" if database_type != "sqlite" else None,
         port=5432 if database_type != "sqlite" else None,
     )
-    
+
     # Get masked representation (should not raise an error)
     masked = connection.mask_sensitive_fields()
-    
+
     # Verify password field is None or not masked
     assert masked["password"] is None, \
         f"Password should be None when not set, got '{masked['password']}'"
@@ -372,9 +372,9 @@ def test_property_9_no_password_field_handling(name, database_type):
 @pytest.mark.property_test
 def test_property_9_empty_password_handling(name, database_type, password):
     """Property 9: Sensitive Field Masking (Empty Password)
-    
+
     **Validates: Requirements 3.3, 10.2, 10.3**
-    
+
     For any connection with an empty password string, the masked output should
     handle this gracefully (empty strings are falsy in Python).
     """
@@ -386,10 +386,10 @@ def test_property_9_empty_password_handling(name, database_type, password):
         host="localhost" if database_type != "sqlite" else None,
         port=5432 if database_type != "sqlite" else None,
     )
-    
+
     # Get masked representation
     masked = connection.mask_sensitive_fields()
-    
+
     # Verify empty password is not masked (since it's falsy)
     assert masked["password"] == "", \
         f"Empty password should remain empty, got '{masked['password']}'"
@@ -404,9 +404,9 @@ def test_property_9_empty_password_handling(name, database_type, password):
 @pytest.mark.property_test
 def test_property_9_oracle_connection_masking(name, password, username):
     """Property 9: Sensitive Field Masking (Oracle Connection)
-    
+
     **Validates: Requirements 3.3, 10.2, 10.3**
-    
+
     For any Oracle connection with password, the password should be masked
     while other Oracle-specific fields (service_name, username) are preserved.
     """
@@ -420,22 +420,22 @@ def test_property_9_oracle_connection_masking(name, password, username):
         username=username,
         password=password,
     )
-    
+
     # Get masked representation
     masked = connection.mask_sensitive_fields()
-    
+
     # Verify password is masked
     assert masked["password"] == "********", \
         "Password should be masked"
-    
+
     # Verify actual password does not appear in password field
     assert masked["password"] != password, \
         "Actual password should not appear in password field"
-    
+
     # Verify non-sensitive Oracle fields are preserved
     assert masked["service_name"] == "ORCL", \
         "Service name should be preserved"
-    
+
     assert masked["username"] == username, \
         "Username should be preserved"
 
@@ -449,9 +449,9 @@ def test_property_9_oracle_connection_masking(name, password, username):
 @pytest.mark.property_test
 def test_property_9_postgresql_connection_masking(name, password, database_name):
     """Property 9: Sensitive Field Masking (PostgreSQL Connection)
-    
+
     **Validates: Requirements 3.3, 10.2, 10.3**
-    
+
     For any PostgreSQL connection with password, the password should be masked
     while other PostgreSQL-specific fields (database) are preserved.
     """
@@ -465,18 +465,18 @@ def test_property_9_postgresql_connection_masking(name, password, database_name)
         username="postgres",
         password=password,
     )
-    
+
     # Get masked representation
     masked = connection.mask_sensitive_fields()
-    
+
     # Verify password is masked
     assert masked["password"] == "********", \
         "Password should be masked"
-    
+
     # Verify actual password does not appear in password field
     assert masked["password"] != password, \
         "Actual password should not appear in password field"
-    
+
     # Verify database name is preserved
     assert masked["database"] == database_name, \
         "Database name should be preserved"
@@ -490,9 +490,9 @@ def test_property_9_postgresql_connection_masking(name, password, database_name)
 @pytest.mark.property_test
 def test_property_9_sqlite_connection_no_password(name, file_path):
     """Property 9: Sensitive Field Masking (SQLite Connection)
-    
+
     **Validates: Requirements 3.3, 10.2, 10.3**
-    
+
     For any SQLite connection (which typically has no password), the masked
     output should preserve the file_path and handle the absence of password.
     """
@@ -502,14 +502,14 @@ def test_property_9_sqlite_connection_no_password(name, file_path):
         database_type="sqlite",
         file_path=file_path,
     )
-    
+
     # Get masked representation
     masked = connection.mask_sensitive_fields()
-    
+
     # Verify file_path is preserved
     assert masked["file_path"] == file_path, \
-        f"File path should be preserved"
-    
+        "File path should be preserved"
+
     # Verify password is None
     assert masked["password"] is None, \
         "SQLite connection should have no password"

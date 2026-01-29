@@ -9,11 +9,11 @@ from enum import Enum
 
 class AccessLevel(str, Enum):
     """Database access levels for agent-connection assignments.
-    
+
     This enum defines the different levels of database access that can be granted
     to agents when they are assigned to database connections. Access levels control
     what types of queries an agent can execute.
-    
+
     Attributes:
         READ_ONLY: Agent can only execute SELECT queries. No data modification allowed.
         READ_WRITE: Agent can execute SELECT, INSERT, UPDATE, and DELETE queries.
@@ -24,7 +24,7 @@ class AccessLevel(str, Enum):
                                    queries, but only on specific tables defined in the
                                    allowed_tables list.
     """
-    
+
     READ_ONLY = "read-only"
     READ_WRITE = "read-write"
     TABLE_SPECIFIC_READ = "table-specific-read"

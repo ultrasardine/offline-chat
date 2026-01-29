@@ -69,15 +69,15 @@ import json
 import os
 from getpass import getpass
 from pathlib import Path
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from offline_chat.connection_validator import validate_database_connection
 from offline_chat.database_config import create_database_mcp_config
 from offline_chat.mcp_config import MCPServerConfig
 
 if TYPE_CHECKING:
-    from offline_chat.database.manager import DatabaseConnectionManager
     from offline_chat.database.connection import DatabaseConnection
+    from offline_chat.database.manager import DatabaseConnectionManager
 
 
 def configure_database_access(
@@ -116,7 +116,7 @@ def configure_database_access(
                 print("  2. Create new database connection")
                 print("  0. Done adding databases")
                 print()
-                
+
                 try:
                     choice = input("Select option: ").strip()
                     if choice == "0":
@@ -131,36 +131,36 @@ def configure_database_access(
                 except ValueError:
                     print("Invalid input.")
                     continue
-        
+
         if use_existing and db_manager is not None:
             # Select from existing connections
             existing_connections = db_manager.list_connections()
-            
+
             # Filter out already selected connections
             available_connections = [
                 conn for conn in existing_connections
                 if not any(c.name == conn.name for c in configs)
             ]
-            
+
             if not available_connections:
                 print("\nNo available connections. All existing connections have been added.")
                 continue
-            
+
             print("\nExisting database connections:")
             for i, conn in enumerate(available_connections, 1):
                 print(f"  {i}. {conn.name} ({conn.database_type})")
             print("  0. Cancel")
             print()
-            
+
             try:
                 choice = input("Select connection: ").strip()
                 if choice == "0":
                     continue
-                
+
                 idx = int(choice)
                 if 1 <= idx <= len(available_connections):
                     selected_conn = available_connections[idx - 1]
-                    
+
                     # Convert DatabaseConnection to MCPServerConfig
                     config = _connection_to_mcp_config(selected_conn)
                     configs.append(config)
@@ -169,7 +169,7 @@ def configure_database_access(
                     print("Invalid selection.")
             except ValueError:
                 print("Invalid input.")
-            
+
         else:
             # Create new connection
             db_type = select_database_type()
@@ -236,10 +236,10 @@ def configure_database_access(
 
 def _connection_to_mcp_config(conn: "DatabaseConnection") -> MCPServerConfig:
     """Convert a DatabaseConnection to an MCPServerConfig.
-    
+
     Args:
         conn: DatabaseConnection object to convert.
-        
+
     Returns:
         MCPServerConfig configured for the database connection.
     """

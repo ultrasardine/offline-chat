@@ -1,16 +1,17 @@
 """Unit tests for DatabaseConnection dataclass."""
 
-from datetime import datetime
 import json
-import pytest
-from hypothesis import given, strategies as st, settings, HealthCheck
+from datetime import datetime
+
+from hypothesis import HealthCheck, given, settings
+from hypothesis import strategies as st
 
 from offline_chat.database.connection import DatabaseConnection
 
 
 class TestDatabaseConnectionBasics:
     """Test basic DatabaseConnection functionality."""
-    
+
     def test_create_oracle_connection(self):
         """Test creating an Oracle connection with all required fields."""
         conn = DatabaseConnection(
@@ -22,7 +23,7 @@ class TestDatabaseConnectionBasics:
             username="test_user",
             password="test_pass"
         )
-        
+
         assert conn.name == "test-oracle"
         assert conn.database_type == "oracle"
         assert conn.host == "localhost"
@@ -32,7 +33,7 @@ class TestDatabaseConnectionBasics:
         assert conn.password == "test_pass"
         assert isinstance(conn.created_at, datetime)
         assert isinstance(conn.updated_at, datetime)
-    
+
     def test_create_postgresql_connection(self):
         """Test creating a PostgreSQL connection."""
         conn = DatabaseConnection(
@@ -44,11 +45,11 @@ class TestDatabaseConnectionBasics:
             username="test_user",
             password="test_pass"
         )
-        
+
         assert conn.name == "test-postgres"
         assert conn.database_type == "postgresql"
         assert conn.database == "testdb"
-    
+
     def test_create_mysql_connection(self):
         """Test creating a MySQL connection."""
         conn = DatabaseConnection(
@@ -60,11 +61,11 @@ class TestDatabaseConnectionBasics:
             username="test_user",
             password="test_pass"
         )
-        
+
         assert conn.name == "test-mysql"
         assert conn.database_type == "mysql"
         assert conn.port == 3306
-    
+
     def test_create_sqlite_connection(self):
         """Test creating a SQLite connection."""
         conn = DatabaseConnection(
@@ -72,13 +73,13 @@ class TestDatabaseConnectionBasics:
             database_type="sqlite",
             file_path="/path/to/database.db"
         )
-        
+
         assert conn.name == "test-sqlite"
         assert conn.database_type == "sqlite"
         assert conn.file_path == "/path/to/database.db"
         assert conn.host is None
         assert conn.port is None
-    
+
     def test_additional_params(self):
         """Test connection with additional parameters."""
         conn = DatabaseConnection(
@@ -91,13 +92,13 @@ class TestDatabaseConnectionBasics:
             password="test_pass",
             additional_params={"ssl": True, "timeout": 30}
         )
-        
+
         assert conn.additional_params == {"ssl": True, "timeout": 30}
 
 
 class TestDatabaseConnectionSerialization:
     """Test JSON serialization and deserialization."""
-    
+
     def test_to_dict_oracle(self):
         """Test converting Oracle connection to dictionary."""
         conn = DatabaseConnection(
@@ -109,9 +110,9 @@ class TestDatabaseConnectionSerialization:
             username="test_user",
             password="test_pass"
         )
-        
+
         data = conn.to_dict()
-        
+
         assert data["name"] == "test-oracle"
         assert data["database_type"] == "oracle"
         assert data["host"] == "localhost"
@@ -121,7 +122,7 @@ class TestDatabaseConnectionSerialization:
         assert data["password"] == "test_pass"
         assert isinstance(data["created_at"], str)
         assert isinstance(data["updated_at"], str)
-    
+
     def test_to_dict_sqlite(self):
         """Test converting SQLite connection to dictionary."""
         conn = DatabaseConnection(
@@ -129,15 +130,15 @@ class TestDatabaseConnectionSerialization:
             database_type="sqlite",
             file_path="/path/to/db.db"
         )
-        
+
         data = conn.to_dict()
-        
+
         assert data["name"] == "test-sqlite"
         assert data["database_type"] == "sqlite"
         assert data["file_path"] == "/path/to/db.db"
         assert data["host"] is None
         assert data["port"] is None
-    
+
     def test_from_dict_oracle(self):
         """Test creating Oracle connection from dictionary."""
         data = {
@@ -151,9 +152,9 @@ class TestDatabaseConnectionSerialization:
             "created_at": "2025-01-13T10:00:00",
             "updated_at": "2025-01-13T10:00:00"
         }
-        
+
         conn = DatabaseConnection.from_dict(data)
-        
+
         assert conn.name == "test-oracle"
         assert conn.database_type == "oracle"
         assert conn.host == "localhost"
@@ -163,7 +164,7 @@ class TestDatabaseConnectionSerialization:
         assert conn.password == "test_pass"
         assert isinstance(conn.created_at, datetime)
         assert isinstance(conn.updated_at, datetime)
-    
+
     def test_from_dict_sqlite(self):
         """Test creating SQLite connection from dictionary."""
         data = {
@@ -173,13 +174,13 @@ class TestDatabaseConnectionSerialization:
             "created_at": "2025-01-13T10:00:00",
             "updated_at": "2025-01-13T10:00:00"
         }
-        
+
         conn = DatabaseConnection.from_dict(data)
-        
+
         assert conn.name == "test-sqlite"
         assert conn.database_type == "sqlite"
         assert conn.file_path == "/path/to/db.db"
-    
+
     def test_from_dict_with_additional_params(self):
         """Test creating connection from dict with additional params."""
         data = {
@@ -194,11 +195,11 @@ class TestDatabaseConnectionSerialization:
             "created_at": "2025-01-13T10:00:00",
             "updated_at": "2025-01-13T10:00:00"
         }
-        
+
         conn = DatabaseConnection.from_dict(data)
-        
+
         assert conn.additional_params == {"ssl": True, "timeout": 30}
-    
+
     def test_from_dict_without_timestamps(self):
         """Test creating connection from dict without timestamp fields."""
         data = {
@@ -206,12 +207,12 @@ class TestDatabaseConnectionSerialization:
             "database_type": "sqlite",
             "file_path": "/path/to/db.db"
         }
-        
+
         conn = DatabaseConnection.from_dict(data)
-        
+
         assert isinstance(conn.created_at, datetime)
         assert isinstance(conn.updated_at, datetime)
-    
+
     def test_roundtrip_serialization(self):
         """Test that to_dict and from_dict are inverse operations."""
         original = DatabaseConnection(
@@ -224,10 +225,10 @@ class TestDatabaseConnectionSerialization:
             password="test_pass",
             additional_params={"ssl": True}
         )
-        
+
         data = original.to_dict()
         restored = DatabaseConnection.from_dict(data)
-        
+
         assert restored.name == original.name
         assert restored.database_type == original.database_type
         assert restored.host == original.host
@@ -240,7 +241,7 @@ class TestDatabaseConnectionSerialization:
 
 class TestDatabaseConnectionMasking:
     """Test sensitive field masking functionality."""
-    
+
     def test_mask_password(self):
         """Test that password is masked in masked output."""
         conn = DatabaseConnection(
@@ -252,13 +253,13 @@ class TestDatabaseConnectionMasking:
             username="test_user",
             password="secret_password"
         )
-        
+
         masked = conn.mask_sensitive_fields()
-        
+
         assert masked["password"] == "********"
         assert masked["username"] == "test_user"  # Username not masked
         assert masked["host"] == "localhost"
-    
+
     def test_mask_no_password(self):
         """Test masking when password is None."""
         conn = DatabaseConnection(
@@ -266,12 +267,12 @@ class TestDatabaseConnectionMasking:
             database_type="sqlite",
             file_path="/path/to/db.db"
         )
-        
+
         masked = conn.mask_sensitive_fields()
-        
+
         assert masked["password"] is None
         assert masked["file_path"] == "/path/to/db.db"
-    
+
     def test_mask_additional_params_password(self):
         """Test masking sensitive keys in additional_params."""
         conn = DatabaseConnection(
@@ -289,15 +290,15 @@ class TestDatabaseConnectionMasking:
                 "auth_token": "secret_token"
             }
         )
-        
+
         masked = conn.mask_sensitive_fields()
-        
+
         assert masked["password"] == "********"
         assert masked["additional_params"]["ssl"] is True
         assert masked["additional_params"]["api_key"] == "********"
         assert masked["additional_params"]["auth_token"] == "********"
         assert masked["additional_params"]["timeout"] == 30
-    
+
     def test_mask_preserves_original(self):
         """Test that masking doesn't modify the original connection."""
         conn = DatabaseConnection(
@@ -309,14 +310,14 @@ class TestDatabaseConnectionMasking:
             username="test_user",
             password="secret_password"
         )
-        
+
         masked = conn.mask_sensitive_fields()
-        
+
         # Original should be unchanged
         assert conn.password == "secret_password"
         # Masked should have asterisks
         assert masked["password"] == "********"
-    
+
     def test_mask_all_sensitive_keywords(self):
         """Test that all sensitive keywords are masked."""
         conn = DatabaseConnection(
@@ -335,9 +336,9 @@ class TestDatabaseConnectionMasking:
                 "normal_param": "visible"
             }
         )
-        
+
         masked = conn.mask_sensitive_fields()
-        
+
         assert masked["additional_params"]["db_password"] == "********"
         assert masked["additional_params"]["access_token"] == "********"
         assert masked["additional_params"]["secret_key"] == "********"
@@ -347,7 +348,7 @@ class TestDatabaseConnectionMasking:
 
 class TestDatabaseConnectionEdgeCases:
     """Test edge cases and error conditions."""
-    
+
     def test_empty_additional_params(self):
         """Test connection with empty additional_params."""
         conn = DatabaseConnection(
@@ -356,11 +357,11 @@ class TestDatabaseConnectionEdgeCases:
             file_path="/path/to/db.db",
             additional_params={}
         )
-        
+
         assert conn.additional_params == {}
         masked = conn.mask_sensitive_fields()
         assert masked["additional_params"] == {}
-    
+
     def test_none_additional_params_in_dict(self):
         """Test from_dict when additional_params is missing."""
         data = {
@@ -368,18 +369,18 @@ class TestDatabaseConnectionEdgeCases:
             "database_type": "sqlite",
             "file_path": "/path/to/db.db"
         }
-        
+
         conn = DatabaseConnection.from_dict(data)
-        
+
         assert conn.additional_params == {}
-    
+
     def test_all_optional_fields_none(self):
         """Test connection with minimal required fields."""
         conn = DatabaseConnection(
             name="test-conn",
             database_type="sqlite"
         )
-        
+
         assert conn.host is None
         assert conn.port is None
         assert conn.database is None
@@ -499,23 +500,23 @@ def any_connection_strategy():
 
 class TestConnectionStoreStructureProperty:
     """Property-based tests for connection store structure.
-    
+
     Feature: database-connection-management
     Property 6: Connection Store Structure
-    
+
     **Validates: Requirements 1.3**
     """
-    
+
     @given(connections=st.lists(any_connection_strategy(), min_size=0, max_size=20))
     @settings(max_examples=100, suppress_health_check=[HealthCheck.too_slow])
     def test_connection_store_structure(self, connections):
         """
         Property 6: Connection Store Structure
-        
+
         For any connection store after saving connections, the JSON file should
         contain a "connections" array where each element has the required fields
         (name, database_type, and type-specific parameters).
-        
+
         **Validates: Requirements 1.3**
         """
         # Simulate a connection store structure
@@ -523,29 +524,29 @@ class TestConnectionStoreStructureProperty:
             "version": "1.0",
             "connections": [conn.to_dict() for conn in connections]
         }
-        
+
         # Verify the store can be serialized to JSON
         json_str = json.dumps(store_data)
         assert json_str is not None
-        
+
         # Verify the store can be deserialized from JSON
         loaded_store = json.loads(json_str)
-        
+
         # Verify top-level structure
         assert "connections" in loaded_store
         assert isinstance(loaded_store["connections"], list)
         assert len(loaded_store["connections"]) == len(connections)
-        
+
         # Verify each connection has required fields
         for i, conn_data in enumerate(loaded_store["connections"]):
             original_conn = connections[i]
-            
+
             # All connections must have name and database_type
             assert "name" in conn_data
             assert "database_type" in conn_data
             assert conn_data["name"] == original_conn.name
             assert conn_data["database_type"] == original_conn.database_type
-            
+
             # Verify type-specific required fields
             if conn_data["database_type"] == "oracle":
                 assert "host" in conn_data
@@ -556,7 +557,7 @@ class TestConnectionStoreStructureProperty:
                 assert conn_data["host"] == original_conn.host
                 assert conn_data["port"] == original_conn.port
                 assert conn_data["service_name"] == original_conn.service_name
-                
+
             elif conn_data["database_type"] in ["postgresql", "mysql"]:
                 assert "host" in conn_data
                 assert "port" in conn_data
@@ -566,11 +567,11 @@ class TestConnectionStoreStructureProperty:
                 assert conn_data["host"] == original_conn.host
                 assert conn_data["port"] == original_conn.port
                 assert conn_data["database"] == original_conn.database
-                
+
             elif conn_data["database_type"] == "sqlite":
                 assert "file_path" in conn_data
                 assert conn_data["file_path"] == original_conn.file_path
-            
+
             # Verify timestamps are present and in ISO format
             assert "created_at" in conn_data
             assert "updated_at" in conn_data
@@ -579,16 +580,16 @@ class TestConnectionStoreStructureProperty:
             # Verify they can be parsed as ISO format
             datetime.fromisoformat(conn_data["created_at"])
             datetime.fromisoformat(conn_data["updated_at"])
-    
+
     @given(connections=st.lists(any_connection_strategy(), min_size=1, max_size=10))
     @settings(max_examples=100)
     def test_connection_serialization_roundtrip(self, connections):
         """
         Property 6: Connection Store Structure (Roundtrip)
-        
+
         For any set of connections, serializing to JSON and deserializing back
         should preserve all connection data.
-        
+
         **Validates: Requirements 1.3**
         """
         # Serialize connections to store format
@@ -596,20 +597,20 @@ class TestConnectionStoreStructureProperty:
             "version": "1.0",
             "connections": [conn.to_dict() for conn in connections]
         }
-        
+
         # Convert to JSON and back
         json_str = json.dumps(store_data)
         loaded_store = json.loads(json_str)
-        
+
         # Deserialize connections
         restored_connections = [
             DatabaseConnection.from_dict(conn_data)
             for conn_data in loaded_store["connections"]
         ]
-        
+
         # Verify all connections were restored correctly
         assert len(restored_connections) == len(connections)
-        
+
         for original, restored in zip(connections, restored_connections):
             assert restored.name == original.name
             assert restored.database_type == original.database_type
@@ -624,42 +625,42 @@ class TestConnectionStoreStructureProperty:
             # Timestamps should be preserved (within microsecond precision)
             assert abs((restored.created_at - original.created_at).total_seconds()) < 0.001
             assert abs((restored.updated_at - original.updated_at).total_seconds()) < 0.001
-    
+
     @given(connection=any_connection_strategy())
     @settings(max_examples=100)
     def test_individual_connection_required_fields(self, connection):
         """
         Property 6: Connection Store Structure (Individual)
-        
+
         For any individual connection, its dictionary representation must
         contain all required fields for its database type.
-        
+
         **Validates: Requirements 1.3**
         """
         conn_dict = connection.to_dict()
-        
+
         # Universal required fields
         assert "name" in conn_dict
         assert "database_type" in conn_dict
         assert "created_at" in conn_dict
         assert "updated_at" in conn_dict
         assert "additional_params" in conn_dict
-        
+
         # Type-specific required fields
         db_type = conn_dict["database_type"]
-        
+
         if db_type == "oracle":
             required_fields = ["host", "port", "service_name", "username", "password"]
             for field in required_fields:
                 assert field in conn_dict
                 assert conn_dict[field] is not None
-                
+
         elif db_type in ["postgresql", "mysql"]:
             required_fields = ["host", "port", "database", "username", "password"]
             for field in required_fields:
                 assert field in conn_dict
                 assert conn_dict[field] is not None
-                
+
         elif db_type == "sqlite":
             assert "file_path" in conn_dict
             assert conn_dict["file_path"] is not None

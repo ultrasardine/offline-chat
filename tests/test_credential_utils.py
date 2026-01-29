@@ -107,9 +107,9 @@ class TestPasswordMasking:
             if isinstance(arg, str) and "postgresql://" in arg:
                 connection_string = arg
                 break
-        
+
         assert connection_string is not None
-        assert f"postgresql://user:****@localhost:5432/db" == connection_string
+        assert "postgresql://user:****@localhost:5432/db" == connection_string
         # The database_password field should be masked
         assert sanitized.get("database_password") == "****"
 

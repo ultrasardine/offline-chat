@@ -437,7 +437,7 @@ class TestSpecificDatabaseConfigurations:
         assert "-y" in config.args
         assert "@modelcontextprotocol/server-postgres" in config.args
         # Connection string should be in args
-        connection_string = f"postgresql://analyst:secret@localhost:5432/analytics"
+        connection_string = "postgresql://analyst:secret@localhost:5432/analytics"
         assert connection_string in config.args
 
     def test_mysql_basic(self):

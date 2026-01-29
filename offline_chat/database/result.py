@@ -7,8 +7,7 @@ preventing silent failures.
 """
 
 from dataclasses import dataclass
-from typing import Generic, TypeVar, Callable, Any
-
+from typing import Any, Callable, Generic, TypeVar
 
 T = TypeVar("T")  # Success type
 E = TypeVar("E")  # Error type
@@ -17,7 +16,7 @@ E = TypeVar("E")  # Error type
 @dataclass
 class Ok(Generic[T]):
     """Represents a successful result containing a value.
-    
+
     Attributes:
         value: The success value of type T
     """
@@ -27,7 +26,7 @@ class Ok(Generic[T]):
 @dataclass
 class Err(Generic[E]):
     """Represents an error result containing an error value.
-    
+
     Attributes:
         error: The error value of type E
     """
@@ -40,13 +39,13 @@ Result = Ok[T] | Err[E]
 
 def is_ok(result: Result[T, E]) -> bool:
     """Check if result is Ok.
-    
+
     Args:
         result: Result to check
-        
+
     Returns:
         True if result is Ok, False if Err
-        
+
     Example:
         >>> result = Ok(42)
         >>> is_ok(result)
@@ -60,13 +59,13 @@ def is_ok(result: Result[T, E]) -> bool:
 
 def is_err(result: Result[T, E]) -> bool:
     """Check if result is Err.
-    
+
     Args:
         result: Result to check
-        
+
     Returns:
         True if result is Err, False if Ok
-        
+
     Example:
         >>> result = Ok(42)
         >>> is_err(result)
@@ -80,16 +79,16 @@ def is_err(result: Result[T, E]) -> bool:
 
 def unwrap(result: Result[T, E]) -> T:
     """Extract the value from an Ok result.
-    
+
     Args:
         result: Result to unwrap
-        
+
     Returns:
         The success value if result is Ok
-        
+
     Raises:
         ValueError: If result is Err
-        
+
     Example:
         >>> result = Ok(42)
         >>> unwrap(result)
@@ -108,16 +107,16 @@ def unwrap(result: Result[T, E]) -> T:
 
 def unwrap_err(result: Result[T, E]) -> E:
     """Extract the error from an Err result.
-    
+
     Args:
         result: Result to unwrap
-        
+
     Returns:
         The error value if result is Err
-        
+
     Raises:
         ValueError: If result is Ok
-        
+
     Example:
         >>> result = Err("error")
         >>> unwrap_err(result)
@@ -136,14 +135,14 @@ def unwrap_err(result: Result[T, E]) -> E:
 
 def unwrap_or(result: Result[T, E], default: T) -> T:
     """Extract the value from result or return default if Err.
-    
+
     Args:
         result: Result to unwrap
         default: Default value to return if result is Err
-        
+
     Returns:
         The success value if Ok, otherwise the default value
-        
+
     Example:
         >>> result = Ok(42)
         >>> unwrap_or(result, 0)
@@ -160,14 +159,14 @@ def unwrap_or(result: Result[T, E], default: T) -> T:
 
 def map_result(result: Result[T, E], func: Callable[[T], Any]) -> Result[Any, E]:
     """Apply a function to the Ok value, leaving Err unchanged.
-    
+
     Args:
         result: Result to map over
         func: Function to apply to Ok value
-        
+
     Returns:
         New Result with function applied to Ok value, or original Err
-        
+
     Example:
         >>> result = Ok(42)
         >>> map_result(result, lambda x: x * 2)
@@ -184,14 +183,14 @@ def map_result(result: Result[T, E], func: Callable[[T], Any]) -> Result[Any, E]
 
 def map_err(result: Result[T, E], func: Callable[[E], Any]) -> Result[T, Any]:
     """Apply a function to the Err value, leaving Ok unchanged.
-    
+
     Args:
         result: Result to map over
         func: Function to apply to Err value
-        
+
     Returns:
         New Result with function applied to Err value, or original Ok
-        
+
     Example:
         >>> result = Err("error")
         >>> map_err(result, lambda e: f"Error: {e}")
@@ -208,14 +207,14 @@ def map_err(result: Result[T, E], func: Callable[[E], Any]) -> Result[T, Any]:
 
 def and_then(result: Result[T, E], func: Callable[[T], Result[Any, E]]) -> Result[Any, E]:
     """Chain operations that return Results (flatMap/bind).
-    
+
     Args:
         result: Result to chain from
         func: Function that takes Ok value and returns a new Result
-        
+
     Returns:
         Result of applying func to Ok value, or original Err
-        
+
     Example:
         >>> def divide(x: int) -> Result[int, str]:
         ...     if x == 0:

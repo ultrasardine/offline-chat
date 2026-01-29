@@ -13,18 +13,18 @@ Properties tested:
 
 import json
 import tempfile
-import pytest
-from hypothesis import given, strategies as st, assume, settings
 from pathlib import Path
 
+import pytest
+from hypothesis import assume, given, settings
+from hypothesis import strategies as st
+
 from offline_chat.agent import Agent
-from offline_chat.database import AccessLevel, AgentConnectionAssignment
+from offline_chat.database import AccessLevel
 from offline_chat.database.connection import DatabaseConnection
 from offline_chat.database.manager import DatabaseConnectionManager
-from offline_chat.database.result import is_ok, is_err, unwrap, unwrap_err
+from offline_chat.database.result import is_err, is_ok, unwrap_err
 from offline_chat.manager import AgentManager
-from offline_chat.mcp_config import MCPServerConfig
-
 
 # ============================================================================
 # Hypothesis Strategies
@@ -88,21 +88,21 @@ def setup_test_environment():
     """Set up test environment with temporary directories and managers."""
     # Create a temporary directory
     tmp_dir = Path(tempfile.mkdtemp())
-    
+
     agents_dir = tmp_dir / "agents"
     history_dir = tmp_dir / "history"
     connections_file = tmp_dir / "connections.json"
-    
+
     agents_dir.mkdir(parents=True, exist_ok=True)
     history_dir.mkdir(parents=True, exist_ok=True)
-    
+
     db_manager = DatabaseConnectionManager(store_path=connections_file)
     agent_manager = AgentManager(
         agents_dir=agents_dir,
         history_dir=history_dir,
         db_manager=db_manager,
     )
-    
+
     return {
         "tmp_dir": tmp_dir,
         "agents_dir": agents_dir,
@@ -136,15 +136,15 @@ def create_test_agent(agent_manager, name: str, **kwargs) -> bool:
         web_search_enabled=kwargs.get("web_search_enabled", False),
         guidelines=kwargs.get("guidelines", []),
     )
-    
+
     # Save agent config manually (skip Ollama registration for tests)
     agent_dir = agent_manager._get_agent_dir(agent.name)
     agent_dir.mkdir(parents=True, exist_ok=True)
-    
+
     config_path = agent_manager._get_config_path(agent.name)
     with open(config_path, "w", encoding="utf-8") as f:
         json.dump(agent.to_dict(), f, indent=2)
-    
+
     return True
 
 
@@ -173,9 +173,9 @@ def test_property_19_agent_update_persistence(
     updated_prompt, updated_temp, updated_language, updated_web_search, updated_guidelines
 ):
     """Property 19: Agent Update Persistence
-    
+
     **Validates: Requirements 7.4, 7.5, 7.6**
-    
+
     For any agent and any valid updates (system_prompt, temperature, language,
     web_search, connection_references, mcp_servers), after successful update,
     loading the agent config should reflect all the changes.
@@ -183,7 +183,7 @@ def test_property_19_agent_update_persistence(
     # Set up test environment
     env = setup_test_environment()
     agent_manager = env["agent_manager"]
-    
+
     # Create the agent with initial values
     assert create_test_agent(
         agent_manager,
@@ -194,7 +194,7 @@ def test_property_19_agent_update_persistence(
         web_search_enabled=initial_web_search,
         guidelines=initial_guidelines,
     )
-    
+
     # Prepare updates
     updates = {
         "system_prompt": updated_prompt,
@@ -203,20 +203,20 @@ def test_property_19_agent_update_persistence(
         "web_search_enabled": updated_web_search,
         "guidelines": updated_guidelines,
     }
-    
+
     # Update the agent
     result = agent_manager.update_agent(
         agent_name=agent_name,
         updates=updates
     )
-    
+
     # Verify update succeeded
     assert is_ok(result), f"Update should succeed: {unwrap_err(result) if is_err(result) else ''}"
-    
+
     # Load the agent from storage
     reloaded_agent = agent_manager.get_agent(agent_name)
     assert reloaded_agent is not None, "Agent should exist after update"
-    
+
     # Verify all updates persisted
     assert reloaded_agent.system_prompt == updated_prompt, \
         f"System prompt should be updated to '{updated_prompt}', got '{reloaded_agent.system_prompt}'"
@@ -241,9 +241,9 @@ def test_property_19_agent_update_persistence_single_field(
     agent_name, system_prompt, temperature
 ):
     """Property 19: Agent Update Persistence (Single Field)
-    
+
     **Validates: Requirements 7.4, 7.5, 7.6**
-    
+
     For any agent and any single field update, after successful update,
     loading the agent config should reflect the change while preserving
     other fields.
@@ -251,12 +251,12 @@ def test_property_19_agent_update_persistence_single_field(
     # Set up test environment
     env = setup_test_environment()
     agent_manager = env["agent_manager"]
-    
+
     # Create the agent with initial values
     initial_prompt = "Initial prompt"
     initial_temp = 0.5
     initial_language = "English"
-    
+
     assert create_test_agent(
         agent_manager,
         agent_name,
@@ -264,29 +264,29 @@ def test_property_19_agent_update_persistence_single_field(
         temperature=initial_temp,
         language=initial_language,
     )
-    
+
     # Update only system_prompt
     result = agent_manager.update_agent(
         agent_name=agent_name,
         updates={"system_prompt": system_prompt}
     )
-    
+
     assert is_ok(result), f"Update should succeed: {unwrap_err(result) if is_err(result) else ''}"
-    
+
     # Load and verify
     reloaded_agent = agent_manager.get_agent(agent_name)
     assert reloaded_agent.system_prompt == system_prompt, "System prompt should be updated"
     assert reloaded_agent.temperature == initial_temp, "Temperature should be preserved"
     assert reloaded_agent.language == initial_language, "Language should be preserved"
-    
+
     # Update only temperature
     result = agent_manager.update_agent(
         agent_name=agent_name,
         updates={"temperature": temperature}
     )
-    
+
     assert is_ok(result), f"Update should succeed: {unwrap_err(result) if is_err(result) else ''}"
-    
+
     # Load and verify
     reloaded_agent = agent_manager.get_agent(agent_name)
     assert reloaded_agent.system_prompt == system_prompt, "System prompt should be preserved"
@@ -309,9 +309,9 @@ def test_property_25_connection_addition(
     agent_name, connection_name, access_level
 ):
     """Property 25: Connection Addition to Agent
-    
+
     **Validates: Requirements 7.4**
-    
+
     For any agent and any valid connection name, adding the connection should
     result in the connection name appearing in the agent's connection_assignments
     array.
@@ -320,23 +320,23 @@ def test_property_25_connection_addition(
     env = setup_test_environment()
     db_manager = env["db_manager"]
     agent_manager = env["agent_manager"]
-    
+
     # Create the connection
     assert create_test_connection(db_manager, connection_name, env["connections_file"].parent)
-    
+
     # Create the agent
     assert create_test_agent(agent_manager, agent_name)
-    
+
     # Verify agent starts with no connections
     agent = agent_manager.get_agent(agent_name)
     initial_count = len(agent.connection_assignments)
-    
+
     # Prepare allowed_tables if needed
     allowed_tables = ["test_table"] if access_level in (
         AccessLevel.TABLE_SPECIFIC_READ,
         AccessLevel.TABLE_SPECIFIC_READ_WRITE
     ) else None
-    
+
     # Add the connection
     result = agent_manager.assign_connection(
         agent_name=agent_name,
@@ -344,23 +344,23 @@ def test_property_25_connection_addition(
         access_level=access_level,
         allowed_tables=allowed_tables,
     )
-    
+
     # Verify addition succeeded
     assert is_ok(result), f"Connection addition should succeed: {unwrap_err(result) if is_err(result) else ''}"
-    
+
     # Load the agent from storage
     reloaded_agent = agent_manager.get_agent(agent_name)
     assert reloaded_agent is not None, "Agent should exist after connection addition"
-    
+
     # Verify the connection was added
     assert len(reloaded_agent.connection_assignments) == initial_count + 1, \
         f"Should have {initial_count + 1} connections after addition, got {len(reloaded_agent.connection_assignments)}"
-    
+
     # Verify the connection name appears in the assignments
     connection_names = {a.connection_name for a in reloaded_agent.connection_assignments}
     assert connection_name in connection_names, \
         f"Connection '{connection_name}' should be in assignments: {connection_names}"
-    
+
     # Verify the access level is correct
     added_assignment = next(a for a in reloaded_agent.connection_assignments if a.connection_name == connection_name)
     assert added_assignment.access_level == access_level, \
@@ -378,9 +378,9 @@ def test_property_25_connection_addition_multiple(
     agent_name, connection_names, access_level
 ):
     """Property 25: Connection Addition to Agent (Multiple Connections)
-    
+
     **Validates: Requirements 7.4**
-    
+
     For any agent and multiple valid connection names, adding each connection
     should result in all connection names appearing in the agent's
     connection_assignments array.
@@ -389,20 +389,20 @@ def test_property_25_connection_addition_multiple(
     env = setup_test_environment()
     db_manager = env["db_manager"]
     agent_manager = env["agent_manager"]
-    
+
     # Create all connections
     for conn_name in connection_names:
         assert create_test_connection(db_manager, conn_name, env["connections_file"].parent)
-    
+
     # Create the agent
     assert create_test_agent(agent_manager, agent_name)
-    
+
     # Prepare allowed_tables if needed
     allowed_tables = ["test_table"] if access_level in (
         AccessLevel.TABLE_SPECIFIC_READ,
         AccessLevel.TABLE_SPECIFIC_READ_WRITE
     ) else None
-    
+
     # Add each connection
     for conn_name in connection_names:
         result = agent_manager.assign_connection(
@@ -412,15 +412,15 @@ def test_property_25_connection_addition_multiple(
             allowed_tables=allowed_tables,
         )
         assert is_ok(result), f"Connection addition should succeed for {conn_name}"
-    
+
     # Load the agent from storage
     reloaded_agent = agent_manager.get_agent(agent_name)
     assert reloaded_agent is not None, "Agent should exist after connection additions"
-    
+
     # Verify all connections were added
     assert len(reloaded_agent.connection_assignments) == len(connection_names), \
         f"Should have {len(connection_names)} connections, got {len(reloaded_agent.connection_assignments)}"
-    
+
     # Verify all connection names appear in the assignments
     stored_names = {a.connection_name for a in reloaded_agent.connection_assignments}
     expected_names = set(connection_names)
@@ -443,9 +443,9 @@ def test_property_26_connection_removal(
     agent_name, connection_name, access_level
 ):
     """Property 26: Connection Removal from Agent
-    
+
     **Validates: Requirements 7.5**
-    
+
     For any agent and any connection name currently in its connection_assignments,
     removing the connection should result in the connection name no longer
     appearing in the array.
@@ -454,19 +454,19 @@ def test_property_26_connection_removal(
     env = setup_test_environment()
     db_manager = env["db_manager"]
     agent_manager = env["agent_manager"]
-    
+
     # Create the connection
     assert create_test_connection(db_manager, connection_name, env["connections_file"].parent)
-    
+
     # Create the agent
     assert create_test_agent(agent_manager, agent_name)
-    
+
     # Prepare allowed_tables if needed
     allowed_tables = ["test_table"] if access_level in (
         AccessLevel.TABLE_SPECIFIC_READ,
         AccessLevel.TABLE_SPECIFIC_READ_WRITE
     ) else None
-    
+
     # Add the connection first
     result = agent_manager.assign_connection(
         agent_name=agent_name,
@@ -475,29 +475,29 @@ def test_property_26_connection_removal(
         allowed_tables=allowed_tables,
     )
     assert is_ok(result), f"Connection addition should succeed: {unwrap_err(result) if is_err(result) else ''}"
-    
+
     # Verify the connection was added
     agent = agent_manager.get_agent(agent_name)
     assert len(agent.connection_assignments) == 1, "Should have 1 connection after addition"
     assert agent.connection_assignments[0].connection_name == connection_name
-    
+
     # Remove the connection
     result = agent_manager.remove_connection(
         agent_name=agent_name,
         connection_name=connection_name,
     )
-    
+
     # Verify removal succeeded
     assert is_ok(result), f"Connection removal should succeed: {unwrap_err(result) if is_err(result) else ''}"
-    
+
     # Load the agent from storage
     reloaded_agent = agent_manager.get_agent(agent_name)
     assert reloaded_agent is not None, "Agent should exist after connection removal"
-    
+
     # Verify the connection was removed
     assert len(reloaded_agent.connection_assignments) == 0, \
         f"Should have 0 connections after removal, got {len(reloaded_agent.connection_assignments)}"
-    
+
     # Verify the connection name does not appear in the assignments
     connection_names = {a.connection_name for a in reloaded_agent.connection_assignments}
     assert connection_name not in connection_names, \
@@ -515,33 +515,33 @@ def test_property_26_connection_removal_from_multiple(
     agent_name, connection_names, access_level
 ):
     """Property 26: Connection Removal from Agent (Multiple Connections)
-    
+
     **Validates: Requirements 7.5**
-    
+
     For any agent with multiple connections, removing one connection should
     result in only that connection being removed while others remain.
     """
     # Ensure we have at least 2 connections
     assume(len(connection_names) >= 2)
-    
+
     # Set up test environment
     env = setup_test_environment()
     db_manager = env["db_manager"]
     agent_manager = env["agent_manager"]
-    
+
     # Create all connections
     for conn_name in connection_names:
         assert create_test_connection(db_manager, conn_name, env["connections_file"].parent)
-    
+
     # Create the agent
     assert create_test_agent(agent_manager, agent_name)
-    
+
     # Prepare allowed_tables if needed
     allowed_tables = ["test_table"] if access_level in (
         AccessLevel.TABLE_SPECIFIC_READ,
         AccessLevel.TABLE_SPECIFIC_READ_WRITE
     ) else None
-    
+
     # Add all connections
     for conn_name in connection_names:
         result = agent_manager.assign_connection(
@@ -551,34 +551,34 @@ def test_property_26_connection_removal_from_multiple(
             allowed_tables=allowed_tables,
         )
         assert is_ok(result), f"Connection addition should succeed for {conn_name}"
-    
+
     # Verify all connections were added
     agent = agent_manager.get_agent(agent_name)
     assert len(agent.connection_assignments) == len(connection_names)
-    
+
     # Remove the first connection
     connection_to_remove = connection_names[0]
     result = agent_manager.remove_connection(
         agent_name=agent_name,
         connection_name=connection_to_remove,
     )
-    
+
     # Verify removal succeeded
     assert is_ok(result), f"Connection removal should succeed: {unwrap_err(result) if is_err(result) else ''}"
-    
+
     # Load the agent from storage
     reloaded_agent = agent_manager.get_agent(agent_name)
     assert reloaded_agent is not None, "Agent should exist after connection removal"
-    
+
     # Verify the connection count decreased by 1
     assert len(reloaded_agent.connection_assignments) == len(connection_names) - 1, \
         f"Should have {len(connection_names) - 1} connections after removal, got {len(reloaded_agent.connection_assignments)}"
-    
+
     # Verify the removed connection is not in the assignments
     stored_names = {a.connection_name for a in reloaded_agent.connection_assignments}
     assert connection_to_remove not in stored_names, \
         f"Removed connection '{connection_to_remove}' should not be in assignments: {stored_names}"
-    
+
     # Verify the other connections are still present
     expected_remaining = set(connection_names[1:])
     assert stored_names == expected_remaining, \
@@ -596,9 +596,9 @@ def test_property_26_connection_removal_all(
     agent_name, connection_names, access_level
 ):
     """Property 26: Connection Removal from Agent (Remove All)
-    
+
     **Validates: Requirements 7.5**
-    
+
     For any agent with connections, removing all connections should result
     in an empty connection_assignments array.
     """
@@ -606,20 +606,20 @@ def test_property_26_connection_removal_all(
     env = setup_test_environment()
     db_manager = env["db_manager"]
     agent_manager = env["agent_manager"]
-    
+
     # Create all connections
     for conn_name in connection_names:
         assert create_test_connection(db_manager, conn_name, env["connections_file"].parent)
-    
+
     # Create the agent
     assert create_test_agent(agent_manager, agent_name)
-    
+
     # Prepare allowed_tables if needed
     allowed_tables = ["test_table"] if access_level in (
         AccessLevel.TABLE_SPECIFIC_READ,
         AccessLevel.TABLE_SPECIFIC_READ_WRITE
     ) else None
-    
+
     # Add all connections
     for conn_name in connection_names:
         result = agent_manager.assign_connection(
@@ -629,11 +629,11 @@ def test_property_26_connection_removal_all(
             allowed_tables=allowed_tables,
         )
         assert is_ok(result), f"Connection addition should succeed for {conn_name}"
-    
+
     # Verify all connections were added
     agent = agent_manager.get_agent(agent_name)
     assert len(agent.connection_assignments) == len(connection_names)
-    
+
     # Remove all connections
     for conn_name in connection_names:
         result = agent_manager.remove_connection(
@@ -641,15 +641,15 @@ def test_property_26_connection_removal_all(
             connection_name=conn_name,
         )
         assert is_ok(result), f"Connection removal should succeed for {conn_name}"
-    
+
     # Load the agent from storage
     reloaded_agent = agent_manager.get_agent(agent_name)
     assert reloaded_agent is not None, "Agent should exist after removing all connections"
-    
+
     # Verify all connections were removed
     assert len(reloaded_agent.connection_assignments) == 0, \
         f"Should have 0 connections after removing all, got {len(reloaded_agent.connection_assignments)}"
-    
+
     # Verify the assignments array is empty
     assert reloaded_agent.connection_assignments == [], \
         "Connection assignments should be an empty list"

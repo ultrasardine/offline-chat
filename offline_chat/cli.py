@@ -6,12 +6,14 @@ with the Offline Chat application.
 
 import asyncio
 import logging
+import sys
+from pathlib import Path
 from typing import Optional
 
 from offline_chat.agent import Agent
-from offline_chat.database_config_cli import configure_database_access
 from offline_chat.database.manager import DatabaseConnectionManager
-from offline_chat.database.result import Ok, Err
+from offline_chat.database.result import Ok
+from offline_chat.database_config_cli import configure_database_access
 from offline_chat.database_menu import show_database_menu
 from offline_chat.exceptions import (
     AgentExistsError,
@@ -27,17 +29,14 @@ from offline_chat.mcp_presets import get_all_available_presets
 from offline_chat.rag_menu import show_rag_menu
 from offline_chat.session import ChatSession
 
-# Import agent update menu from cli package
-import sys
-
 logger = logging.getLogger(__name__)
-from pathlib import Path
+
 # Add cli directory to path if not already there
 cli_dir = Path(__file__).parent.parent / "cli"
 if str(cli_dir) not in sys.path:
     sys.path.insert(0, str(cli_dir))
 
-from agent_update_menu import show_update_agent_menu
+from agent_update_menu import show_update_agent_menu  # noqa: E402
 
 
 def format_user_message(content: str) -> str:
@@ -106,27 +105,27 @@ class CLI:
 
     def _run_migration_check(self) -> None:
         """Run migration check for agents with inline database configurations.
-        
+
         This method is called automatically on application startup to migrate
         any agents with old-style inline database configurations to the new
         centralized connection management system.
-        
+
         If any agents are migrated, displays the results to the user.
         """
         try:
             # Call the migration method
             migration_results = self.manager.migrate_inline_configs()
-            
+
             # Display results if any agents were migrated
             if migration_results:
                 print("\n" + "=" * 40)
                 print("Database Configuration Migration")
                 print("=" * 40)
                 print(f"\nMigrated {len(migration_results)} agent(s) to centralized database connections:")
-                
+
                 for agent_name, connection_name in migration_results.items():
                     print(f"  • {agent_name} -> {connection_name}")
-                
+
                 print("\nYour agents now use the centralized connection management system.")
                 print("You can manage connections via 'Manage database connections' menu.")
                 print("=" * 40)
@@ -339,7 +338,7 @@ class CLI:
                     db_status = "[DB: connections not found]"
             elif agent.mcp_servers:
                 # Backward compatibility: check for database-type MCP servers
-                db_servers = [s for s in agent.mcp_servers 
+                db_servers = [s for s in agent.mcp_servers
                              if hasattr(s, 'database_type') and s.database_type and not s.disabled]
                 if db_servers:
                     db_info = [f"{s.database_type}:{s.name}" for s in db_servers]
@@ -400,16 +399,16 @@ class CLI:
             for assignment in agent.connection_assignments:
                 # Try to resolve the connection to get details
                 result = self.db_manager.get_connection(assignment.connection_name)
-                
+
                 if isinstance(result, Ok):
                     conn = result.value
                     print(f"\n  Connection: {conn.name}")
                     print(f"  Type: {conn.database_type}")
                     print(f"  Access Level: {assignment.access_level.value}")
-                    
+
                     if assignment.allowed_tables:
                         print(f"  Allowed Tables: {', '.join(assignment.allowed_tables)}")
-                    
+
                     # Display connection details based on database type
                     if conn.database_type == "sqlite":
                         print(f"  Path: {conn.file_path}")
@@ -432,7 +431,7 @@ class CLI:
                         print(f"  Allowed Tables: {', '.join(assignment.allowed_tables)}")
         elif agent.mcp_servers:
             # Backward compatibility: check for database-type MCP servers
-            db_servers = [s for s in agent.mcp_servers 
+            db_servers = [s for s in agent.mcp_servers
                          if hasattr(s, 'database_type') and s.database_type and not s.disabled]
             if db_servers:
                 print("\nDatabase Connections (Legacy):")
@@ -440,7 +439,7 @@ class CLI:
                     print(f"\n  Name: {server.name}")
                     print(f"  Type: {server.database_type}")
                     print(f"  Command: {server.command} {' '.join(server.args)}")
-                    
+
                     # Show type-specific details
                     if server.database_type == "oracle":
                         if hasattr(server, 'oracle_connection_name') and server.oracle_connection_name:
@@ -783,7 +782,7 @@ class CLI:
                             response_started = True
                         print(chunk, end="", flush=True)
                     print()
-                    
+
                     # Display source citations if available (RAG-enhanced response)
                     self._display_source_citations()
 
@@ -890,7 +889,7 @@ class CLI:
                         for chunk in response_chunks:
                             print(chunk, end="", flush=True)
                         print()
-                    
+
                     # Display source citations if available (RAG-enhanced response)
                     self._display_source_citations()
 
@@ -968,7 +967,7 @@ class CLI:
             print("\n\nReturning to main menu...")
         except OfflineChatError as e:
             print(f"\nError: {e}")
-    
+
     def manage_rag_knowledge_sources_flow(self) -> None:
         """Handle RAG knowledge source management workflow.
 
@@ -984,25 +983,25 @@ class CLI:
 
     def _display_source_citations(self) -> None:
         """Display source citations for the last assistant message if available.
-        
+
         This method checks if the last message in the conversation history
         has source citations (indicating a RAG-enhanced response) and displays
         them in a formatted way.
         """
         if not self.session.is_active or not self.session.history:
             return
-        
+
         # Get the last message
         messages = self.session.history.messages
         if not messages:
             return
-        
+
         last_message = messages[-1]
-        
+
         # Check if it's an assistant message with sources
         if last_message.role != "assistant" or not last_message.sources:
             return
-        
+
         # Display sources
         print("\n" + "-" * 40)
         print("Sources consulted:")

@@ -62,14 +62,14 @@ class SourceCitation:
     source_type: Literal["web", "database"]
     identifier: str
     relevance_score: float
-    
+
     def format_for_display(self) -> str:
         """
         Format the citation for display to users.
-        
+
         Returns:
             A formatted string showing the source type and identifier.
-            
+
         Examples:
             Web source: "[Web] https://example.com/docs"
             Database source: "[Database] products_table"
@@ -78,14 +78,14 @@ class SourceCitation:
             return f"[Web] {self.identifier}"
         else:  # database
             return f"[Database] {self.identifier}"
-    
+
     def format_with_relevance(self) -> str:
         """
         Format the citation with relevance score for detailed display.
-        
+
         Returns:
             A formatted string including the relevance score.
-            
+
         Examples:
             "[Web] https://example.com/docs (relevance: 0.92)"
             "[Database] products_table (relevance: 0.78)"

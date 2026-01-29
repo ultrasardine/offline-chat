@@ -434,7 +434,7 @@ class TestModelfileGeneration:
         assert 'Line 1\\nLine 2\\nLine 3' in modelfile
         # Should NOT contain actual newlines in the SYSTEM directive value
         lines = modelfile.split('\n')
-        system_line = [l for l in lines if l.startswith('SYSTEM')][0]
+        system_line = [line for line in lines if line.startswith('SYSTEM')][0]
         # The SYSTEM line itself should be a single line
         assert system_line.startswith('SYSTEM "')
         assert system_line.endswith('"')
@@ -459,7 +459,7 @@ class TestModelfileGeneration:
         assert '✓' in modelfile
         # Should be a valid single-line SYSTEM directive
         lines = modelfile.split('\n')
-        system_line = [l for l in lines if l.startswith('SYSTEM')][0]
+        system_line = [line for line in lines if line.startswith('SYSTEM')][0]
         assert system_line.startswith('SYSTEM "')
         assert system_line.endswith('"')
 
@@ -714,7 +714,7 @@ class TestAgentBackwardCompatibility:
 
 class TestAgentConnectionAssignments:
     """Tests for agent connection assignments and guidelines.
-    
+
     Feature: database-connection-management
     **Validates: Requirements 6.3, 12.9, 13.1, 13.8**
     """
@@ -843,7 +843,7 @@ class TestAgentConnectionAssignments:
         )
 
         full_prompt = agent.get_full_system_prompt()
-        
+
         assert "You are a helpful assistant." in full_prompt
         assert "Guidelines:" in full_prompt
         assert "- Be helpful" in full_prompt
@@ -861,7 +861,7 @@ class TestAgentConnectionAssignments:
         )
 
         full_prompt = agent.get_full_system_prompt()
-        
+
         assert full_prompt == "You are a helpful assistant."
         assert "Guidelines:" not in full_prompt
 
@@ -939,7 +939,7 @@ class TestAgentConnectionAssignments:
         )
 
         data = agent.to_dict()
-        
+
         assert "connection_references" in data
         assert data["connection_references"] == ["old-db"]
         assert "database_config" in data
@@ -969,7 +969,7 @@ class TestAgentConnectionAssignments:
         )
 
         data = agent.to_dict()
-        
+
         # Both should be present
         assert len(data["connection_assignments"]) == 1
         assert data["connection_references"] == ["old-db"]
@@ -1015,7 +1015,7 @@ def valid_agent_with_guidelines_strategy():
 
 class TestAgentGuidelinesProperties:
     """Property tests for agent guidelines functionality.
-    
+
     Feature: database-connection-management
     **Validates: Requirements 13.1, 13.4, 13.8, 13.9, 13.10**
     """
@@ -1024,27 +1024,27 @@ class TestAgentGuidelinesProperties:
     @given(agent=valid_agent_with_guidelines_strategy())
     def test_property_34_guidelines_storage(self, agent: Agent):
         """Property 34: Guidelines Storage.
-        
+
         **Validates: Requirements 13.1, 13.4**
-        
-        For any agent and list of guidelines, after adding guidelines, the agent 
+
+        For any agent and list of guidelines, after adding guidelines, the agent
         config should contain exactly those guidelines in the same order.
         """
         # Serialize to dict
         data = agent.to_dict()
-        
+
         # Verify guidelines field exists and contains the guidelines
         assert "guidelines" in data
         assert isinstance(data["guidelines"], list)
         assert data["guidelines"] == agent.guidelines
-        
+
         # Deserialize back to Agent
         restored = Agent.from_dict(data)
-        
+
         # Verify guidelines are preserved in the same order
         assert len(restored.guidelines) == len(agent.guidelines)
         assert restored.guidelines == agent.guidelines
-        
+
         # Verify order is preserved
         for i, (original, restored_guideline) in enumerate(zip(agent.guidelines, restored.guidelines)):
             assert restored_guideline == original, f"Guideline at index {i} differs"
@@ -1055,37 +1055,37 @@ class TestAgentGuidelinesProperties:
     )
     def test_property_38_guidelines_in_system_prompt(self, agent: Agent):
         """Property 38: Guidelines in System Prompt.
-        
+
         **Validates: Requirements 13.8, 13.10**
-        
-        For any agent with guidelines, the full system prompt should include the 
+
+        For any agent with guidelines, the full system prompt should include the
         base system prompt followed by the guidelines formatted as bullet points.
         """
         full_prompt = agent.get_full_system_prompt()
-        
+
         # Verify base system prompt is included
         assert agent.system_prompt in full_prompt
-        
+
         # Verify "Guidelines:" header is present
         assert "Guidelines:" in full_prompt
-        
+
         # Verify each guideline appears as a bullet point
         for guideline in agent.guidelines:
             assert f"- {guideline}" in full_prompt
-        
+
         # Verify structure: base prompt comes before guidelines
         base_prompt_index = full_prompt.index(agent.system_prompt)
         guidelines_index = full_prompt.index("Guidelines:")
         assert base_prompt_index < guidelines_index
-        
+
         # Verify guidelines section contains all guidelines in order
         # Split the prompt to get the guidelines section
         guidelines_section = full_prompt.split("Guidelines:")[1]
         guidelines_lines = [line.strip() for line in guidelines_section.split("\n") if line.strip().startswith("- ")]
-        
+
         # Verify we have the correct number of guideline lines
         assert len(guidelines_lines) == len(agent.guidelines)
-        
+
         # Verify each guideline appears in the correct position
         for i, guideline in enumerate(agent.guidelines):
             expected_line = f"- {guideline}"
@@ -1097,21 +1097,21 @@ class TestAgentGuidelinesProperties:
     )
     def test_property_39_empty_guidelines_handling(self, agent: Agent):
         """Property 39: Empty Guidelines Handling.
-        
+
         **Validates: Requirements 13.9**
-        
-        For any agent with no guidelines, the full system prompt should be 
+
+        For any agent with no guidelines, the full system prompt should be
         identical to the base system prompt.
         """
         full_prompt = agent.get_full_system_prompt()
-        
+
         # Verify full prompt equals base system prompt exactly
         assert full_prompt == agent.system_prompt
-        
+
         # Verify no guidelines section is present
         assert "Guidelines:" not in full_prompt
         assert "- " not in full_prompt or agent.system_prompt.count("- ") == full_prompt.count("- ")
-        
+
         # Verify no extra whitespace or formatting was added
         assert len(full_prompt) == len(agent.system_prompt)
 
@@ -1122,9 +1122,9 @@ class TestAgentGuidelinesProperties:
     )
     def test_property_34_guidelines_order_preservation(self, base_agent: Agent, guidelines: list[str]):
         """Property 34: Guidelines Storage - Order Preservation.
-        
+
         **Validates: Requirements 13.1, 13.4**
-        
+
         Verify that guidelines maintain their exact order through serialization
         and deserialization cycles.
         """
@@ -1138,11 +1138,11 @@ class TestAgentGuidelinesProperties:
             guidelines=guidelines,
             created_at=base_agent.created_at,
         )
-        
+
         # Serialize and deserialize
         data = agent.to_dict()
         restored = Agent.from_dict(data)
-        
+
         # Verify exact order preservation
         assert restored.guidelines == guidelines
         for i, (expected, actual) in enumerate(zip(guidelines, restored.guidelines)):
@@ -1159,29 +1159,29 @@ class TestAgentGuidelinesProperties:
     )
     def test_property_34_guidelines_accumulation(self, agent: Agent, additional_guidelines: list[str]):
         """Property 34: Guidelines Storage - Accumulation.
-        
+
         **Validates: Requirements 13.1, 13.4**
-        
+
         Verify that adding guidelines to an existing list maintains all guidelines
         in the correct order.
         """
         original_count = len(agent.guidelines)
         original_guidelines = agent.guidelines.copy()
-        
+
         # Add new guidelines
         agent.guidelines.extend(additional_guidelines)
-        
+
         # Verify all guidelines are present
         assert len(agent.guidelines) == original_count + len(additional_guidelines)
-        
+
         # Verify original guidelines are still at the beginning
         for i, original in enumerate(original_guidelines):
             assert agent.guidelines[i] == original
-        
+
         # Verify new guidelines are at the end
         for i, new_guideline in enumerate(additional_guidelines):
             assert agent.guidelines[original_count + i] == new_guideline
-        
+
         # Verify serialization preserves the accumulated list
         data = agent.to_dict()
         restored = Agent.from_dict(data)

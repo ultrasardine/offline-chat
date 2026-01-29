@@ -4,15 +4,14 @@ This module tests the error sanitization utilities that remove credentials
 from error messages and logs to prevent credential exposure.
 """
 
-import pytest
-from hypothesis import given, settings, assume
+from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 from offline_chat.database.connection import DatabaseConnection
 from offline_chat.database.error_sanitizer import (
-    sanitize_error_message,
     sanitize_connection_string,
     sanitize_dict,
+    sanitize_error_message,
 )
 
 
@@ -30,10 +29,10 @@ class TestSanitizeErrorMessage:
             username="user",
             password="secret123"
         )
-        
+
         error = "Connection failed: password 'secret123' is invalid"
         sanitized = sanitize_error_message(error, conn)
-        
+
         assert "secret123" not in sanitized
         assert "****" in sanitized
         assert "Connection failed" in sanitized
@@ -42,7 +41,7 @@ class TestSanitizeErrorMessage:
         """Error message without connection should remain unchanged."""
         error = "Connection timeout after 30 seconds"
         sanitized = sanitize_error_message(error)
-        
+
         assert sanitized == error
 
     def test_sanitize_with_no_password_in_error(self):
@@ -56,10 +55,10 @@ class TestSanitizeErrorMessage:
             username="user",
             password="secret123"
         )
-        
+
         error = "Connection timeout after 30 seconds"
         sanitized = sanitize_error_message(error, conn)
-        
+
         assert sanitized == error
         assert "secret123" not in sanitized
 
@@ -74,10 +73,10 @@ class TestSanitizeErrorMessage:
             username="user",
             password="secret123"
         )
-        
+
         error = "Error: secret123 failed, retry with secret123"
         sanitized = sanitize_error_message(error, conn)
-        
+
         assert "secret123" not in sanitized
         assert sanitized.count("****") == 2
 
@@ -93,10 +92,10 @@ class TestSanitizeErrorMessage:
             password="mainpass",
             additional_params={"db_password": "extrapass"}
         )
-        
+
         error = "Failed with extrapass and mainpass"
         sanitized = sanitize_error_message(error, conn)
-        
+
         assert "extrapass" not in sanitized
         assert "mainpass" not in sanitized
         assert "****" in sanitized
@@ -113,10 +112,10 @@ class TestSanitizeErrorMessage:
             password="pass123",
             additional_params={"api_token": "token456"}
         )
-        
+
         error = "Authentication failed with token456"
         sanitized = sanitize_error_message(error, conn)
-        
+
         assert "token456" not in sanitized
         assert "****" in sanitized
 
@@ -124,7 +123,7 @@ class TestSanitizeErrorMessage:
         """Additional secrets parameter should be sanitized."""
         error = "API key abc123 is invalid"
         sanitized = sanitize_error_message(error, additional_secrets=["abc123"])
-        
+
         assert "abc123" not in sanitized
         assert "****" in sanitized
 
@@ -139,10 +138,10 @@ class TestSanitizeErrorMessage:
             username="user",
             password="ab"  # Too short
         )
-        
+
         error = "Connection failed with ab"
         sanitized = sanitize_error_message(error, conn)
-        
+
         # Short password should not be replaced (to avoid false positives)
         assert sanitized == error
 
@@ -157,10 +156,10 @@ class TestSanitizeErrorMessage:
             username="user",
             password="****"  # Already masked
         )
-        
+
         error = "Connection failed with ****"
         sanitized = sanitize_error_message(error, conn)
-        
+
         # Should remain unchanged
         assert sanitized == error
 
@@ -176,10 +175,10 @@ class TestSanitizeErrorMessage:
             password="secret",
             additional_params={"api_key": "secret123"}  # Contains "secret"
         )
-        
+
         error = "Failed with secret123 and secret"
         sanitized = sanitize_error_message(error, conn)
-        
+
         # Both should be masked
         assert "secret123" not in sanitized
         assert "secret" not in sanitized
@@ -193,10 +192,10 @@ class TestSanitizeErrorMessage:
             file_path="/path/to/db.sqlite",
             password=None
         )
-        
+
         error = "Connection failed"
         sanitized = sanitize_error_message(error, conn)
-        
+
         assert sanitized == error
 
     def test_sanitize_empty_additional_params(self):
@@ -211,10 +210,10 @@ class TestSanitizeErrorMessage:
             password="secret123",
             additional_params={}
         )
-        
+
         error = "Connection failed with secret123"
         sanitized = sanitize_error_message(error, conn)
-        
+
         assert "secret123" not in sanitized
         assert "****" in sanitized
 
@@ -226,7 +225,7 @@ class TestSanitizeConnectionString:
         """Oracle connection string format should be sanitized."""
         conn_str = "user/secret123@localhost:1521/ORCL"
         sanitized = sanitize_connection_string(conn_str)
-        
+
         assert "secret123" not in sanitized
         assert "user/****@localhost:1521/ORCL" == sanitized
 
@@ -234,7 +233,7 @@ class TestSanitizeConnectionString:
         """PostgreSQL URL format should be sanitized."""
         conn_str = "postgresql://user:secret@localhost:5432/mydb"
         sanitized = sanitize_connection_string(conn_str)
-        
+
         assert "secret" not in sanitized
         assert "postgresql://user:****@localhost:5432/mydb" == sanitized
 
@@ -242,7 +241,7 @@ class TestSanitizeConnectionString:
         """MySQL URL format should be sanitized."""
         conn_str = "mysql://user:password123@localhost:3306/mydb"
         sanitized = sanitize_connection_string(conn_str)
-        
+
         assert "password123" not in sanitized
         assert "mysql://user:****@localhost:3306/mydb" == sanitized
 
@@ -250,14 +249,14 @@ class TestSanitizeConnectionString:
         """Connection string without credentials should remain unchanged."""
         conn_str = "localhost:5432"
         sanitized = sanitize_connection_string(conn_str)
-        
+
         assert sanitized == conn_str
 
     def test_sanitize_complex_password(self):
         """Complex password with special characters should be sanitized."""
         conn_str = "user/p@ssw0rd!#$@localhost:1521/ORCL"
         sanitized = sanitize_connection_string(conn_str)
-        
+
         # The password (everything between / and @) should be masked
         assert "p@ssw0rd!#$" not in sanitized
         assert "****" in sanitized
@@ -268,7 +267,7 @@ class TestSanitizeConnectionString:
         """Connection string with @ in password should be handled correctly."""
         conn_str = "postgresql://user:pass@word@localhost:5432/db"
         sanitized = sanitize_connection_string(conn_str)
-        
+
         # Should mask the password part
         assert "pass@word" not in sanitized
         assert "****" in sanitized
@@ -284,9 +283,9 @@ class TestSanitizeDict:
             "password": "secret",
             "host": "localhost"
         }
-        
+
         sanitized = sanitize_dict(data)
-        
+
         assert sanitized["password"] == "****"
         assert sanitized["username"] == "user"
         assert sanitized["host"] == "localhost"
@@ -297,9 +296,9 @@ class TestSanitizeDict:
             "api_token": "abc123",
             "host": "localhost"
         }
-        
+
         sanitized = sanitize_dict(data)
-        
+
         assert sanitized["api_token"] == "****"
         assert sanitized["host"] == "localhost"
 
@@ -312,9 +311,9 @@ class TestSanitizeDict:
             "auth_token": "token456",
             "host": "localhost"
         }
-        
+
         sanitized = sanitize_dict(data)
-        
+
         assert sanitized["password"] == "****"
         assert sanitized["api_key"] == "****"
         assert sanitized["auth_token"] == "****"
@@ -328,9 +327,9 @@ class TestSanitizeDict:
             "password": None,
             "host": "localhost"
         }
-        
+
         sanitized = sanitize_dict(data)
-        
+
         assert sanitized["password"] is None
         assert sanitized["username"] == "user"
 
@@ -338,7 +337,7 @@ class TestSanitizeDict:
         """Empty dictionary should remain empty."""
         data = {}
         sanitized = sanitize_dict(data)
-        
+
         assert sanitized == {}
 
     def test_sanitize_case_insensitive(self):
@@ -348,9 +347,9 @@ class TestSanitizeDict:
             "ApiKey": "key123",
             "Auth_Token": "token456"
         }
-        
+
         sanitized = sanitize_dict(data)
-        
+
         assert sanitized["PASSWORD"] == "****"
         assert sanitized["ApiKey"] == "****"
         assert sanitized["Auth_Token"] == "****"
@@ -362,14 +361,14 @@ class TestSanitizeDict:
             "password": "secret",
             "host": "localhost"
         }
-        
+
         original_password = data["password"]
         sanitized = sanitize_dict(data)
-        
+
         # Original should be unchanged
         assert data["password"] == original_password
         assert data["password"] == "secret"
-        
+
         # Sanitized should be masked
         assert sanitized["password"] == "****"
 
@@ -391,10 +390,10 @@ def test_property_password_always_removed(password: str, error_template: str):
     """
     Feature: database-connection-management
     Property 24: Log Credential Sanitization
-    
+
     For any password and error message containing that password,
     sanitizing the error should remove the password.
-    
+
     Validates: Requirements 10.4, 10.5
     """
     conn = DatabaseConnection(
@@ -406,10 +405,10 @@ def test_property_password_always_removed(password: str, error_template: str):
         username="user",
         password=password
     )
-    
+
     error_message = error_template.format(password)
     sanitized = sanitize_error_message(error_message, conn)
-    
+
     # The password should not appear in the sanitized message
     assert password not in sanitized
     # The mask should appear
@@ -426,16 +425,16 @@ def test_property_password_removed_with_context(password: str, prefix: str, suff
     """
     Feature: database-connection-management
     Property 24: Log Credential Sanitization
-    
+
     For any password and surrounding text, the password should be removed
     regardless of context.
-    
+
     Validates: Requirements 10.4, 10.5
     """
     # Skip if prefix or suffix contains the password (would make test ambiguous)
     assume(password not in prefix)
     assume(password not in suffix)
-    
+
     conn = DatabaseConnection(
         name="test-db",
         database_type="postgresql",
@@ -445,10 +444,10 @@ def test_property_password_removed_with_context(password: str, prefix: str, suff
         username="user",
         password=password
     )
-    
+
     error_message = f"{prefix}{password}{suffix}"
     sanitized = sanitize_error_message(error_message, conn)
-    
+
     # The password should not appear
     assert password not in sanitized
     # The prefix and suffix should still be there
@@ -466,10 +465,10 @@ def test_property_no_connection_unchanged(error_message: str):
     """
     Feature: database-connection-management
     Property 24: Log Credential Sanitization
-    
+
     For any error message without a connection object, the message
     should remain unchanged.
-    
+
     Validates: Requirements 10.4, 10.5
     """
     sanitized = sanitize_error_message(error_message, None)
@@ -499,9 +498,9 @@ def test_property_oracle_connection_string_sanitized(
     """
     Feature: database-connection-management
     Property 24: Log Credential Sanitization
-    
+
     For any Oracle connection string, the password should be masked.
-    
+
     Validates: Requirements 10.4, 10.5
     """
     # Skip if password appears in other parts (would make test ambiguous)
@@ -509,10 +508,10 @@ def test_property_oracle_connection_string_sanitized(
     assume(password not in host)
     assume(password not in service)
     assume(password not in str(port))
-    
+
     conn_str = f"{username}/{password}@{host}:{port}/{service}"
     sanitized = sanitize_connection_string(conn_str)
-    
+
     # Password should not appear
     assert password not in sanitized
     # Username, host, port, and service should still be there
@@ -535,17 +534,17 @@ def test_property_sanitize_dict_preserves_structure(data: dict):
     """
     Feature: database-connection-management
     Property 24: Log Credential Sanitization
-    
+
     For any dictionary, sanitization should preserve all keys and
     only modify sensitive values.
-    
+
     Validates: Requirements 10.4, 10.5
     """
     sanitized = sanitize_dict(data)
-    
+
     # All keys should be preserved
     assert set(sanitized.keys()) == set(data.keys())
-    
+
     # Non-sensitive values should be unchanged
     sensitive_patterns = [
         "password", "passwd", "pwd",
@@ -553,7 +552,7 @@ def test_property_sanitize_dict_preserves_structure(data: dict):
         "credential", "auth",
         "api_key", "apikey"
     ]
-    
+
     for key, value in data.items():
         is_sensitive = any(pattern in key.lower() for pattern in sensitive_patterns)
         if not is_sensitive:

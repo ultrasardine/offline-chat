@@ -5,17 +5,17 @@ from offline_chat.database.connection import DatabaseConnection
 from offline_chat.database.connection_assignment import AgentConnectionAssignment
 from offline_chat.database.manager import DatabaseConnectionManager
 from offline_chat.database.result import (
-    Ok,
     Err,
+    Ok,
     Result,
-    is_ok,
+    and_then,
     is_err,
+    is_ok,
+    map_err,
+    map_result,
     unwrap,
     unwrap_err,
     unwrap_or,
-    map_result,
-    map_err,
-    and_then,
 )
 from offline_chat.database.validator import ConnectionValidator
 

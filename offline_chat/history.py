@@ -40,7 +40,7 @@ class Message:
             "content": self.content,
             "timestamp": self.timestamp.isoformat(),
         }
-        
+
         # Only include sources if they exist (RAG-enhanced messages)
         if self.sources is not None:
             result["sources"] = [
@@ -51,35 +51,35 @@ class Message:
                 }
                 for source in self.sources
             ]
-        
+
         return result
-    
+
     def format_for_display(self, agent_display_name: str = "Agent") -> str:
         """Format message for display in conversation history.
-        
+
         For RAG-enhanced messages (those with sources), includes source citations
         in the formatted output to show which knowledge sources were consulted.
-        
+
         Args:
             agent_display_name: The display name of the agent (for assistant messages).
-        
+
         Returns:
             Formatted string ready for display in terminal.
         """
         timestamp_str = self.timestamp.strftime("%H:%M")
-        
+
         # Format the main message
         if self.role == "user":
             formatted = f"[{timestamp_str}] You: {self.content}"
         else:
             formatted = f"[{timestamp_str}] {agent_display_name}: {self.content}"
-        
+
         # Add source citations if this is a RAG-enhanced message
         if self.sources is not None and len(self.sources) > 0:
             formatted += "\n  Sources:"
             for source in self.sources:
                 formatted += f"\n    - {source.format_for_display()}"
-        
+
         return formatted
 
     @classmethod
@@ -106,7 +106,7 @@ class Message:
                 )
                 for source in data["sources"]
             ]
-        
+
         return cls(
             role=data["role"],
             content=data["content"],

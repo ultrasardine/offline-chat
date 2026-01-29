@@ -4,15 +4,12 @@ This module contains unit tests for the guideline management functionality
 in the AgentManager class.
 """
 
-import json
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
-
 from offline_chat import Agent, AgentManager
-from offline_chat.database.result import is_ok, is_err, unwrap, unwrap_err
+from offline_chat.database.result import is_err, is_ok, unwrap, unwrap_err
 
 
 class TestAddGuideline:
@@ -535,13 +532,13 @@ class TestListGuidelines:
 
 class TestGuidelinesEdgeCases:
     """Additional edge case tests for guidelines management.
-    
+
     This test class specifically addresses the edge cases mentioned in task 8.3:
     - Adding empty guideline (should fail)
     - Editing with invalid index (should fail)
     - Deleting with invalid index (should fail)
     - Listing empty guidelines
-    
+
     Validates Requirements: 13.3, 13.4, 13.5, 13.6, 13.7
     """
 

@@ -1,6 +1,7 @@
 """Unit tests for AccessLevel enum."""
 
 import pytest
+
 from offline_chat.database import AccessLevel
 
 

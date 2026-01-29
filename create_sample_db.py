@@ -10,9 +10,9 @@ This script creates a database with:
 - Order items
 """
 
+import random
 import sqlite3
 from datetime import datetime, timedelta
-import random
 from pathlib import Path
 
 # Sample data
@@ -53,19 +53,19 @@ SALES_REPS = [
 
 def create_database(db_path: str = "sample_company.db"):
     """Create and populate the sample database."""
-    
+
     # Remove existing database
     db_file = Path(db_path)
     if db_file.exists():
         db_file.unlink()
         print(f"Removed existing database: {db_path}")
-    
+
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    
+
     # Create tables
     print("Creating tables...")
-    
+
     cursor.execute("""
         CREATE TABLE customers (
             customer_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -77,7 +77,7 @@ def create_database(db_path: str = "sample_company.db"):
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
-    
+
     cursor.execute("""
         CREATE TABLE products (
             product_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -88,7 +88,7 @@ def create_database(db_path: str = "sample_company.db"):
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
-    
+
     cursor.execute("""
         CREATE TABLE sales_reps (
             rep_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -99,7 +99,7 @@ def create_database(db_path: str = "sample_company.db"):
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
-    
+
     cursor.execute("""
         CREATE TABLE orders (
             order_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -114,7 +114,7 @@ def create_database(db_path: str = "sample_company.db"):
             FOREIGN KEY (rep_id) REFERENCES sales_reps(rep_id)
         )
     """)
-    
+
     cursor.execute("""
         CREATE TABLE order_items (
             item_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -127,7 +127,7 @@ def create_database(db_path: str = "sample_company.db"):
             FOREIGN KEY (product_id) REFERENCES products(product_id)
         )
     """)
-    
+
     # Insert customers
     print("Inserting customers...")
     for customer in CUSTOMERS:
@@ -135,7 +135,7 @@ def create_database(db_path: str = "sample_company.db"):
             "INSERT INTO customers (company_name, contact_name, email, phone, address) VALUES (?, ?, ?, ?, ?)",
             customer
         )
-    
+
     # Insert products
     print("Inserting products...")
     for product in PRODUCTS:
@@ -143,7 +143,7 @@ def create_database(db_path: str = "sample_company.db"):
             "INSERT INTO products (product_name, category, unit_price, stock_quantity) VALUES (?, ?, ?, ?)",
             product
         )
-    
+
     # Insert sales reps
     print("Inserting sales representatives...")
     for rep in SALES_REPS:
@@ -151,73 +151,73 @@ def create_database(db_path: str = "sample_company.db"):
             "INSERT INTO sales_reps (rep_name, email, phone, hire_date) VALUES (?, ?, ?, ?)",
             rep
         )
-    
+
     # Generate orders (last 6 months)
     print("Generating orders...")
     statuses = ["Completed", "Completed", "Completed", "Pending", "Shipped"]
     start_date = datetime.now() - timedelta(days=180)
-    
+
     order_count = 0
     for _ in range(50):  # Generate 50 orders
         customer_id = random.randint(1, len(CUSTOMERS))
         rep_id = random.randint(1, len(SALES_REPS))
         order_date = start_date + timedelta(days=random.randint(0, 180))
         status = random.choice(statuses)
-        
+
         cursor.execute(
             "INSERT INTO orders (customer_id, rep_id, order_date, status, total_amount) VALUES (?, ?, ?, ?, ?)",
             (customer_id, rep_id, order_date.strftime("%Y-%m-%d"), status, 0)
         )
         order_id = cursor.lastrowid
         order_count += 1
-        
+
         # Add 1-4 items per order
         num_items = random.randint(1, 4)
         total_amount = 0
-        
+
         for _ in range(num_items):
             product_id = random.randint(1, len(PRODUCTS))
             quantity = random.randint(1, 5)
-            
+
             # Get product price
             cursor.execute("SELECT unit_price FROM products WHERE product_id = ?", (product_id,))
             unit_price = cursor.fetchone()[0]
             subtotal = unit_price * quantity
             total_amount += subtotal
-            
+
             cursor.execute(
                 "INSERT INTO order_items (order_id, product_id, quantity, unit_price, subtotal) VALUES (?, ?, ?, ?, ?)",
                 (order_id, product_id, quantity, unit_price, subtotal)
             )
-        
+
         # Update order total
         cursor.execute("UPDATE orders SET total_amount = ? WHERE order_id = ?", (total_amount, order_id))
-    
+
     conn.commit()
-    
+
     # Print summary
     print(f"\n{'='*60}")
     print("Database created successfully!")
     print(f"{'='*60}")
     print(f"Location: {db_path}")
-    print(f"\nTables created:")
+    print("\nTables created:")
     print(f"  - customers: {len(CUSTOMERS)} records")
     print(f"  - products: {len(PRODUCTS)} records")
     print(f"  - sales_reps: {len(SALES_REPS)} records")
     print(f"  - orders: {order_count} records")
-    
+
     cursor.execute("SELECT COUNT(*) FROM order_items")
     item_count = cursor.fetchone()[0]
     print(f"  - order_items: {item_count} records")
-    
+
     # Show some sample queries
     print(f"\n{'='*60}")
     print("Sample queries you can try:")
     print(f"{'='*60}")
-    
+
     print("\n1. Total sales by month:")
     cursor.execute("""
-        SELECT strftime('%Y-%m', order_date) as month, 
+        SELECT strftime('%Y-%m', order_date) as month,
                COUNT(*) as order_count,
                SUM(total_amount) as total_sales
         FROM orders
@@ -228,10 +228,10 @@ def create_database(db_path: str = "sample_company.db"):
     """)
     for row in cursor.fetchall():
         print(f"   {row[0]}: {row[1]} orders, ${row[2]:,.2f}")
-    
+
     print("\n2. Top 5 customers by revenue:")
     cursor.execute("""
-        SELECT c.company_name, 
+        SELECT c.company_name,
                COUNT(o.order_id) as order_count,
                SUM(o.total_amount) as total_spent
         FROM customers c
@@ -243,7 +243,7 @@ def create_database(db_path: str = "sample_company.db"):
     """)
     for row in cursor.fetchall():
         print(f"   {row[0]}: {row[1]} orders, ${row[2]:,.2f}")
-    
+
     print("\n3. Top selling products:")
     cursor.execute("""
         SELECT p.product_name,
@@ -259,11 +259,11 @@ def create_database(db_path: str = "sample_company.db"):
     """)
     for row in cursor.fetchall():
         print(f"   {row[0]}: {row[1]} units, ${row[2]:,.2f}")
-    
+
     print(f"\n{'='*60}")
     print("Ready to use with your agent!")
     print(f"{'='*60}\n")
-    
+
     conn.close()
 
 

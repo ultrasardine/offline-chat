@@ -124,7 +124,7 @@ def sanitize_error_message(error_message: str, config: MCPServerConfig | None = 
     if config is not None:
         # Collect all passwords to sanitize
         passwords_to_sanitize = []
-        
+
         # Add database password if present
         if config.database_password is not None:
             passwords_to_sanitize.append(config.database_password)
@@ -142,7 +142,7 @@ def sanitize_error_message(error_message: str, config: MCPServerConfig | None = 
         # Sort passwords by length (longest first) to avoid partial replacements
         # Also filter out passwords that are too short or are just the mask character
         passwords_to_sanitize = [
-            pwd for pwd in passwords_to_sanitize 
+            pwd for pwd in passwords_to_sanitize
             if len(pwd) >= 3 and pwd != "****"
         ]
         passwords_to_sanitize.sort(key=len, reverse=True)

@@ -49,7 +49,7 @@ class Agent:
     guidelines: list[str] = field(default_factory=list)
     created_at: datetime = field(default_factory=datetime.now)
     rag_config: RAGConfig | None = None
-    
+
     # Legacy fields for backward compatibility (deprecated)
     connection_references: list[str] = field(default_factory=list)
     database_config: dict[str, Any] | None = None
@@ -70,14 +70,14 @@ class Agent:
 
     def get_full_system_prompt(self) -> str:
         """Generate system prompt with guidelines included.
-        
+
         If guidelines are present, they are appended to the base system prompt
         as a formatted bullet list. If no guidelines exist, returns just the
         base system prompt.
-        
+
         Returns:
             The complete system prompt including guidelines if present.
-            
+
         Example:
             >>> agent = Agent(
             ...     name="test",
@@ -94,7 +94,7 @@ class Agent:
         """
         if not self.guidelines:
             return self.system_prompt
-        
+
         guidelines_text = "\n\nGuidelines:\n" + "\n".join(f"- {g}" for g in self.guidelines)
         return self.system_prompt + guidelines_text
 
@@ -119,7 +119,7 @@ class Agent:
             .replace("\r", "\\r")    # Escape carriage returns
             .replace("\t", "\\t")    # Escape tabs
         )
-        
+
         return f'''FROM {self.base_model}
 
 SYSTEM "{escaped_prompt}"
@@ -130,15 +130,14 @@ PARAMETER temperature {self.temperature}
     @staticmethod
     def _rag_config_to_dict(rag_config: RAGConfig) -> dict[str, Any]:
         """Serialize RAGConfig to dictionary.
-        
+
         Args:
             rag_config: RAGConfig instance to serialize.
-            
+
         Returns:
             Dictionary representation of the RAG config.
         """
-        from offline_chat.rag.models import RAGConfig
-        
+
         return {
             "enabled": rag_config.enabled,
             "top_k": rag_config.top_k,
@@ -157,19 +156,19 @@ PARAMETER temperature {self.temperature}
                 for ks in rag_config.knowledge_sources
             ],
         }
-    
+
     @staticmethod
     def _rag_config_from_dict(data: dict[str, Any]) -> RAGConfig:
         """Deserialize RAGConfig from dictionary.
-        
+
         Args:
             data: Dictionary containing RAG config data.
-            
+
         Returns:
             RAGConfig instance.
         """
         from offline_chat.rag.models import KnowledgeSource, RAGConfig
-        
+
         knowledge_sources = [
             KnowledgeSource(
                 source_type=ks["source_type"],
@@ -180,7 +179,7 @@ PARAMETER temperature {self.temperature}
             )
             for ks in data.get("knowledge_sources", [])
         ]
-        
+
         return RAGConfig(
             enabled=data.get("enabled", False),
             top_k=data.get("top_k", 5),
@@ -213,11 +212,11 @@ PARAMETER temperature {self.temperature}
             "connection_references": self.connection_references,
             "database_config": self.database_config,
         }
-        
+
         # Add RAG config if present
         if self.rag_config is not None:
             result["rag_config"] = self._rag_config_to_dict(self.rag_config)
-        
+
         return result
 
     @classmethod
@@ -237,12 +236,12 @@ PARAMETER temperature {self.temperature}
 
         # Deserialize MCP server configs with backward compatibility
         mcp_servers = [MCPServerConfig.from_dict(s) for s in data.get("mcp_servers", [])]
-        
+
         # Deserialize connection assignments with backward compatibility
         connection_assignments = []
         if "connection_assignments" in data:
             connection_assignments = [
-                AgentConnectionAssignment.from_dict(ca) 
+                AgentConnectionAssignment.from_dict(ca)
                 for ca in data["connection_assignments"]
             ]
         elif "connection_references" in data and data["connection_references"]:
@@ -256,14 +255,14 @@ PARAMETER temperature {self.temperature}
                 )
                 for ref in data["connection_references"]
             ]
-        
+
         # Get guidelines with backward compatibility
         guidelines = data.get("guidelines", [])
-        
+
         # Get legacy fields for backward compatibility
         connection_references = data.get("connection_references", [])
         database_config = data.get("database_config")
-        
+
         # Deserialize RAG config if present
         rag_config = None
         if "rag_config" in data:

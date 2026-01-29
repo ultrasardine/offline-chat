@@ -6,34 +6,34 @@ database types (Oracle, PostgreSQL, MySQL, SQLite).
 """
 
 from offline_chat.database.connection import DatabaseConnection
-from offline_chat.database.result import Result, Ok, Err
+from offline_chat.database.result import Err, Ok, Result
 
 
 class ConnectionValidator:
     """Validates and tests database connections.
-    
+
     This class provides static methods for validating connection parameters
     and testing connectivity for different database types. Each database type
     has specific required fields that must be present and valid.
     """
-    
+
     @staticmethod
     def validate_oracle(connection: DatabaseConnection) -> Result[None, str]:
         """Validate Oracle connection parameters and test connectivity.
-        
+
         Required fields for Oracle connections:
         - host: Database server hostname or IP address
         - port: Database server port number
         - service_name: Oracle service name
         - username: Database username
         - password: Database password
-        
+
         Args:
             connection: DatabaseConnection instance to validate
-            
+
         Returns:
             Result with None on success, or error message on failure
-            
+
         Example:
             >>> conn = DatabaseConnection(
             ...     name="test-oracle",
@@ -51,7 +51,7 @@ class ConnectionValidator:
         # Check database type
         if connection.database_type != "oracle":
             return Err(f"Invalid database type '{connection.database_type}' for Oracle validation")
-        
+
         # Check required fields
         required_fields = {
             "host": connection.host,
@@ -60,35 +60,35 @@ class ConnectionValidator:
             "username": connection.username,
             "password": connection.password,
         }
-        
+
         for field_name, field_value in required_fields.items():
             if field_value is None or (isinstance(field_value, str) and not field_value.strip()):
                 return Err(f"Missing required field '{field_name}' for oracle connection")
-        
+
         # Validate port is a positive integer
         if not isinstance(connection.port, int) or connection.port <= 0 or connection.port > 65535:
-            return Err(f"Invalid port number. Must be between 1 and 65535")
-        
+            return Err("Invalid port number. Must be between 1 and 65535")
+
         # Test connection (placeholder for now)
         return ConnectionValidator.test_connection(connection)
-    
+
     @staticmethod
     def validate_postgresql(connection: DatabaseConnection) -> Result[None, str]:
         """Validate PostgreSQL connection parameters and test connectivity.
-        
+
         Required fields for PostgreSQL connections:
         - host: Database server hostname or IP address
         - port: Database server port number
         - database: Database name
         - username: Database username
         - password: Database password
-        
+
         Args:
             connection: DatabaseConnection instance to validate
-            
+
         Returns:
             Result with None on success, or error message on failure
-            
+
         Example:
             >>> conn = DatabaseConnection(
             ...     name="test-postgres",
@@ -106,7 +106,7 @@ class ConnectionValidator:
         # Check database type
         if connection.database_type != "postgresql":
             return Err(f"Invalid database type '{connection.database_type}' for PostgreSQL validation")
-        
+
         # Check required fields
         required_fields = {
             "host": connection.host,
@@ -115,35 +115,35 @@ class ConnectionValidator:
             "username": connection.username,
             "password": connection.password,
         }
-        
+
         for field_name, field_value in required_fields.items():
             if field_value is None or (isinstance(field_value, str) and not field_value.strip()):
                 return Err(f"Missing required field '{field_name}' for postgresql connection")
-        
+
         # Validate port is a positive integer
         if not isinstance(connection.port, int) or connection.port <= 0 or connection.port > 65535:
-            return Err(f"Invalid port number. Must be between 1 and 65535")
-        
+            return Err("Invalid port number. Must be between 1 and 65535")
+
         # Test connection (placeholder for now)
         return ConnectionValidator.test_connection(connection)
-    
+
     @staticmethod
     def validate_mysql(connection: DatabaseConnection) -> Result[None, str]:
         """Validate MySQL connection parameters and test connectivity.
-        
+
         Required fields for MySQL connections:
         - host: Database server hostname or IP address
         - port: Database server port number
         - database: Database name
         - username: Database username
         - password: Database password
-        
+
         Args:
             connection: DatabaseConnection instance to validate
-            
+
         Returns:
             Result with None on success, or error message on failure
-            
+
         Example:
             >>> conn = DatabaseConnection(
             ...     name="test-mysql",
@@ -161,7 +161,7 @@ class ConnectionValidator:
         # Check database type
         if connection.database_type != "mysql":
             return Err(f"Invalid database type '{connection.database_type}' for MySQL validation")
-        
+
         # Check required fields
         required_fields = {
             "host": connection.host,
@@ -170,31 +170,31 @@ class ConnectionValidator:
             "username": connection.username,
             "password": connection.password,
         }
-        
+
         for field_name, field_value in required_fields.items():
             if field_value is None or (isinstance(field_value, str) and not field_value.strip()):
                 return Err(f"Missing required field '{field_name}' for mysql connection")
-        
+
         # Validate port is a positive integer
         if not isinstance(connection.port, int) or connection.port <= 0 or connection.port > 65535:
-            return Err(f"Invalid port number. Must be between 1 and 65535")
-        
+            return Err("Invalid port number. Must be between 1 and 65535")
+
         # Test connection (placeholder for now)
         return ConnectionValidator.test_connection(connection)
-    
+
     @staticmethod
     def validate_sqlite(connection: DatabaseConnection) -> Result[None, str]:
         """Validate SQLite connection parameters and test connectivity.
-        
+
         Required fields for SQLite connections:
         - file_path: Path to the SQLite database file
-        
+
         Args:
             connection: DatabaseConnection instance to validate
-            
+
         Returns:
             Result with None on success, or error message on failure
-            
+
         Example:
             >>> conn = DatabaseConnection(
             ...     name="test-sqlite",
@@ -208,31 +208,31 @@ class ConnectionValidator:
         # Check database type
         if connection.database_type != "sqlite":
             return Err(f"Invalid database type '{connection.database_type}' for SQLite validation")
-        
+
         # Check required field
         if connection.file_path is None or not connection.file_path.strip():
-            return Err(f"Missing required field 'file_path' for sqlite connection")
-        
+            return Err("Missing required field 'file_path' for sqlite connection")
+
         # Test connection (placeholder for now)
         return ConnectionValidator.test_connection(connection)
-    
+
     @staticmethod
     def test_connection(connection: DatabaseConnection) -> Result[None, str]:
         """Test database connectivity by executing a simple query.
-        
+
         This is a placeholder implementation that returns Ok. In a full
         implementation, this would:
         1. Establish connection using appropriate driver
         2. Execute SELECT 1 (or equivalent)
         3. Close connection
         4. Return success or error with details
-        
+
         Args:
             connection: DatabaseConnection instance to test
-            
+
         Returns:
             Result with None on success, or error message on failure
-            
+
         Note:
             This is currently a placeholder that always returns Ok.
             Actual database testing will be implemented in a future task.
