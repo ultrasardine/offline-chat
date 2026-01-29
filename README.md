@@ -42,7 +42,7 @@ A terminal-based chatbot application that uses local Ollama models. Create perso
 
 ```bash
 # Clone the repository
-git clone <repo-url>
+git clone https://github.com/ultrasardine/offline-chat.git
 cd offline-chat
 
 # Install dependencies
@@ -55,7 +55,7 @@ make install-dev
 ### As a Library
 
 ```bash
-uv add git+<repo-url>
+uv add git+https://github.com/ultrasardine/offline-chat.git
 ```
 
 ## Quick Start
@@ -347,10 +347,10 @@ Import `offline_chat` into your Python project to programmatically manage agents
 
 ```bash
 # Using uv
-uv add git+<repo-url>
+uv add git+https://github.com/ultrasardine/offline-chat.git
 
 # Or using pip
-pip install git+<repo-url>
+pip install git+https://github.com/ultrasardine/offline-chat.git
 ```
 
 #### Basic Example

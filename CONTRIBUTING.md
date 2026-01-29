@@ -6,7 +6,7 @@ Thank you for your interest in contributing to Offline Chat! This document provi
 
 1. Clone the repository:
    ```bash
-   git clone <repo-url>
+   git clone https://github.com/ultrasardine/offline-chat.git
    cd offline-chat
    ```
 
