@@ -333,8 +333,7 @@ class TestToolAggregationCompleteness:
 
         # Create configs for each server
         configs = [
-            MCPServerConfig(name=f"server{i}", command="uvx", args=[f"server{i}"])
-            for i in range(len(server_tools))
+            MCPServerConfig(name=f"server{i}", command="uvx", args=[f"server{i}"]) for i in range(len(server_tools))
         ]
 
         # Create manager
@@ -374,8 +373,7 @@ class TestToolAggregationCompleteness:
 
         # Create configs for each server
         configs = [
-            MCPServerConfig(name=f"server{i}", command="uvx", args=[f"server{i}"])
-            for i in range(len(server_tools))
+            MCPServerConfig(name=f"server{i}", command="uvx", args=[f"server{i}"]) for i in range(len(server_tools))
         ]
 
         # Create manager
@@ -464,8 +462,7 @@ class TestToolRoutingCorrectness:
 
         # Create configs for each server
         configs = [
-            MCPServerConfig(name=f"server{i}", command="uvx", args=[f"server{i}"])
-            for i in range(len(server_tools))
+            MCPServerConfig(name=f"server{i}", command="uvx", args=[f"server{i}"]) for i in range(len(server_tools))
         ]
 
         # Create manager
@@ -503,16 +500,13 @@ class TestToolRoutingCorrectness:
             max_size=3,
         )
     )
-    def test_first_registration_wins_for_duplicate_tools(
-        self, server_tools: list[list[MockMCPTool]]
-    ):
+    def test_first_registration_wins_for_duplicate_tools(self, server_tools: list[list[MockMCPTool]]):
         """When multiple servers have same tool name, first registration wins."""
         from offline_chat import MCPClientManager, MCPServerConfig
 
         # Create configs for each server
         configs = [
-            MCPServerConfig(name=f"server{i}", command="uvx", args=[f"server{i}"])
-            for i in range(len(server_tools))
+            MCPServerConfig(name=f"server{i}", command="uvx", args=[f"server{i}"]) for i in range(len(server_tools))
         ]
 
         # Create manager

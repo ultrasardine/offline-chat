@@ -194,16 +194,10 @@ class AgentManager:
 
             # Initialize core components
             vector_store = VectorStore(data_dir)
-            embedding_generator = EmbeddingGenerator(
-                model_name=agent.rag_config.embedding_model
-            )
-            context_retriever = ContextRetriever(
-                vector_store=vector_store,
-                embedding_generator=embedding_generator
-            )
+            embedding_generator = EmbeddingGenerator(model_name=agent.rag_config.embedding_model)
+            context_retriever = ContextRetriever(vector_store=vector_store, embedding_generator=embedding_generator)
             document_processor = DocumentProcessor(
-                chunk_size=agent.rag_config.chunk_size,
-                chunk_overlap=agent.rag_config.chunk_overlap
+                chunk_size=agent.rag_config.chunk_size, chunk_overlap=agent.rag_config.chunk_overlap
             )
             prompt_augmenter = PromptAugmenter()
 
@@ -212,20 +206,14 @@ class AgentManager:
             database_integration = None
 
             # Check if agent has web sources - initialize web scraper if needed
-            has_web_sources = any(
-                ks.source_type == "web"
-                for ks in agent.rag_config.knowledge_sources
-            )
+            has_web_sources = any(ks.source_type == "web" for ks in agent.rag_config.knowledge_sources)
             if has_web_sources:
                 # Web scraper will be initialized with MCP client when needed
                 # For now, we'll pass None and let the orchestrator handle it
                 pass
 
             # Check if agent has database sources - initialize database integration if needed
-            has_db_sources = any(
-                ks.source_type == "database"
-                for ks in agent.rag_config.knowledge_sources
-            )
+            has_db_sources = any(ks.source_type == "database" for ks in agent.rag_config.knowledge_sources)
             if has_db_sources and self.db_manager:
                 # Get the first database connection for the agent
                 # In the future, we might want to support multiple database connections
@@ -235,8 +223,7 @@ class AgentManager:
                     if not is_err(conn_result):
                         connection = unwrap(conn_result)
                         database_integration = DatabaseIntegration(
-                            connection=connection,
-                            document_processor=document_processor
+                            connection=connection, document_processor=document_processor
                         )
 
             # Create orchestrator
@@ -255,9 +242,7 @@ class AgentManager:
             return orchestrator
 
         except Exception as e:
-            logger.error(
-                f"Failed to initialize RAG orchestrator for agent '{agent.name}': {e}"
-            )
+            logger.error(f"Failed to initialize RAG orchestrator for agent '{agent.name}': {e}")
             raise
 
     def create_agent(self, agent: Agent) -> bool:
@@ -364,9 +349,7 @@ class AgentManager:
 
             # Initialize vector store and embedding generator
             vector_store = VectorStore(data_dir)
-            embedding_generator = EmbeddingGenerator(
-                model_name=agent.rag_config.embedding_model
-            )
+            embedding_generator = EmbeddingGenerator(model_name=agent.rag_config.embedding_model)
 
             # Get embedding dimension
             embedding_dim = embedding_generator.get_embedding_dimension()
@@ -374,15 +357,10 @@ class AgentManager:
             # Create collection
             vector_store.create_collection(agent.name, embedding_dim)
 
-            logger.info(
-                f"Created vector collection for agent '{agent.name}' "
-                f"with embedding dimension {embedding_dim}"
-            )
+            logger.info(f"Created vector collection for agent '{agent.name}' with embedding dimension {embedding_dim}")
 
         except Exception as e:
-            logger.error(
-                f"Failed to create vector collection for agent '{agent.name}': {e}"
-            )
+            logger.error(f"Failed to create vector collection for agent '{agent.name}': {e}")
             raise
 
     def _delete_rag_collection(self, agent_name: str) -> None:
@@ -411,9 +389,7 @@ class AgentManager:
 
         except Exception as e:
             # Log error but don't raise - we want to continue with agent deletion
-            logger.warning(
-                f"Failed to delete vector collection for agent '{agent_name}': {e}"
-            )
+            logger.warning(f"Failed to delete vector collection for agent '{agent_name}': {e}")
 
     def list_agents(self) -> list[Agent]:
         """List all available agents.
@@ -546,14 +522,9 @@ class AgentManager:
         # Validate allowed_tables for table-specific access levels
         if access_level in (AccessLevel.TABLE_SPECIFIC_READ, AccessLevel.TABLE_SPECIFIC_READ_WRITE):
             if allowed_tables is None:
-                return Err(
-                    f"Access level '{access_level.value}' requires allowed_tables to be specified"
-                )
+                return Err(f"Access level '{access_level.value}' requires allowed_tables to be specified")
             if not isinstance(allowed_tables, list) or len(allowed_tables) == 0:
-                return Err(
-                    f"Access level '{access_level.value}' requires "
-                    f"allowed_tables to be a non-empty list"
-                )
+                return Err(f"Access level '{access_level.value}' requires allowed_tables to be a non-empty list")
 
         # Load agent config
         agent = self.get_agent(agent_name)
@@ -623,15 +594,12 @@ class AgentManager:
         # Find and remove the connection assignment
         original_count = len(agent.connection_assignments)
         agent.connection_assignments = [
-            assignment for assignment in agent.connection_assignments
-            if assignment.connection_name != connection_name
+            assignment for assignment in agent.connection_assignments if assignment.connection_name != connection_name
         ]
 
         # Check if connection was actually removed
         if len(agent.connection_assignments) == original_count:
-            return Err(
-                f"Connection '{connection_name}' is not assigned to agent '{agent_name}'"
-            )
+            return Err(f"Connection '{connection_name}' is not assigned to agent '{agent_name}'")
 
         # Save updated agent config
         try:
@@ -706,8 +674,7 @@ class AgentManager:
         invalid_fields = set(updates.keys()) - valid_fields
         if invalid_fields:
             return Err(
-                f"Invalid update fields: {', '.join(invalid_fields)}. "
-                f"Valid fields: {', '.join(sorted(valid_fields))}"
+                f"Invalid update fields: {', '.join(invalid_fields)}. Valid fields: {', '.join(sorted(valid_fields))}"
             )
 
         # Apply updates
@@ -733,9 +700,7 @@ class AgentManager:
                 )
 
                 if result.returncode != 0:
-                    return Err(
-                        f"Failed to recreate Ollama model: {result.stderr or result.stdout}"
-                    )
+                    return Err(f"Failed to recreate Ollama model: {result.stderr or result.stdout}")
             except (OSError, PermissionError) as e:
                 return Err(f"Failed to update Modelfile: {e}")
 
@@ -768,10 +733,7 @@ class AgentManager:
             # Validate all items are AgentConnectionAssignment instances
             for item in updates["connection_assignments"]:
                 if not isinstance(item, AgentConnectionAssignment):
-                    return Err(
-                        "connection_assignments must be a list of "
-                        "AgentConnectionAssignment instances"
-                    )
+                    return Err("connection_assignments must be a list of AgentConnectionAssignment instances")
             agent.connection_assignments = updates["connection_assignments"]
 
         if "mcp_servers" in updates:
@@ -796,9 +758,7 @@ class AgentManager:
                 return Err("rag_config must be a RAGConfig instance or None")
 
             # If enabling RAG for the first time, create vector collection
-            if rag_config and rag_config.enabled and (
-                not agent.rag_config or not agent.rag_config.enabled
-            ):
+            if rag_config and rag_config.enabled and (not agent.rag_config or not agent.rag_config.enabled):
                 # Create vector collection for this agent
                 try:
                     from offline_chat.rag.embedding_generator import EmbeddingGenerator
@@ -923,10 +883,7 @@ class AgentManager:
         if not isinstance(index, int):
             return Err("Index must be an integer")
         if index < 0 or index >= len(agent.guidelines):
-            return Err(
-                f"Guideline index {index} out of range. "
-                f"Agent has {len(agent.guidelines)} guideline(s)."
-            )
+            return Err(f"Guideline index {index} out of range. Agent has {len(agent.guidelines)} guideline(s).")
 
         # Update guideline
         agent.guidelines[index] = new_text
@@ -973,10 +930,7 @@ class AgentManager:
         if not isinstance(index, int):
             return Err("Index must be an integer")
         if index < 0 or index >= len(agent.guidelines):
-            return Err(
-                f"Guideline index {index} out of range. "
-                f"Agent has {len(agent.guidelines)} guideline(s)."
-            )
+            return Err(f"Guideline index {index} out of range. Agent has {len(agent.guidelines)} guideline(s).")
 
         # Delete guideline
         agent.guidelines.pop(index)
@@ -1070,12 +1024,7 @@ class AgentManager:
 
             # Step 3: Call migrate_agent for this agent
             try:
-                result = migrate_agent(
-                    agent_name,
-                    config_data,
-                    config_path,
-                    self.db_manager
-                )
+                result = migrate_agent(agent_name, config_data, config_path, self.db_manager)
 
                 # Step 4: Handle result
                 if is_err(result):
@@ -1086,10 +1035,7 @@ class AgentManager:
                     # Success - add to results
                     connection_name = unwrap(result)
                     migration_results[agent_name] = connection_name
-                    print(
-                        f"Successfully migrated agent '{agent_name}' -> "
-                        f"connection '{connection_name}'"
-                    )
+                    print(f"Successfully migrated agent '{agent_name}' -> connection '{connection_name}'")
 
             except Exception as e:
                 # Catch any unexpected errors and continue
@@ -1134,9 +1080,7 @@ class AgentManager:
         except (OSError, PermissionError) as e:
             return Err(f"Failed to save agent config: {e}")
 
-    def _get_rag_orchestrator_safe(
-        self, agent: Agent
-    ) -> Result["RAGOrchestrator", str]:  # noqa: F821
+    def _get_rag_orchestrator_safe(self, agent: Agent) -> Result["RAGOrchestrator", str]:  # noqa: F821
         """Get RAG orchestrator with error handling.
 
         Args:
@@ -1194,8 +1138,7 @@ class AgentManager:
         # Check if RAG config exists
         if not agent.rag_config:
             return Err(
-                f"RAG is not configured for agent '{agent_name}'. "
-                f"Please configure RAG first via the Update Agent menu."
+                f"RAG is not configured for agent '{agent_name}'. Please configure RAG first via the Update Agent menu."
             )
 
         # Auto-enable RAG if this is the first knowledge source
@@ -1217,6 +1160,7 @@ class AgentManager:
         # Validate URL format for web sources
         if source_type == "web":
             from offline_chat.rag.validators import is_valid_url
+
             if not is_valid_url(identifier):
                 return Err(f"Invalid URL format: {identifier}")
 
@@ -1264,9 +1208,7 @@ class AgentManager:
                     return Err(f"Ingestion failed: {error_msg}")
 
                 if progress_callback:
-                    progress_callback(
-                        f"Successfully ingested {results[0].chunks_processed} chunks"
-                    )
+                    progress_callback(f"Successfully ingested {results[0].chunks_processed} chunks")
 
                 # Update source status in config
                 new_source.status = "active"
@@ -1330,10 +1272,7 @@ class AgentManager:
             return Err(f"Knowledge source not found: {source_identifier}")
 
         if progress_callback:
-            progress_callback(
-                f"Re-indexing {source_to_reindex.source_type} source: "
-                f"{source_identifier}"
-            )
+            progress_callback(f"Re-indexing {source_to_reindex.source_type} source: {source_identifier}")
 
         try:
             # Get RAG orchestrator
@@ -1358,12 +1297,11 @@ class AgentManager:
                 return Err(f"Re-indexing failed: {error_msg}")
 
             if progress_callback:
-                progress_callback(
-                    f"Successfully re-indexed {results[0].chunks_processed} chunks"
-                )
+                progress_callback(f"Successfully re-indexed {results[0].chunks_processed} chunks")
 
             # Update source status in config
             from datetime import datetime
+
             source_to_reindex.status = "active"
             source_to_reindex.last_indexed = datetime.now()
             source_to_reindex.error_message = None

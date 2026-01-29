@@ -88,9 +88,7 @@ class DuckDuckGoProvider:
             with DDGS(timeout=self.timeout) as ddgs:
                 results = ddgs.text(query, max_results=max_results)
                 return [
-                    SearchResult(
-                        title=r.get("title", ""), href=r.get("href", ""), body=r.get("body", "")
-                    )
+                    SearchResult(title=r.get("title", ""), href=r.get("href", ""), body=r.get("body", ""))
                     for r in results
                 ]
         except TimeoutException as e:

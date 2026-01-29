@@ -18,7 +18,6 @@ Usage Example:
     >>> show_guidelines_menu(agent_manager, "data-analyst")
 """
 
-
 from offline_chat.database.result import is_ok, unwrap, unwrap_err
 from offline_chat.manager import AgentManager
 
@@ -292,9 +291,7 @@ def delete_guideline_flow(agent_manager: AgentManager, agent_name: str) -> None:
 
             # Confirm deletion
             guideline_text = guidelines[guideline_index]
-            confirm = input(
-                f'\nDelete guideline: "{guideline_text}"? (y/N): '
-            ).strip().lower()
+            confirm = input(f'\nDelete guideline: "{guideline_text}"? (y/N): ').strip().lower()
 
             if confirm != "y":
                 print("\nDeletion cancelled.")

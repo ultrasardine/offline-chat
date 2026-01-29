@@ -45,10 +45,7 @@ class TestShowGuidelinesMenu:
         with patch("builtins.input", side_effect=["1", "Test guideline", "5"]):
             show_guidelines_menu(mock_agent_manager, "test-agent")
 
-        mock_agent_manager.add_guideline.assert_called_once_with(
-            "test-agent",
-            "Test guideline"
-        )
+        mock_agent_manager.add_guideline.assert_called_once_with("test-agent", "Test guideline")
 
     def test_select_edit_guideline(self, mock_agent_manager):
         """Test selecting edit guideline option."""
@@ -58,11 +55,7 @@ class TestShowGuidelinesMenu:
         with patch("builtins.input", side_effect=["2", "1", "Updated guideline", "5"]):
             show_guidelines_menu(mock_agent_manager, "test-agent")
 
-        mock_agent_manager.edit_guideline.assert_called_once_with(
-            "test-agent",
-            0,
-            "Updated guideline"
-        )
+        mock_agent_manager.edit_guideline.assert_called_once_with("test-agent", 0, "Updated guideline")
 
     def test_select_delete_guideline(self, mock_agent_manager):
         """Test selecting delete guideline option."""
@@ -72,17 +65,11 @@ class TestShowGuidelinesMenu:
         with patch("builtins.input", side_effect=["3", "1", "y", "5"]):
             show_guidelines_menu(mock_agent_manager, "test-agent")
 
-        mock_agent_manager.delete_guideline.assert_called_once_with(
-            "test-agent",
-            0
-        )
+        mock_agent_manager.delete_guideline.assert_called_once_with("test-agent", 0)
 
     def test_select_list_guidelines(self, mock_agent_manager):
         """Test selecting list guidelines option."""
-        mock_agent_manager.list_guidelines.return_value = Ok([
-            "Guideline 1",
-            "Guideline 2"
-        ])
+        mock_agent_manager.list_guidelines.return_value = Ok(["Guideline 1", "Guideline 2"])
 
         with patch("builtins.input", side_effect=["4", "5"]):
             show_guidelines_menu(mock_agent_manager, "test-agent")
@@ -127,10 +114,7 @@ class TestAddGuidelineFlow:
         assert "Add Guideline" in captured.out
         assert "Guideline added successfully" in captured.out
 
-        mock_agent_manager.add_guideline.assert_called_once_with(
-            "test-agent",
-            "Always explain your queries"
-        )
+        mock_agent_manager.add_guideline.assert_called_once_with("test-agent", "Always explain your queries")
 
     def test_add_guideline_failure(self, mock_agent_manager, capsys):
         """Test handling guideline addition failure."""
@@ -176,10 +160,7 @@ class TestEditGuidelineFlow:
 
     def test_edit_guideline_success(self, mock_agent_manager, capsys):
         """Test successfully editing a guideline."""
-        mock_agent_manager.list_guidelines.return_value = Ok([
-            "Guideline 1",
-            "Guideline 2"
-        ])
+        mock_agent_manager.list_guidelines.return_value = Ok(["Guideline 1", "Guideline 2"])
         mock_agent_manager.edit_guideline.return_value = Ok(None)
 
         with patch("builtins.input", side_effect=["1", "Updated guideline"]):
@@ -193,11 +174,7 @@ class TestEditGuidelineFlow:
         assert "Current text: Guideline 1" in captured.out
         assert "Guideline updated successfully" in captured.out
 
-        mock_agent_manager.edit_guideline.assert_called_once_with(
-            "test-agent",
-            0,
-            "Updated guideline"
-        )
+        mock_agent_manager.edit_guideline.assert_called_once_with("test-agent", 0, "Updated guideline")
 
     def test_edit_guideline_failure(self, mock_agent_manager, capsys):
         """Test handling guideline edit failure."""
@@ -289,10 +266,7 @@ class TestDeleteGuidelineFlow:
 
     def test_delete_guideline_success(self, mock_agent_manager, capsys):
         """Test successfully deleting a guideline."""
-        mock_agent_manager.list_guidelines.return_value = Ok([
-            "Guideline 1",
-            "Guideline 2"
-        ])
+        mock_agent_manager.list_guidelines.return_value = Ok(["Guideline 1", "Guideline 2"])
         mock_agent_manager.delete_guideline.return_value = Ok(None)
 
         with patch("builtins.input", side_effect=["1", "y"]):
@@ -305,10 +279,7 @@ class TestDeleteGuidelineFlow:
         assert "2. Guideline 2" in captured.out
         assert "Guideline deleted successfully" in captured.out
 
-        mock_agent_manager.delete_guideline.assert_called_once_with(
-            "test-agent",
-            0
-        )
+        mock_agent_manager.delete_guideline.assert_called_once_with("test-agent", 0)
 
     def test_delete_guideline_failure(self, mock_agent_manager, capsys):
         """Test handling guideline deletion failure."""
@@ -364,11 +335,7 @@ class TestDeleteGuidelineFlow:
 
         mock_agent_manager.delete_guideline.assert_not_called()
 
-    def test_delete_guideline_confirmation_case_insensitive(
-        self,
-        mock_agent_manager,
-        capsys
-    ):
+    def test_delete_guideline_confirmation_case_insensitive(self, mock_agent_manager, capsys):
         """Test that confirmation is case-insensitive."""
         mock_agent_manager.list_guidelines.return_value = Ok(["Guideline 1"])
         mock_agent_manager.delete_guideline.return_value = Ok(None)
@@ -416,11 +383,13 @@ class TestListGuidelinesDisplay:
 
     def test_list_guidelines_success(self, mock_agent_manager, capsys):
         """Test successfully listing guidelines."""
-        mock_agent_manager.list_guidelines.return_value = Ok([
-            "Always explain your SQL queries",
-            "Never modify production data",
-            "Provide data visualizations when appropriate"
-        ])
+        mock_agent_manager.list_guidelines.return_value = Ok(
+            [
+                "Always explain your SQL queries",
+                "Never modify production data",
+                "Provide data visualizations when appropriate",
+            ]
+        )
 
         list_guidelines_display(mock_agent_manager, "test-agent")
 
@@ -443,9 +412,7 @@ class TestListGuidelinesDisplay:
 
     def test_list_guidelines_single(self, mock_agent_manager, capsys):
         """Test listing a single guideline."""
-        mock_agent_manager.list_guidelines.return_value = Ok([
-            "Always explain your queries"
-        ])
+        mock_agent_manager.list_guidelines.return_value = Ok(["Always explain your queries"])
 
         list_guidelines_display(mock_agent_manager, "test-agent")
 

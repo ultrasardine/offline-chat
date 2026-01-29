@@ -328,9 +328,7 @@ class TestMCPServerConfigValidation:
         env=valid_env_strategy(),
         disabled=st.booleans(),
     )
-    def test_empty_name_fails_validation(
-        self, command: str, args: list[str], env: dict[str, str], disabled: bool
-    ):
+    def test_empty_name_fails_validation(self, command: str, args: list[str], env: dict[str, str], disabled: bool):
         """MCPServerConfig with empty name should fail validation."""
         config = MCPServerConfig(
             name="",
@@ -349,9 +347,7 @@ class TestMCPServerConfigValidation:
         env=valid_env_strategy(),
         disabled=st.booleans(),
     )
-    def test_empty_command_fails_validation(
-        self, name: str, args: list[str], env: dict[str, str], disabled: bool
-    ):
+    def test_empty_command_fails_validation(self, name: str, args: list[str], env: dict[str, str], disabled: bool):
         """MCPServerConfig with empty command should fail validation."""
         config = MCPServerConfig(
             name=name,

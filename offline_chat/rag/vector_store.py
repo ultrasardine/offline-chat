@@ -32,11 +32,7 @@ class VectorStore:
 
         # Initialize persistent ChromaDB client
         self.client = chromadb.PersistentClient(
-            path=str(self.chroma_dir),
-            settings=Settings(
-                anonymized_telemetry=False,
-                allow_reset=True
-            )
+            path=str(self.chroma_dir), settings=Settings(anonymized_telemetry=False, allow_reset=True)
         )
 
     def create_collection(self, agent_name: str, embedding_dimension: int) -> None:
@@ -49,17 +45,9 @@ class VectorStore:
         """
         # ChromaDB automatically handles embedding dimensions
         # If collection exists, get_or_create_collection will return it
-        self.client.get_or_create_collection(
-            name=agent_name,
-            metadata={"embedding_dimension": embedding_dimension}
-        )
+        self.client.get_or_create_collection(name=agent_name, metadata={"embedding_dimension": embedding_dimension})
 
-    def add_documents(
-        self,
-        collection_name: str,
-        chunks: list[DocumentChunk],
-        embeddings: list[list[float]]
-    ) -> None:
+    def add_documents(self, collection_name: str, chunks: list[DocumentChunk], embeddings: list[list[float]]) -> None:
         """
         Add document chunks with embeddings to a collection.
 
@@ -69,9 +57,7 @@ class VectorStore:
             embeddings: Corresponding embedding vectors
         """
         if len(chunks) != len(embeddings):
-            raise ValueError(
-                f"Number of chunks ({len(chunks)}) must match number of embeddings ({len(embeddings)})"
-            )
+            raise ValueError(f"Number of chunks ({len(chunks)}) must match number of embeddings ({len(embeddings)})")
 
         if not chunks:
             return  # Nothing to add
@@ -86,25 +72,16 @@ class VectorStore:
                 "source_type": chunk.source_type,
                 "source_identifier": chunk.source_identifier,
                 "chunk_index": chunk.chunk_index,
-                **chunk.metadata
+                **chunk.metadata,
             }
             for chunk in chunks
         ]
 
         # Add to collection
-        collection.add(
-            ids=ids,
-            embeddings=embeddings,
-            documents=documents,
-            metadatas=metadatas
-        )
+        collection.add(ids=ids, embeddings=embeddings, documents=documents, metadatas=metadatas)
 
     def search(
-        self,
-        collection_name: str,
-        query_embedding: list[float],
-        top_k: int = 5,
-        min_similarity: float = 0.3
+        self, collection_name: str, query_embedding: list[float], top_k: int = 5, min_similarity: float = 0.3
     ) -> list[SearchResult]:
         """
         Search for similar documents in a collection.
@@ -125,26 +102,18 @@ class VectorStore:
             return []
 
         # Query the collection
-        results = collection.query(
-            query_embeddings=[query_embedding],
-            n_results=top_k
-        )
+        results = collection.query(query_embeddings=[query_embedding], n_results=top_k)
 
         # ChromaDB returns distances (lower is more similar)
         # Convert to similarity scores (higher is more similar)
         # Using cosine distance: similarity = 1 - distance
         search_results = []
 
-        if not results['ids'] or not results['ids'][0]:
+        if not results["ids"] or not results["ids"][0]:
             return []
 
         for rank, (doc_id, document, metadata, distance) in enumerate(
-            zip(
-                results['ids'][0],
-                results['documents'][0],
-                results['metadatas'][0],
-                results['distances'][0]
-            )
+            zip(results["ids"][0], results["documents"][0], results["metadatas"][0], results["distances"][0])
         ):
             # Convert distance to similarity score
             # ChromaDB uses L2 (Euclidean) distance by default
@@ -158,20 +127,15 @@ class VectorStore:
             # Reconstruct DocumentChunk from metadata
             chunk = DocumentChunk(
                 text=document,
-                source_type=metadata['source_type'],
-                source_identifier=metadata['source_identifier'],
-                chunk_index=metadata['chunk_index'],
-                metadata={k: v for k, v in metadata.items()
-                         if k not in ['source_type', 'source_identifier', 'chunk_index']}
+                source_type=metadata["source_type"],
+                source_identifier=metadata["source_identifier"],
+                chunk_index=metadata["chunk_index"],
+                metadata={
+                    k: v for k, v in metadata.items() if k not in ["source_type", "source_identifier", "chunk_index"]
+                },
             )
 
-            search_results.append(
-                SearchResult(
-                    chunk=chunk,
-                    similarity_score=similarity_score,
-                    rank=rank
-                )
-            )
+            search_results.append(SearchResult(chunk=chunk, similarity_score=similarity_score, rank=rank))
 
         return search_results
 
@@ -211,7 +175,7 @@ class VectorStore:
 
             # Try to perform a basic operation (get with limit 1)
             # This will fail if the collection is corrupted
-            collection.get(limit=1, include=['embeddings', 'documents', 'metadatas'])
+            collection.get(limit=1, include=["embeddings", "documents", "metadatas"])
 
             # If we get here, collection is healthy
             return False, None
@@ -251,10 +215,7 @@ class VectorStore:
             return True, f"Collection access error: {error_msg}"
 
     def rebuild_collection(
-        self,
-        collection_name: str,
-        embedding_dimension: int,
-        force: bool = False
+        self, collection_name: str, embedding_dimension: int, force: bool = False
     ) -> tuple[bool, str]:
         """
         Rebuild a corrupted collection.
@@ -294,7 +255,10 @@ class VectorStore:
             # Create a fresh collection
             self.create_collection(collection_name, embedding_dimension)
 
-            return True, f"Collection '{collection_name}' successfully rebuilt. Re-index knowledge sources to restore data."
+            return (
+                True,
+                f"Collection '{collection_name}' successfully rebuilt. Re-index knowledge sources to restore data.",
+            )
 
         except Exception as e:
             return False, f"Failed to rebuild collection '{collection_name}': {str(e)}"

@@ -143,11 +143,7 @@ class TestDocumentProcessor:
     def test_process_database_rows_multiple_rows(self):
         """Test processing multiple database rows."""
         processor = DocumentProcessor()
-        rows = [
-            {"id": 1, "name": "Alice"},
-            {"id": 2, "name": "Bob"},
-            {"id": 3, "name": "Charlie"}
-        ]
+        rows = [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}, {"id": 3, "name": "Charlie"}]
         chunks = processor.process_database_rows("users", rows)
 
         assert len(chunks) == 3
@@ -176,13 +172,7 @@ class TestDocumentProcessor:
     def test_process_database_rows_with_various_types(self):
         """Test processing rows with various data types."""
         processor = DocumentProcessor()
-        rows = [{
-            "id": 42,
-            "name": "Test",
-            "price": 19.99,
-            "active": True,
-            "description": None
-        }]
+        rows = [{"id": 42, "name": "Test", "price": 19.99, "active": True, "description": None}]
         chunks = processor.process_database_rows("products", rows)
 
         assert len(chunks) == 1

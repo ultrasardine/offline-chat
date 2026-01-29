@@ -43,12 +43,12 @@ class TestPasswordMasking:
 
     @settings(max_examples=100)
     @given(
-        name=st.text(
-            min_size=1, max_size=50, alphabet=st.characters(min_codepoint=32, max_codepoint=126)
-        ).filter(lambda s: s.strip()),
-        password=st.text(
-            min_size=2, max_size=100, alphabet=st.characters(min_codepoint=32, max_codepoint=126)
-        ).filter(lambda s: s != "****"),
+        name=st.text(min_size=1, max_size=50, alphabet=st.characters(min_codepoint=32, max_codepoint=126)).filter(
+            lambda s: s.strip()
+        ),
+        password=st.text(min_size=2, max_size=100, alphabet=st.characters(min_codepoint=32, max_codepoint=126)).filter(
+            lambda s: s != "****"
+        ),
     )
     def test_config_display_masks_database_password(self, name: str, password: str):
         """Database password in config should be masked for display."""
@@ -75,12 +75,12 @@ class TestPasswordMasking:
 
     @settings(max_examples=100)
     @given(
-        name=st.text(
-            min_size=1, max_size=50, alphabet=st.characters(min_codepoint=32, max_codepoint=126)
-        ).filter(lambda s: s.strip()),
-        password=st.text(
-            min_size=2, max_size=100, alphabet=st.characters(min_codepoint=32, max_codepoint=126)
-        ).filter(lambda s: s != "****"),
+        name=st.text(min_size=1, max_size=50, alphabet=st.characters(min_codepoint=32, max_codepoint=126)).filter(
+            lambda s: s.strip()
+        ),
+        password=st.text(min_size=2, max_size=100, alphabet=st.characters(min_codepoint=32, max_codepoint=126)).filter(
+            lambda s: s != "****"
+        ),
     )
     def test_config_display_masks_env_passwords(self, name: str, password: str):
         """Passwords in environment variables should be masked for display."""
@@ -115,12 +115,12 @@ class TestPasswordMasking:
 
     @settings(max_examples=50)
     @given(
-        name=st.text(
-            min_size=1, max_size=50, alphabet=st.characters(min_codepoint=32, max_codepoint=126)
-        ).filter(lambda s: s.strip()),
-        password=st.text(
-            min_size=2, max_size=100, alphabet=st.characters(min_codepoint=32, max_codepoint=126)
-        ).filter(lambda s: s != "****"),
+        name=st.text(min_size=1, max_size=50, alphabet=st.characters(min_codepoint=32, max_codepoint=126)).filter(
+            lambda s: s.strip()
+        ),
+        password=st.text(min_size=2, max_size=100, alphabet=st.characters(min_codepoint=32, max_codepoint=126)).filter(
+            lambda s: s != "****"
+        ),
         env_key=st.sampled_from(
             [
                 "PASSWORD",
@@ -134,16 +134,12 @@ class TestPasswordMasking:
             ]
         ),
     )
-    def test_config_display_masks_various_password_env_keys(
-        self, name: str, password: str, env_key: str
-    ):
+    def test_config_display_masks_various_password_env_keys(self, name: str, password: str, env_key: str):
         """Various password-like environment variable keys should be masked."""
         # Skip if password is a substring of name or vice versa to avoid false positives
         assume(password not in name and name not in password)
 
-        config = MCPServerConfig(
-            name=name, command="uvx", args=["test-server"], env={env_key: password}
-        )
+        config = MCPServerConfig(name=name, command="uvx", args=["test-server"], env={env_key: password})
 
         sanitized = sanitize_config_for_display(config)
 
@@ -174,9 +170,7 @@ class TestPasswordMasking:
 
     def test_config_without_password_unchanged(self):
         """Config without passwords should remain unchanged."""
-        config = MCPServerConfig(
-            name="test_db", command="sql", args=["-mcp"], database_type="oracle"
-        )
+        config = MCPServerConfig(name="test_db", command="sql", args=["-mcp"], database_type="oracle")
 
         sanitized = sanitize_config_for_display(config)
 
@@ -201,9 +195,7 @@ class TestCredentialExclusionFromErrorMessages:
     )
     def test_password_removed_from_error_message(self, password: str, error_prefix: str):
         """Passwords should be removed from error messages."""
-        config = MCPServerConfig(
-            name="test_db", command="sql", args=["-mcp"], database_password=password
-        )
+        config = MCPServerConfig(name="test_db", command="sql", args=["-mcp"], database_password=password)
 
         error_message = f"{error_prefix}: Connection failed with password {password}"
         sanitized = sanitize_error_message(error_message, config)
@@ -227,9 +219,7 @@ class TestCredentialExclusionFromErrorMessages:
     )
     def test_password_removed_from_various_error_formats(self, password: str, error_template: str):
         """Passwords should be removed from various error message formats."""
-        config = MCPServerConfig(
-            name="test_db", command="sql", args=["-mcp"], database_password=password
-        )
+        config = MCPServerConfig(name="test_db", command="sql", args=["-mcp"], database_password=password)
 
         error_message = error_template.format(password)
         sanitized = sanitize_error_message(error_message, config)
@@ -269,9 +259,7 @@ class TestCredentialExclusionFromErrorMessages:
     )
     def test_multiple_password_occurrences_removed(self, password: str, other_text: str):
         """All occurrences of password should be removed from error messages."""
-        config = MCPServerConfig(
-            name="test_db", command="sql", args=["-mcp"], database_password=password
-        )
+        config = MCPServerConfig(name="test_db", command="sql", args=["-mcp"], database_password=password)
 
         error_message = f"{other_text} {password} and again {password}"
         sanitized = sanitize_error_message(error_message, config)
@@ -301,18 +289,14 @@ class TestCredentialExclusionFromErrorMessages:
     @settings(max_examples=50)
     @given(
         password=st.text(min_size=1, max_size=100),
-        safe_text=st.text(min_size=1, max_size=100).filter(
-            lambda s: s.strip() and "password" not in s.lower()
-        ),
+        safe_text=st.text(min_size=1, max_size=100).filter(lambda s: s.strip() and "password" not in s.lower()),
     )
     def test_non_password_text_preserved(self, password: str, safe_text: str):
         """Non-password text should be preserved in error messages."""
         # Skip if password is a substring of safe_text or vice versa to avoid false positives
         assume(password not in safe_text and safe_text not in password)
 
-        config = MCPServerConfig(
-            name="test_db", command="sql", args=["-mcp"], database_password=password
-        )
+        config = MCPServerConfig(name="test_db", command="sql", args=["-mcp"], database_password=password)
 
         error_message = f"Error: {safe_text}"
         sanitized = sanitize_error_message(error_message, config)
@@ -413,9 +397,7 @@ class TestEdgeCases:
 
     def test_error_message_with_no_password_match(self):
         """Error messages without password should remain unchanged."""
-        config = MCPServerConfig(
-            name="test_db", command="sql", args=["-mcp"], database_password="secret123"
-        )
+        config = MCPServerConfig(name="test_db", command="sql", args=["-mcp"], database_password="secret123")
 
         error_message = "Connection timeout after 30 seconds"
         sanitized = sanitize_error_message(error_message, config)
@@ -424,9 +406,7 @@ class TestEdgeCases:
 
     def test_password_at_start_of_error_message(self):
         """Password at the start of error message should be removed."""
-        config = MCPServerConfig(
-            name="test_db", command="sql", args=["-mcp"], database_password="secret123"
-        )
+        config = MCPServerConfig(name="test_db", command="sql", args=["-mcp"], database_password="secret123")
 
         error_message = "secret123 is not a valid password"
         sanitized = sanitize_error_message(error_message, config)
@@ -436,9 +416,7 @@ class TestEdgeCases:
 
     def test_password_at_end_of_error_message(self):
         """Password at the end of error message should be removed."""
-        config = MCPServerConfig(
-            name="test_db", command="sql", args=["-mcp"], database_password="secret123"
-        )
+        config = MCPServerConfig(name="test_db", command="sql", args=["-mcp"], database_password="secret123")
 
         error_message = "Invalid password: secret123"
         sanitized = sanitize_error_message(error_message, config)

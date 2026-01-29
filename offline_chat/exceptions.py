@@ -28,9 +28,7 @@ class InvalidAgentNameError(OfflineChatError):
 
     def __init__(self, name: str):
         self.name = name
-        super().__init__(
-            f"Invalid agent name '{name}'. Use lowercase letters, numbers, and hyphens only."
-        )
+        super().__init__(f"Invalid agent name '{name}'. Use lowercase letters, numbers, and hyphens only.")
 
 
 class OllamaConnectionError(OfflineChatError):

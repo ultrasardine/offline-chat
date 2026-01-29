@@ -23,11 +23,13 @@ def agent_name_strategy(draw):
     num_words = draw(st.integers(min_value=1, max_value=3))
     words = []
     for _ in range(num_words):
-        word = draw(st.text(
-            alphabet=st.characters(whitelist_categories=("Ll",), min_codepoint=97, max_codepoint=122),
-            min_size=2,
-            max_size=10
-        ))
+        word = draw(
+            st.text(
+                alphabet=st.characters(whitelist_categories=("Ll",), min_codepoint=97, max_codepoint=122),
+                min_size=2,
+                max_size=10,
+            )
+        )
         words.append(word)
 
     name = "-".join(words)
@@ -51,11 +53,7 @@ def rag_config_strategy(draw):
     min_similarity = draw(st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False))
     chunk_size = draw(st.integers(min_value=100, max_value=2000))
     chunk_overlap = draw(st.integers(min_value=0, max_value=200))
-    embedding_model = draw(st.sampled_from([
-        "all-MiniLM-L6-v2",
-        "all-mpnet-base-v2",
-        "paraphrase-MiniLM-L6-v2"
-    ]))
+    embedding_model = draw(st.sampled_from(["all-MiniLM-L6-v2", "all-mpnet-base-v2", "paraphrase-MiniLM-L6-v2"]))
 
     # Generate 0-3 knowledge sources
     num_sources = draw(st.integers(min_value=0, max_value=3))
@@ -66,25 +64,25 @@ def rag_config_strategy(draw):
 
         if source_type == "web":
             # Generate a simple URL
-            domain = draw(st.text(
-                alphabet=st.characters(whitelist_categories=("Ll",), min_codepoint=97, max_codepoint=122),
-                min_size=3,
-                max_size=15
-            ))
+            domain = draw(
+                st.text(
+                    alphabet=st.characters(whitelist_categories=("Ll",), min_codepoint=97, max_codepoint=122),
+                    min_size=3,
+                    max_size=15,
+                )
+            )
             identifier = f"https://{domain}.com"
         else:  # database
             # Generate a table name
-            identifier = draw(st.text(
-                alphabet=st.characters(whitelist_categories=("Ll",), min_codepoint=97, max_codepoint=122),
-                min_size=3,
-                max_size=30
-            ))
+            identifier = draw(
+                st.text(
+                    alphabet=st.characters(whitelist_categories=("Ll",), min_codepoint=97, max_codepoint=122),
+                    min_size=3,
+                    max_size=30,
+                )
+            )
 
-        knowledge_sources.append(KnowledgeSource(
-            source_type=source_type,
-            identifier=identifier,
-            status="pending"
-        ))
+        knowledge_sources.append(KnowledgeSource(source_type=source_type, identifier=identifier, status="pending"))
 
     return RAGConfig(
         enabled=enabled,
@@ -93,7 +91,7 @@ def rag_config_strategy(draw):
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
         embedding_model=embedding_model,
-        knowledge_sources=knowledge_sources
+        knowledge_sources=knowledge_sources,
     )
 
 
@@ -115,7 +113,7 @@ def agent_with_rag_strategy(draw):
         system_prompt=system_prompt,
         temperature=temperature,
         rag_config=rag_config,
-        created_at=datetime.now()
+        created_at=datetime.now(),
     )
 
 
@@ -139,8 +137,7 @@ class TestAgentRAGProperties:
         allowing the agent to store and retrieve knowledge from its configured sources.
         """
         # RAG is always enabled by the strategy
-        assert agent.rag_config and agent.rag_config.enabled, \
-            "Test expects RAG to be enabled"
+        assert agent.rag_config and agent.rag_config.enabled, "Test expects RAG to be enabled"
 
         # Create temporary directories for testing
         temp_dir = Path(tempfile.mkdtemp())
@@ -148,15 +145,18 @@ class TestAgentRAGProperties:
         try:
             # Set environment variable to override data directory
             import os
+
             original_env = os.environ.get("OFFLINE_CHAT_DATA_DIR")
             os.environ["OFFLINE_CHAT_DATA_DIR"] = str(temp_dir)
 
             # Create agent manager (will use temp_dir as data directory)
             from offline_chat.manager import AgentManager
+
             manager = AgentManager()
 
             # Mock the Ollama create command to avoid actual model creation
             import subprocess
+
             original_run = subprocess.run
 
             def mock_run(*args, **kwargs):
@@ -167,6 +167,7 @@ class TestAgentRAGProperties:
                         returncode = 0
                         stderr = ""
                         stdout = "success"
+
                     return MockResult()
                 # For other commands, use original
                 return original_run(*args, **kwargs)
@@ -178,8 +179,7 @@ class TestAgentRAGProperties:
                 manager.create_agent(agent)
 
                 # Verify that the agent was created
-                assert manager.agent_exists(agent.name), \
-                    f"Agent '{agent.name}' should exist after creation"
+                assert manager.agent_exists(agent.name), f"Agent '{agent.name}' should exist after creation"
 
                 # Verify that the vector collection was created
                 # Import vector store to check collection
@@ -192,30 +192,29 @@ class TestAgentRAGProperties:
                 collection_info = vector_store.get_collection_info(agent.name)
 
                 # Requirement 7.2: Collection should be created with agent's name
-                assert collection_info is not None, \
+                assert collection_info is not None, (
                     f"Vector collection should be created for RAG-enabled agent '{agent.name}'"
+                )
 
-                assert collection_info["name"] == agent.name, \
-                    f"Collection name should match agent name '{agent.name}'"
+                assert collection_info["name"] == agent.name, f"Collection name should match agent name '{agent.name}'"
 
                 # Verify that the collection has the correct metadata
-                assert "metadata" in collection_info, \
-                    "Collection should have metadata"
+                assert "metadata" in collection_info, "Collection should have metadata"
 
                 # The collection should have embedding_dimension in metadata
-                assert "embedding_dimension" in collection_info["metadata"], \
+                assert "embedding_dimension" in collection_info["metadata"], (
                     "Collection metadata should include embedding_dimension"
+                )
 
                 # Verify that the embedding dimension is valid (positive integer)
                 embedding_dim = collection_info["metadata"]["embedding_dimension"]
-                assert isinstance(embedding_dim, int), \
-                    "Embedding dimension should be an integer"
-                assert embedding_dim > 0, \
-                    f"Embedding dimension should be positive, got {embedding_dim}"
+                assert isinstance(embedding_dim, int), "Embedding dimension should be an integer"
+                assert embedding_dim > 0, f"Embedding dimension should be positive, got {embedding_dim}"
 
                 # Verify that the collection is initially empty (no documents ingested yet)
-                assert collection_info["count"] == 0, \
+                assert collection_info["count"] == 0, (
                     "Newly created collection should be empty (no documents ingested yet)"
+                )
 
             finally:
                 # Restore original subprocess.run
@@ -253,23 +252,28 @@ class TestAgentRAGProperties:
         try:
             # Set environment variable to override data directory
             import os
+
             original_env = os.environ.get("OFFLINE_CHAT_DATA_DIR")
             os.environ["OFFLINE_CHAT_DATA_DIR"] = str(temp_dir)
 
             # Create agent manager
             from offline_chat.manager import AgentManager
+
             manager = AgentManager()
 
             # Mock the Ollama create command
             import subprocess
+
             original_run = subprocess.run
 
             def mock_run(*args, **kwargs):
                 if args and len(args[0]) > 0 and args[0][0] == "ollama":
+
                     class MockResult:
                         returncode = 0
                         stderr = ""
                         stdout = "success"
+
                     return MockResult()
                 return original_run(*args, **kwargs)
 
@@ -280,8 +284,7 @@ class TestAgentRAGProperties:
                 manager.create_agent(agent)
 
                 # Verify that the agent was created
-                assert manager.agent_exists(agent.name), \
-                    f"Agent '{agent.name}' should exist after creation"
+                assert manager.agent_exists(agent.name), f"Agent '{agent.name}' should exist after creation"
 
                 # Verify that NO vector collection was created
                 from offline_chat.rag.vector_store import VectorStore
@@ -293,8 +296,9 @@ class TestAgentRAGProperties:
                 collection_info = vector_store.get_collection_info(agent.name)
 
                 # Collection should NOT exist for non-RAG agents
-                assert collection_info is None, \
+                assert collection_info is None, (
                     f"Vector collection should NOT be created for non-RAG agent '{agent.name}'"
+                )
 
             finally:
                 # Restore original subprocess.run

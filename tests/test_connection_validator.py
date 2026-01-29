@@ -315,9 +315,7 @@ def test_property_successful_connection_returns_no_error(db_type, db_name):
     2. Successful connections return None for error
     3. This holds for all database types
     """
-    config = MCPServerConfig(
-        name=db_name, command="test_command", args=["--test"], database_type=db_type
-    )
+    config = MCPServerConfig(name=db_name, command="test_command", args=["--test"], database_type=db_type)
 
     # Mock successful connection
     with patch("offline_chat.connection_validator._validate_connection_async") as mock_async:
@@ -363,9 +361,7 @@ def test_property_test_query_format(db_type):
         st.text(
             min_size=1,
             max_size=30,
-            alphabet=st.characters(
-                whitelist_categories=("Lu", "Ll", "Nd"), whitelist_characters="-_"
-            ),
+            alphabet=st.characters(whitelist_categories=("Lu", "Ll", "Nd"), whitelist_characters="-_"),
         ),
         min_size=0,
         max_size=10,
@@ -400,13 +396,9 @@ def test_property_find_query_tool_returns_valid_or_none(tool_names):
 
         # It should be one of the recognized query tool names
         recognized_names = ["run-sql", "query_database", "query", "execute_query", "run_query"]
-        assert result in recognized_names, (
-            f"Found tool '{result}' should be a recognized query tool name"
-        )
+        assert result in recognized_names, f"Found tool '{result}' should be a recognized query tool name"
     else:
         # If None was returned, verify no query tools were in the input
         recognized_names = ["run-sql", "query_database", "query", "execute_query", "run_query"]
         has_query_tool = any(name in recognized_names for name in tool_names)
-        assert not has_query_tool, (
-            "If no tool found, input should not contain recognized query tool names"
-        )
+        assert not has_query_tool, "If no tool found, input should not contain recognized query tool names"

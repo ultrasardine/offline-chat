@@ -46,11 +46,7 @@ class TestEmbeddingGenerator:
     def test_generate_embeddings_batch(self):
         """Test generating embeddings for multiple texts."""
         generator = EmbeddingGenerator()
-        texts = [
-            "First sentence.",
-            "Second sentence.",
-            "Third sentence."
-        ]
+        texts = ["First sentence.", "Second sentence.", "Third sentence."]
 
         embeddings = generator.generate_embeddings_batch(texts)
 
@@ -123,7 +119,7 @@ class TestEmbeddingGenerator:
             "Price: $100.50",
             "Email: test@example.com",
             "Math: 2 + 2 = 4",
-            "Unicode: café, naïve, 日本語"
+            "Unicode: café, naïve, 日本語",
         ]
 
         for text in special_texts:

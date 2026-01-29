@@ -70,10 +70,7 @@ class TestEmbeddingPerformance:
         assert len(embedding) > 0
 
         # Verify performance requirement (100ms)
-        assert elapsed_ms < 100, (
-            f"Query embedding generation took {elapsed_ms:.2f}ms, "
-            f"exceeds 100ms requirement"
-        )
+        assert elapsed_ms < 100, f"Query embedding generation took {elapsed_ms:.2f}ms, exceeds 100ms requirement"
 
     def test_batch_embedding_generation_efficiency(self, embedding_generator):
         """
@@ -100,9 +97,7 @@ class TestEmbeddingPerformance:
 
         # Measure individual generation time
         start_time = time.time()
-        individual_embeddings = [
-            embedding_generator.generate_embedding(text) for text in texts
-        ]
+        individual_embeddings = [embedding_generator.generate_embedding(text) for text in texts]
         individual_time_ms = (time.time() - start_time) * 1000
 
         # Verify results are equivalent
@@ -122,13 +117,7 @@ class TestEmbeddingPerformance:
 class TestRetrievalPerformance:
     """Test context retrieval performance with large vector stores."""
 
-    def test_retrieval_time_with_10k_chunks(
-        self,
-        vector_store,
-        embedding_generator,
-        context_retriever,
-        temp_data_dir
-    ):
+    def test_retrieval_time_with_10k_chunks(self, vector_store, embedding_generator, context_retriever, temp_data_dir):
         """
         Test that retrieval completes within 500ms for 10,000 chunks.
 
@@ -161,7 +150,7 @@ class TestRetrievalPerformance:
                     source_type="web",
                     source_identifier=f"https://example.com/doc{i}",
                     chunk_index=0,
-                    metadata={"doc_id": i, "topic": topic}
+                    metadata={"doc_id": i, "topic": topic},
                 )
             )
 
@@ -170,7 +159,7 @@ class TestRetrievalPerformance:
         batch_size = 100
         all_embeddings = []
         for i in range(0, len(chunks), batch_size):
-            batch = chunks[i:i + batch_size]
+            batch = chunks[i : i + batch_size]
             batch_texts = [chunk.text for chunk in batch]
             batch_embeddings = embedding_generator.generate_embeddings_batch(batch_texts)
             all_embeddings.extend(batch_embeddings)
@@ -179,8 +168,8 @@ class TestRetrievalPerformance:
         print("Adding to vector store...")
         max_batch_size = 5000  # ChromaDB's max batch size
         for i in range(0, len(chunks), max_batch_size):
-            batch_chunks = chunks[i:i + max_batch_size]
-            batch_embeddings = all_embeddings[i:i + max_batch_size]
+            batch_chunks = chunks[i : i + max_batch_size]
+            batch_embeddings = all_embeddings[i : i + max_batch_size]
             vector_store.add_documents(collection_name, batch_chunks, batch_embeddings)
 
         # Verify we have 10,000 chunks
@@ -197,7 +186,7 @@ class TestRetrievalPerformance:
             collection_name=collection_name,
             query=query,
             top_k=5,
-            min_similarity=0.0  # Get results regardless of similarity
+            min_similarity=0.0,  # Get results regardless of similarity
         )
         elapsed_ms = (time.time() - start_time) * 1000
 
@@ -206,19 +195,11 @@ class TestRetrievalPerformance:
         assert len(result.chunks) > 0, "Should return chunks"
 
         # Verify performance requirement (500ms)
-        assert elapsed_ms < 500, (
-            f"Retrieval from 10,000 chunks took {elapsed_ms:.2f}ms, "
-            f"exceeds 500ms requirement"
-        )
+        assert elapsed_ms < 500, f"Retrieval from 10,000 chunks took {elapsed_ms:.2f}ms, exceeds 500ms requirement"
 
         print(f"✓ Retrieval completed in {elapsed_ms:.2f}ms (requirement: <500ms)")
 
-    def test_retrieval_time_scales_reasonably(
-        self,
-        vector_store,
-        embedding_generator,
-        context_retriever
-    ):
+    def test_retrieval_time_scales_reasonably(self, vector_store, embedding_generator, context_retriever):
         """
         Test that retrieval time scales reasonably with collection size.
 
@@ -243,7 +224,7 @@ class TestRetrievalPerformance:
                     source_type="web",
                     source_identifier=f"https://example.com/doc{i}",
                     chunk_index=0,
-                    metadata={"doc_id": i}
+                    metadata={"doc_id": i},
                 )
                 for i in range(size)
             ]
@@ -259,10 +240,7 @@ class TestRetrievalPerformance:
             query = "Information about topic 5"
             start_time = time.time()
             context_retriever.retrieve_context(
-                collection_name=collection_name,
-                query=query,
-                top_k=5,
-                min_similarity=0.0
+                collection_name=collection_name, query=query, top_k=5, min_similarity=0.0
             )
             elapsed_ms = (time.time() - start_time) * 1000
             times.append(elapsed_ms)
@@ -272,20 +250,14 @@ class TestRetrievalPerformance:
         # Verify that time doesn't grow exponentially
         # Time for 1000 chunks should be less than 10x time for 100 chunks
         assert times[2] < times[0] * 10, (
-            f"Retrieval time grows too quickly: "
-            f"100 chunks={times[0]:.2f}ms, 1000 chunks={times[2]:.2f}ms"
+            f"Retrieval time grows too quickly: 100 chunks={times[0]:.2f}ms, 1000 chunks={times[2]:.2f}ms"
         )
 
 
 class TestConcurrentAccess:
     """Test concurrent access performance."""
 
-    def test_concurrent_read_operations(
-        self,
-        vector_store,
-        embedding_generator,
-        context_retriever
-    ):
+    def test_concurrent_read_operations(self, vector_store, embedding_generator, context_retriever):
         """
         Test that concurrent read operations don't degrade performance.
 
@@ -304,7 +276,7 @@ class TestConcurrentAccess:
                 source_type="web",
                 source_identifier=f"https://example.com/doc{i}",
                 chunk_index=0,
-                metadata={"doc_id": i}
+                metadata={"doc_id": i},
             )
             for i in range(1000)
         ]
@@ -316,22 +288,14 @@ class TestConcurrentAccess:
         # Measure single read time
         query = "Information about topic 5"
         start_time = time.time()
-        context_retriever.retrieve_context(
-            collection_name=collection_name,
-            query=query,
-            top_k=5,
-            min_similarity=0.0
-        )
+        context_retriever.retrieve_context(collection_name=collection_name, query=query, top_k=5, min_similarity=0.0)
         single_read_time = (time.time() - start_time) * 1000
 
         # Perform multiple sequential reads
         start_time = time.time()
         for _ in range(10):
             context_retriever.retrieve_context(
-                collection_name=collection_name,
-                query=query,
-                top_k=5,
-                min_similarity=0.0
+                collection_name=collection_name, query=query, top_k=5, min_similarity=0.0
             )
         sequential_time = (time.time() - start_time) * 1000
         avg_sequential_time = sequential_time / 10
@@ -339,8 +303,7 @@ class TestConcurrentAccess:
         # Average time should not be significantly worse than single read
         # Allow 50% margin for overhead
         assert avg_sequential_time < single_read_time * 1.5, (
-            f"Sequential reads degrade performance: "
-            f"single={single_read_time:.2f}ms, avg={avg_sequential_time:.2f}ms"
+            f"Sequential reads degrade performance: single={single_read_time:.2f}ms, avg={avg_sequential_time:.2f}ms"
         )
 
         print(f"Single read: {single_read_time:.2f}ms")
@@ -377,8 +340,7 @@ class TestLazyLoading:
 
         # Second call should be significantly faster (no model loading)
         assert second_call_time < first_call_time * 0.5, (
-            f"Second call should be faster: "
-            f"first={first_call_time:.2f}ms, second={second_call_time:.2f}ms"
+            f"Second call should be faster: first={first_call_time:.2f}ms, second={second_call_time:.2f}ms"
         )
 
         print(f"First call (with loading): {first_call_time:.2f}ms")

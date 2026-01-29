@@ -29,12 +29,15 @@ def temp_data_dir():
 @pytest.fixture
 def mock_ollama(monkeypatch):
     """Mock Ollama subprocess calls."""
+
     def mock_run(*args, **kwargs):
         if args and len(args[0]) > 0 and args[0][0] == "ollama":
+
             class MockResult:
                 returncode = 0
                 stderr = ""
                 stdout = "success"
+
             return MockResult()
         # For other commands, raise to avoid unexpected calls
         raise RuntimeError(f"Unexpected subprocess call: {args}")
@@ -75,14 +78,10 @@ def test_create_rag_enabled_agent(temp_data_dir, mock_ollama, monkeypatch):
             chunk_overlap=50,
             embedding_model="all-MiniLM-L6-v2",
             knowledge_sources=[
-                KnowledgeSource(
-                    source_type="web",
-                    identifier="https://example.com/docs",
-                    status="pending"
-                )
-            ]
+                KnowledgeSource(source_type="web", identifier="https://example.com/docs", status="pending")
+            ],
         ),
-        created_at=datetime.now()
+        created_at=datetime.now(),
     )
 
     # Create the agent
@@ -143,9 +142,9 @@ def test_load_rag_enabled_agent(temp_data_dir, mock_ollama, monkeypatch):
             chunk_size=256,
             chunk_overlap=25,
             embedding_model="all-MiniLM-L6-v2",
-            knowledge_sources=[]
+            knowledge_sources=[],
         ),
-        created_at=datetime.now()
+        created_at=datetime.now(),
     )
 
     # Create the agent
@@ -199,9 +198,9 @@ def test_delete_rag_enabled_agent_with_cleanup(temp_data_dir, mock_ollama, monke
             chunk_size=512,
             chunk_overlap=50,
             embedding_model="all-MiniLM-L6-v2",
-            knowledge_sources=[]
+            knowledge_sources=[],
         ),
-        created_at=datetime.now()
+        created_at=datetime.now(),
     )
 
     # Create the agent
@@ -258,9 +257,9 @@ def test_delete_rag_enabled_agent_keep_collection(temp_data_dir, mock_ollama, mo
             chunk_size=512,
             chunk_overlap=50,
             embedding_model="all-MiniLM-L6-v2",
-            knowledge_sources=[]
+            knowledge_sources=[],
         ),
-        created_at=datetime.now()
+        created_at=datetime.now(),
     )
 
     # Create the agent
@@ -310,7 +309,7 @@ def test_create_non_rag_agent_no_collection(temp_data_dir, mock_ollama, monkeypa
         system_prompt="You are a helpful assistant.",
         temperature=0.7,
         rag_config=None,  # No RAG config
-        created_at=datetime.now()
+        created_at=datetime.now(),
     )
 
     # Create the agent

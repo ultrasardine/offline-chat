@@ -36,12 +36,7 @@ def document_chunk_strategy(draw):
             metadata[key] = draw(st.integers(min_value=-1000000, max_value=1000000))
         elif value_type == "float":
             # Use reasonable float range to avoid precision issues
-            metadata[key] = draw(st.floats(
-                min_value=-1e6,
-                max_value=1e6,
-                allow_nan=False,
-                allow_infinity=False
-            ))
+            metadata[key] = draw(st.floats(min_value=-1e6, max_value=1e6, allow_nan=False, allow_infinity=False))
         else:
             metadata[key] = draw(st.booleans())
 
@@ -50,7 +45,7 @@ def document_chunk_strategy(draw):
         source_type=source_type,
         source_identifier=source_identifier,
         chunk_index=chunk_index,
-        metadata=metadata
+        metadata=metadata,
     )
 
 
@@ -58,13 +53,7 @@ def document_chunk_strategy(draw):
 class TestRetrievalProperties:
     """Property-based tests for context retrieval."""
 
-    @given(
-        chunks=st.lists(
-            document_chunk_strategy(),
-            min_size=1,
-            max_size=20
-        )
-    )
+    @given(chunks=st.lists(document_chunk_strategy(), min_size=1, max_size=20))
     @settings(max_examples=20, deadline=None)
     def test_vector_store_round_trip(self, chunks):
         """
@@ -96,7 +85,7 @@ class TestRetrievalProperties:
                     source_type=chunk.source_type,
                     source_identifier=f"{chunk.source_identifier}_unique_{i}",
                     chunk_index=chunk.chunk_index,
-                    metadata=chunk.metadata
+                    metadata=chunk.metadata,
                 )
                 unique_chunks.append(unique_chunk)
 
@@ -117,7 +106,7 @@ class TestRetrievalProperties:
                     collection_name,
                     embedding,
                     top_k=1,
-                    min_similarity=0.0  # No threshold to ensure we get results
+                    min_similarity=0.0,  # No threshold to ensure we get results
                 )
 
                 # Should get at least one result
@@ -127,49 +116,54 @@ class TestRetrievalProperties:
                 retrieved_chunk = results[0].chunk
 
                 # Verify text is identical
-                assert retrieved_chunk.text == original_chunk.text, \
+                assert retrieved_chunk.text == original_chunk.text, (
                     f"Text mismatch: expected '{original_chunk.text}', got '{retrieved_chunk.text}'"
+                )
 
                 # Verify source_type is identical
-                assert retrieved_chunk.source_type == original_chunk.source_type, \
+                assert retrieved_chunk.source_type == original_chunk.source_type, (
                     f"Source type mismatch: expected '{original_chunk.source_type}', got '{retrieved_chunk.source_type}'"
+                )
 
                 # Verify source_identifier is identical
-                assert retrieved_chunk.source_identifier == original_chunk.source_identifier, \
+                assert retrieved_chunk.source_identifier == original_chunk.source_identifier, (
                     f"Source identifier mismatch: expected '{original_chunk.source_identifier}', got '{retrieved_chunk.source_identifier}'"
+                )
 
                 # Verify chunk_index is identical
-                assert retrieved_chunk.chunk_index == original_chunk.chunk_index, \
+                assert retrieved_chunk.chunk_index == original_chunk.chunk_index, (
                     f"Chunk index mismatch: expected {original_chunk.chunk_index}, got {retrieved_chunk.chunk_index}"
+                )
 
                 # Verify metadata is identical (with tolerance for float precision)
                 for key in original_chunk.metadata:
-                    assert key in retrieved_chunk.metadata, \
-                        f"Metadata key '{key}' missing in retrieved chunk"
+                    assert key in retrieved_chunk.metadata, f"Metadata key '{key}' missing in retrieved chunk"
 
                     original_value = original_chunk.metadata[key]
                     retrieved_value = retrieved_chunk.metadata[key]
 
                     if isinstance(original_value, float):
                         # Use approximate equality for floats due to ChromaDB precision
-                        assert abs(original_value - retrieved_value) < 1e-6 or \
-                               abs(original_value - retrieved_value) / max(abs(original_value), 1e-10) < 1e-6, \
+                        assert (
+                            abs(original_value - retrieved_value) < 1e-6
+                            or abs(original_value - retrieved_value) / max(abs(original_value), 1e-10) < 1e-6
+                        ), (
                             f"Metadata float value mismatch for key '{key}': expected {original_value}, got {retrieved_value}"
+                        )
                     else:
-                        assert retrieved_value == original_value, \
+                        assert retrieved_value == original_value, (
                             f"Metadata value mismatch for key '{key}': expected {original_value}, got {retrieved_value}"
+                        )
 
                 # Verify no extra metadata keys
-                assert set(retrieved_chunk.metadata.keys()) == set(original_chunk.metadata.keys()), \
+                assert set(retrieved_chunk.metadata.keys()) == set(original_chunk.metadata.keys()), (
                     f"Metadata keys mismatch: expected {set(original_chunk.metadata.keys())}, got {set(retrieved_chunk.metadata.keys())}"
+                )
         finally:
             # Cleanup
             shutil.rmtree(temp_dir, ignore_errors=True)
 
-    @given(
-        num_chunks=st.integers(min_value=0, max_value=50),
-        top_k=st.integers(min_value=1, max_value=100)
-    )
+    @given(num_chunks=st.integers(min_value=0, max_value=50), top_k=st.integers(min_value=1, max_value=100))
     @settings(max_examples=20, deadline=None)
     def test_top_k_retrieval_limit(self, num_chunks, top_k):
         """
@@ -201,7 +195,7 @@ class TestRetrievalProperties:
                     source_type="web",
                     source_identifier=f"http://example.com/doc{i}",
                     chunk_index=i,
-                    metadata={"doc_id": i}
+                    metadata={"doc_id": i},
                 )
                 chunks.append(chunk)
 
@@ -221,29 +215,27 @@ class TestRetrievalProperties:
                 collection_name,
                 query_embedding,
                 top_k=top_k,
-                min_similarity=0.0  # No threshold to test pure top-k behavior
+                min_similarity=0.0,  # No threshold to test pure top-k behavior
             )
 
             # Verify the number of results is at most min(k, N)
             expected_max_results = min(top_k, num_chunks)
-            assert len(results) <= expected_max_results, \
+            assert len(results) <= expected_max_results, (
                 f"Expected at most {expected_max_results} results, but got {len(results)}"
+            )
 
             # Additional verification: results should not exceed the number of chunks
-            assert len(results) <= num_chunks, \
+            assert len(results) <= num_chunks, (
                 f"Number of results ({len(results)}) exceeds number of chunks ({num_chunks})"
+            )
 
             # Additional verification: results should not exceed top_k
-            assert len(results) <= top_k, \
-                f"Number of results ({len(results)}) exceeds top_k ({top_k})"
+            assert len(results) <= top_k, f"Number of results ({len(results)}) exceeds top_k ({top_k})"
         finally:
             # Cleanup
             shutil.rmtree(temp_dir, ignore_errors=True)
 
-    @given(
-        num_chunks=st.integers(min_value=2, max_value=30),
-        top_k=st.integers(min_value=1, max_value=20)
-    )
+    @given(num_chunks=st.integers(min_value=2, max_value=30), top_k=st.integers(min_value=1, max_value=20))
     @settings(max_examples=20, deadline=None)
     def test_search_results_ordering(self, num_chunks, top_k):
         """
@@ -282,7 +274,7 @@ class TestRetrievalProperties:
                     source_type="web",
                     source_identifier=f"http://example.com/doc{i}",
                     chunk_index=i,
-                    metadata={"doc_id": i}
+                    metadata={"doc_id": i},
                 )
                 chunks.append(chunk)
 
@@ -301,7 +293,7 @@ class TestRetrievalProperties:
                 collection_name=collection_name,
                 query=query,
                 top_k=top_k,
-                min_similarity=0.0  # No threshold to test pure ordering
+                min_similarity=0.0,  # No threshold to test pure ordering
             )
 
             # Get the search results
@@ -314,9 +306,10 @@ class TestRetrievalProperties:
                     next_score = search_results[i + 1].similarity_score
 
                     # Current score should be >= next score (descending order)
-                    assert current_score >= next_score, \
-                        f"Results not ordered correctly: result[{i}].similarity_score ({current_score}) " \
-                        f"< result[{i+1}].similarity_score ({next_score})"
+                    assert current_score >= next_score, (
+                        f"Results not ordered correctly: result[{i}].similarity_score ({current_score}) "
+                        f"< result[{i + 1}].similarity_score ({next_score})"
+                    )
 
             # Additional verification: verify rank field is also in ascending order
             if len(search_results) > 1:
@@ -325,9 +318,10 @@ class TestRetrievalProperties:
                     next_rank = search_results[i + 1].rank
 
                     # Rank should be in ascending order (0, 1, 2, ...)
-                    assert current_rank < next_rank, \
-                        f"Rank not ordered correctly: result[{i}].rank ({current_rank}) " \
-                        f">= result[{i+1}].rank ({next_rank})"
+                    assert current_rank < next_rank, (
+                        f"Rank not ordered correctly: result[{i}].rank ({current_rank}) "
+                        f">= result[{i + 1}].rank ({next_rank})"
+                    )
         finally:
             # Cleanup
             shutil.rmtree(temp_dir, ignore_errors=True)

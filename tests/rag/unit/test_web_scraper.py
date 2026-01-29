@@ -70,14 +70,7 @@ class TestWebScraperScrapeUrl:
         assert result.metadata["content_length"] == len(test_content)
 
         # Verify MCP client was called correctly
-        mock_mcp_client.call_tool.assert_called_once_with(
-            "fetch",
-            {
-                "url": test_url,
-                "max_length": 50000,
-                "raw": False
-            }
-        )
+        mock_mcp_client.call_tool.assert_called_once_with("fetch", {"url": test_url, "max_length": 50000, "raw": False})
 
     @pytest.mark.anyio
     async def test_scrape_url_with_custom_max_length(self, web_scraper, mock_mcp_client):
@@ -92,12 +85,7 @@ class TestWebScraperScrapeUrl:
 
         assert result.success is True
         mock_mcp_client.call_tool.assert_called_once_with(
-            "fetch",
-            {
-                "url": test_url,
-                "max_length": custom_max_length,
-                "raw": False
-            }
+            "fetch", {"url": test_url, "max_length": custom_max_length, "raw": False}
         )
 
     @pytest.mark.anyio
@@ -131,7 +119,7 @@ class TestWebScraperScrapeUrl:
         mock_mcp_client.call_tool.side_effect = [
             RuntimeError("Network error"),
             RuntimeError("Timeout"),
-            "Success content"
+            "Success content",
         ]
 
         result = await web_scraper.scrape_url(test_url, max_retries=3)
@@ -158,7 +146,7 @@ class TestWebScraperScrapeUrl:
         async def mock_sleep(delay):
             sleep_times.append(delay)
 
-        with patch('asyncio.sleep', side_effect=mock_sleep):
+        with patch("asyncio.sleep", side_effect=mock_sleep):
             result = await web_scraper.scrape_url(test_url, max_retries=3)
 
         # Should fail after all retries
@@ -226,18 +214,10 @@ class TestWebScraperBatchScraping:
     @pytest.mark.anyio
     async def test_scrape_urls_batch_success(self, web_scraper, mock_mcp_client):
         """Test successful batch scraping of multiple URLs."""
-        test_urls = [
-            "https://example.com/page1",
-            "https://example.com/page2",
-            "https://example.com/page3"
-        ]
+        test_urls = ["https://example.com/page1", "https://example.com/page2", "https://example.com/page3"]
 
         # Mock responses for each URL
-        mock_mcp_client.call_tool.side_effect = [
-            "Content from page 1",
-            "Content from page 2",
-            "Content from page 3"
-        ]
+        mock_mcp_client.call_tool.side_effect = ["Content from page 1", "Content from page 2", "Content from page 3"]
 
         results = await web_scraper.scrape_urls_batch(test_urls)
 
@@ -258,11 +238,7 @@ class TestWebScraperBatchScraping:
     @pytest.mark.anyio
     async def test_scrape_urls_batch_with_rate_limiting(self, web_scraper, mock_mcp_client):
         """Test that rate limiting is applied between requests."""
-        test_urls = [
-            "https://example.com/page1",
-            "https://example.com/page2",
-            "https://example.com/page3"
-        ]
+        test_urls = ["https://example.com/page1", "https://example.com/page2", "https://example.com/page3"]
 
         mock_mcp_client.call_tool.return_value = "Content"
 
@@ -272,11 +248,8 @@ class TestWebScraperBatchScraping:
         async def mock_sleep(delay):
             sleep_times.append(delay)
 
-        with patch('asyncio.sleep', side_effect=mock_sleep):
-            results = await web_scraper.scrape_urls_batch(
-                test_urls,
-                rate_limit_delay=0.5
-            )
+        with patch("asyncio.sleep", side_effect=mock_sleep):
+            results = await web_scraper.scrape_urls_batch(test_urls, rate_limit_delay=0.5)
 
         # Should have successful results
         assert len(results) == 3
@@ -301,11 +274,8 @@ class TestWebScraperBatchScraping:
             sleep_times.append(delay)
 
         custom_delay = 2.0
-        with patch('asyncio.sleep', side_effect=mock_sleep):
-            await web_scraper.scrape_urls_batch(
-                test_urls,
-                rate_limit_delay=custom_delay
-            )
+        with patch("asyncio.sleep", side_effect=mock_sleep):
+            await web_scraper.scrape_urls_batch(test_urls, rate_limit_delay=custom_delay)
 
         # Should have used custom delay
         rate_limit_sleeps = [s for s in sleep_times if s == custom_delay]
@@ -314,11 +284,7 @@ class TestWebScraperBatchScraping:
     @pytest.mark.anyio
     async def test_scrape_urls_batch_mixed_success_failure(self, web_scraper, mock_mcp_client):
         """Test batch scraping with some successes and some failures."""
-        test_urls = [
-            "https://example.com/page1",
-            "https://example.com/page2",
-            "https://example.com/page3"
-        ]
+        test_urls = ["https://example.com/page1", "https://example.com/page2", "https://example.com/page3"]
 
         # Mock mixed responses: success, failure, success
         mock_mcp_client.call_tool.side_effect = [
@@ -326,7 +292,7 @@ class TestWebScraperBatchScraping:
             RuntimeError("Network error"),
             RuntimeError("Network error"),
             RuntimeError("Network error"),  # All retries for page 2 fail
-            "Content from page 3"
+            "Content from page 3",
         ]
 
         results = await web_scraper.scrape_urls_batch(test_urls, max_retries=3)
@@ -361,7 +327,7 @@ class TestWebScraperBatchScraping:
         async def mock_sleep(delay):
             sleep_times.append(delay)
 
-        with patch('asyncio.sleep', side_effect=mock_sleep):
+        with patch("asyncio.sleep", side_effect=mock_sleep):
             results = await web_scraper.scrape_urls_batch(test_urls)
 
         # Should succeed
@@ -379,16 +345,11 @@ class TestWebScraperBatchScraping:
             "https://example.com/page1",
             "https://example.com/page2",
             "https://example.com/page3",
-            "https://example.com/page4"
+            "https://example.com/page4",
         ]
 
         # Mock responses with identifiable content
-        mock_mcp_client.call_tool.side_effect = [
-            "Content 1",
-            "Content 2",
-            "Content 3",
-            "Content 4"
-        ]
+        mock_mcp_client.call_tool.side_effect = ["Content 1", "Content 2", "Content 3", "Content 4"]
 
         results = await web_scraper.scrape_urls_batch(test_urls)
 
@@ -499,7 +460,7 @@ class TestWebScraperRateLimiting:
         async def mock_sleep(delay):
             sleep_times.append(delay)
 
-        with patch('asyncio.sleep', side_effect=mock_sleep):
+        with patch("asyncio.sleep", side_effect=mock_sleep):
             await web_scraper.scrape_urls_batch(test_urls, rate_limit_delay=1.5)
 
         # Should have exactly 1 rate limit sleep (between requests)
@@ -512,23 +473,15 @@ class TestWebScraperRateLimiting:
         test_urls = ["https://example.com/page1", "https://example.com/page2"]
 
         # First URL fails once then succeeds, second URL succeeds immediately
-        mock_mcp_client.call_tool.side_effect = [
-            RuntimeError("Temporary error"),
-            "Content 1",
-            "Content 2"
-        ]
+        mock_mcp_client.call_tool.side_effect = [RuntimeError("Temporary error"), "Content 1", "Content 2"]
 
         sleep_times = []
 
         async def mock_sleep(delay):
             sleep_times.append(delay)
 
-        with patch('asyncio.sleep', side_effect=mock_sleep):
-            results = await web_scraper.scrape_urls_batch(
-                test_urls,
-                max_retries=2,
-                rate_limit_delay=0.5
-            )
+        with patch("asyncio.sleep", side_effect=mock_sleep):
+            results = await web_scraper.scrape_urls_batch(test_urls, max_retries=2, rate_limit_delay=0.5)
 
         # Both should succeed
         assert all(r.success for r in results)

@@ -1,6 +1,5 @@
 """Unit tests for AccessLevelValidator."""
 
-
 from offline_chat.database.access_level import AccessLevel
 from offline_chat.database.access_validator import AccessLevelValidator
 from offline_chat.database.result import is_err, is_ok, unwrap_err
@@ -72,9 +71,7 @@ class TestExtractTableNames:
 
     def test_extract_from_select_with_join(self):
         """Test extracting tables from SELECT with JOIN."""
-        tables = AccessLevelValidator._extract_table_names(
-            "SELECT * FROM users u JOIN orders o ON u.id = o.user_id"
-        )
+        tables = AccessLevelValidator._extract_table_names("SELECT * FROM users u JOIN orders o ON u.id = o.user_id")
         assert set(tables) == {"users", "orders"}
 
     def test_extract_from_insert(self):
@@ -100,9 +97,7 @@ class TestExtractTableNames:
     def test_extract_multiple_joins(self):
         """Test extracting tables from query with multiple joins."""
         tables = AccessLevelValidator._extract_table_names(
-            "SELECT * FROM users u "
-            "JOIN orders o ON u.id = o.user_id "
-            "JOIN products p ON o.product_id = p.id"
+            "SELECT * FROM users u JOIN orders o ON u.id = o.user_id JOIN products p ON o.product_id = p.id"
         )
         assert set(tables) == {"users", "orders", "products"}
 
@@ -124,19 +119,13 @@ class TestValidateQueryReadOnly:
 
     def test_read_only_allows_select(self):
         """Test that READ_ONLY allows SELECT queries."""
-        result = AccessLevelValidator.validate_query(
-            "SELECT * FROM users",
-            AccessLevel.READ_ONLY,
-            []
-        )
+        result = AccessLevelValidator.validate_query("SELECT * FROM users", AccessLevel.READ_ONLY, [])
         assert is_ok(result)
 
     def test_read_only_rejects_insert(self):
         """Test that READ_ONLY rejects INSERT queries."""
         result = AccessLevelValidator.validate_query(
-            "INSERT INTO users (name) VALUES ('John')",
-            AccessLevel.READ_ONLY,
-            []
+            "INSERT INTO users (name) VALUES ('John')", AccessLevel.READ_ONLY, []
         )
         assert is_err(result)
         error_msg = unwrap_err(result)
@@ -145,11 +134,7 @@ class TestValidateQueryReadOnly:
 
     def test_read_only_rejects_update(self):
         """Test that READ_ONLY rejects UPDATE queries."""
-        result = AccessLevelValidator.validate_query(
-            "UPDATE users SET name = 'Jane'",
-            AccessLevel.READ_ONLY,
-            []
-        )
+        result = AccessLevelValidator.validate_query("UPDATE users SET name = 'Jane'", AccessLevel.READ_ONLY, [])
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "read-only" in error_msg.lower()
@@ -157,11 +142,7 @@ class TestValidateQueryReadOnly:
 
     def test_read_only_rejects_delete(self):
         """Test that READ_ONLY rejects DELETE queries."""
-        result = AccessLevelValidator.validate_query(
-            "DELETE FROM users",
-            AccessLevel.READ_ONLY,
-            []
-        )
+        result = AccessLevelValidator.validate_query("DELETE FROM users", AccessLevel.READ_ONLY, [])
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "read-only" in error_msg.lower()
@@ -169,11 +150,7 @@ class TestValidateQueryReadOnly:
 
     def test_read_only_rejects_create(self):
         """Test that READ_ONLY rejects CREATE queries."""
-        result = AccessLevelValidator.validate_query(
-            "CREATE TABLE users (id INT)",
-            AccessLevel.READ_ONLY,
-            []
-        )
+        result = AccessLevelValidator.validate_query("CREATE TABLE users (id INT)", AccessLevel.READ_ONLY, [])
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "read-only" in error_msg.lower()
@@ -181,11 +158,7 @@ class TestValidateQueryReadOnly:
 
     def test_read_only_rejects_drop(self):
         """Test that READ_ONLY rejects DROP queries."""
-        result = AccessLevelValidator.validate_query(
-            "DROP TABLE users",
-            AccessLevel.READ_ONLY,
-            []
-        )
+        result = AccessLevelValidator.validate_query("DROP TABLE users", AccessLevel.READ_ONLY, [])
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "read-only" in error_msg.lower()
@@ -197,47 +170,29 @@ class TestValidateQueryReadWrite:
 
     def test_read_write_allows_select(self):
         """Test that READ_WRITE allows SELECT queries."""
-        result = AccessLevelValidator.validate_query(
-            "SELECT * FROM users",
-            AccessLevel.READ_WRITE,
-            []
-        )
+        result = AccessLevelValidator.validate_query("SELECT * FROM users", AccessLevel.READ_WRITE, [])
         assert is_ok(result)
 
     def test_read_write_allows_insert(self):
         """Test that READ_WRITE allows INSERT queries."""
         result = AccessLevelValidator.validate_query(
-            "INSERT INTO users (name) VALUES ('John')",
-            AccessLevel.READ_WRITE,
-            []
+            "INSERT INTO users (name) VALUES ('John')", AccessLevel.READ_WRITE, []
         )
         assert is_ok(result)
 
     def test_read_write_allows_update(self):
         """Test that READ_WRITE allows UPDATE queries."""
-        result = AccessLevelValidator.validate_query(
-            "UPDATE users SET name = 'Jane'",
-            AccessLevel.READ_WRITE,
-            []
-        )
+        result = AccessLevelValidator.validate_query("UPDATE users SET name = 'Jane'", AccessLevel.READ_WRITE, [])
         assert is_ok(result)
 
     def test_read_write_allows_delete(self):
         """Test that READ_WRITE allows DELETE queries."""
-        result = AccessLevelValidator.validate_query(
-            "DELETE FROM users WHERE id = 1",
-            AccessLevel.READ_WRITE,
-            []
-        )
+        result = AccessLevelValidator.validate_query("DELETE FROM users WHERE id = 1", AccessLevel.READ_WRITE, [])
         assert is_ok(result)
 
     def test_read_write_rejects_create(self):
         """Test that READ_WRITE rejects CREATE queries (DDL)."""
-        result = AccessLevelValidator.validate_query(
-            "CREATE TABLE users (id INT)",
-            AccessLevel.READ_WRITE,
-            []
-        )
+        result = AccessLevelValidator.validate_query("CREATE TABLE users (id INT)", AccessLevel.READ_WRITE, [])
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "read-write" in error_msg.lower()
@@ -246,11 +201,7 @@ class TestValidateQueryReadWrite:
 
     def test_read_write_rejects_drop(self):
         """Test that READ_WRITE rejects DROP queries (DDL)."""
-        result = AccessLevelValidator.validate_query(
-            "DROP TABLE users",
-            AccessLevel.READ_WRITE,
-            []
-        )
+        result = AccessLevelValidator.validate_query("DROP TABLE users", AccessLevel.READ_WRITE, [])
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "read-write" in error_msg.lower()
@@ -258,16 +209,11 @@ class TestValidateQueryReadWrite:
 
     def test_read_write_rejects_alter(self):
         """Test that READ_WRITE rejects ALTER queries (DDL)."""
-        result = AccessLevelValidator.validate_query(
-            "ALTER TABLE users ADD COLUMN age INT",
-            AccessLevel.READ_WRITE,
-            []
-        )
+        result = AccessLevelValidator.validate_query("ALTER TABLE users ADD COLUMN age INT", AccessLevel.READ_WRITE, [])
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "read-write" in error_msg.lower()
         assert "ALTER" in error_msg
-
 
 
 class TestValidateQueryTableSpecificRead:
@@ -276,18 +222,14 @@ class TestValidateQueryTableSpecificRead:
     def test_table_specific_read_allows_select_on_allowed_table(self):
         """Test that TABLE_SPECIFIC_READ allows SELECT on allowed tables."""
         result = AccessLevelValidator.validate_query(
-            "SELECT * FROM users",
-            AccessLevel.TABLE_SPECIFIC_READ,
-            ["users", "orders"]
+            "SELECT * FROM users", AccessLevel.TABLE_SPECIFIC_READ, ["users", "orders"]
         )
         assert is_ok(result)
 
     def test_table_specific_read_rejects_select_on_disallowed_table(self):
         """Test that TABLE_SPECIFIC_READ rejects SELECT on non-allowed tables."""
         result = AccessLevelValidator.validate_query(
-            "SELECT * FROM products",
-            AccessLevel.TABLE_SPECIFIC_READ,
-            ["users", "orders"]
+            "SELECT * FROM products", AccessLevel.TABLE_SPECIFIC_READ, ["users", "orders"]
         )
         assert is_err(result)
         error_msg = unwrap_err(result)
@@ -297,9 +239,7 @@ class TestValidateQueryTableSpecificRead:
     def test_table_specific_read_rejects_insert(self):
         """Test that TABLE_SPECIFIC_READ rejects INSERT queries."""
         result = AccessLevelValidator.validate_query(
-            "INSERT INTO users (name) VALUES ('John')",
-            AccessLevel.TABLE_SPECIFIC_READ,
-            ["users"]
+            "INSERT INTO users (name) VALUES ('John')", AccessLevel.TABLE_SPECIFIC_READ, ["users"]
         )
         assert is_err(result)
         error_msg = unwrap_err(result)
@@ -308,11 +248,7 @@ class TestValidateQueryTableSpecificRead:
 
     def test_table_specific_read_requires_allowed_tables(self):
         """Test that TABLE_SPECIFIC_READ requires allowed_tables to be specified."""
-        result = AccessLevelValidator.validate_query(
-            "SELECT * FROM users",
-            AccessLevel.TABLE_SPECIFIC_READ,
-            []
-        )
+        result = AccessLevelValidator.validate_query("SELECT * FROM users", AccessLevel.TABLE_SPECIFIC_READ, [])
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "allowed_tables" in error_msg
@@ -322,7 +258,7 @@ class TestValidateQueryTableSpecificRead:
         result = AccessLevelValidator.validate_query(
             "SELECT * FROM users u JOIN orders o ON u.id = o.user_id",
             AccessLevel.TABLE_SPECIFIC_READ,
-            ["users", "orders"]
+            ["users", "orders"],
         )
         assert is_ok(result)
 
@@ -331,12 +267,11 @@ class TestValidateQueryTableSpecificRead:
         result = AccessLevelValidator.validate_query(
             "SELECT * FROM users u JOIN products p ON u.id = p.owner_id",
             AccessLevel.TABLE_SPECIFIC_READ,
-            ["users", "orders"]
+            ["users", "orders"],
         )
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "products" in error_msg
-
 
 
 class TestValidateQueryTableSpecificReadWrite:
@@ -345,45 +280,35 @@ class TestValidateQueryTableSpecificReadWrite:
     def test_table_specific_read_write_allows_select_on_allowed_table(self):
         """Test that TABLE_SPECIFIC_READ_WRITE allows SELECT on allowed tables."""
         result = AccessLevelValidator.validate_query(
-            "SELECT * FROM users",
-            AccessLevel.TABLE_SPECIFIC_READ_WRITE,
-            ["users", "orders"]
+            "SELECT * FROM users", AccessLevel.TABLE_SPECIFIC_READ_WRITE, ["users", "orders"]
         )
         assert is_ok(result)
 
     def test_table_specific_read_write_allows_insert_on_allowed_table(self):
         """Test that TABLE_SPECIFIC_READ_WRITE allows INSERT on allowed tables."""
         result = AccessLevelValidator.validate_query(
-            "INSERT INTO users (name) VALUES ('John')",
-            AccessLevel.TABLE_SPECIFIC_READ_WRITE,
-            ["users", "orders"]
+            "INSERT INTO users (name) VALUES ('John')", AccessLevel.TABLE_SPECIFIC_READ_WRITE, ["users", "orders"]
         )
         assert is_ok(result)
 
     def test_table_specific_read_write_allows_update_on_allowed_table(self):
         """Test that TABLE_SPECIFIC_READ_WRITE allows UPDATE on allowed tables."""
         result = AccessLevelValidator.validate_query(
-            "UPDATE users SET name = 'Jane'",
-            AccessLevel.TABLE_SPECIFIC_READ_WRITE,
-            ["users", "orders"]
+            "UPDATE users SET name = 'Jane'", AccessLevel.TABLE_SPECIFIC_READ_WRITE, ["users", "orders"]
         )
         assert is_ok(result)
 
     def test_table_specific_read_write_allows_delete_on_allowed_table(self):
         """Test that TABLE_SPECIFIC_READ_WRITE allows DELETE on allowed tables."""
         result = AccessLevelValidator.validate_query(
-            "DELETE FROM users WHERE id = 1",
-            AccessLevel.TABLE_SPECIFIC_READ_WRITE,
-            ["users", "orders"]
+            "DELETE FROM users WHERE id = 1", AccessLevel.TABLE_SPECIFIC_READ_WRITE, ["users", "orders"]
         )
         assert is_ok(result)
 
     def test_table_specific_read_write_rejects_insert_on_disallowed_table(self):
         """Test that TABLE_SPECIFIC_READ_WRITE rejects INSERT on non-allowed tables."""
         result = AccessLevelValidator.validate_query(
-            "INSERT INTO products (name) VALUES ('Widget')",
-            AccessLevel.TABLE_SPECIFIC_READ_WRITE,
-            ["users", "orders"]
+            "INSERT INTO products (name) VALUES ('Widget')", AccessLevel.TABLE_SPECIFIC_READ_WRITE, ["users", "orders"]
         )
         assert is_err(result)
         error_msg = unwrap_err(result)
@@ -393,9 +318,7 @@ class TestValidateQueryTableSpecificReadWrite:
     def test_table_specific_read_write_rejects_ddl(self):
         """Test that TABLE_SPECIFIC_READ_WRITE rejects DDL queries."""
         result = AccessLevelValidator.validate_query(
-            "CREATE TABLE users (id INT)",
-            AccessLevel.TABLE_SPECIFIC_READ_WRITE,
-            ["users"]
+            "CREATE TABLE users (id INT)", AccessLevel.TABLE_SPECIFIC_READ_WRITE, ["users"]
         )
         assert is_err(result)
         error_msg = unwrap_err(result)
@@ -405,11 +328,7 @@ class TestValidateQueryTableSpecificReadWrite:
 
     def test_table_specific_read_write_requires_allowed_tables(self):
         """Test that TABLE_SPECIFIC_READ_WRITE requires allowed_tables."""
-        result = AccessLevelValidator.validate_query(
-            "SELECT * FROM users",
-            AccessLevel.TABLE_SPECIFIC_READ_WRITE,
-            []
-        )
+        result = AccessLevelValidator.validate_query("SELECT * FROM users", AccessLevel.TABLE_SPECIFIC_READ_WRITE, [])
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "allowed_tables" in error_msg
@@ -420,40 +339,24 @@ class TestValidateQueryEdgeCases:
 
     def test_empty_query(self):
         """Test that empty query is rejected."""
-        result = AccessLevelValidator.validate_query(
-            "",
-            AccessLevel.READ_ONLY,
-            []
-        )
+        result = AccessLevelValidator.validate_query("", AccessLevel.READ_ONLY, [])
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "empty" in error_msg.lower()
 
     def test_whitespace_only_query(self):
         """Test that whitespace-only query is rejected."""
-        result = AccessLevelValidator.validate_query(
-            "   ",
-            AccessLevel.READ_ONLY,
-            []
-        )
+        result = AccessLevelValidator.validate_query("   ", AccessLevel.READ_ONLY, [])
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "empty" in error_msg.lower()
 
     def test_query_with_lowercase_operation(self):
         """Test that lowercase operations are handled correctly."""
-        result = AccessLevelValidator.validate_query(
-            "select * from users",
-            AccessLevel.READ_ONLY,
-            []
-        )
+        result = AccessLevelValidator.validate_query("select * from users", AccessLevel.READ_ONLY, [])
         assert is_ok(result)
 
     def test_query_with_mixed_case_operation(self):
         """Test that mixed case operations are handled correctly."""
-        result = AccessLevelValidator.validate_query(
-            "SeLeCt * FrOm users",
-            AccessLevel.READ_ONLY,
-            []
-        )
+        result = AccessLevelValidator.validate_query("SeLeCt * FrOm users", AccessLevel.READ_ONLY, [])
         assert is_ok(result)

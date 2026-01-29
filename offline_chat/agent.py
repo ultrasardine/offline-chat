@@ -112,12 +112,11 @@ class Agent:
         # Escape special characters for Modelfile format
         # Order matters: backslash first, then quotes, then newlines
         escaped_prompt = (
-            full_prompt
-            .replace("\\", "\\\\")  # Escape backslashes first
-            .replace('"', '\\"')     # Escape double quotes
-            .replace("\n", "\\n")    # Escape newlines
-            .replace("\r", "\\r")    # Escape carriage returns
-            .replace("\t", "\\t")    # Escape tabs
+            full_prompt.replace("\\", "\\\\")  # Escape backslashes first
+            .replace('"', '\\"')  # Escape double quotes
+            .replace("\n", "\\n")  # Escape newlines
+            .replace("\r", "\\r")  # Escape carriage returns
+            .replace("\t", "\\t")  # Escape tabs
         )
 
         return f'''FROM {self.base_model}
@@ -240,19 +239,12 @@ PARAMETER temperature {self.temperature}
         # Deserialize connection assignments with backward compatibility
         connection_assignments = []
         if "connection_assignments" in data:
-            connection_assignments = [
-                AgentConnectionAssignment.from_dict(ca)
-                for ca in data["connection_assignments"]
-            ]
+            connection_assignments = [AgentConnectionAssignment.from_dict(ca) for ca in data["connection_assignments"]]
         elif "connection_references" in data and data["connection_references"]:
             # Migration: convert old connection_references to connection_assignments
             # Default to read-write access for backward compatibility
             connection_assignments = [
-                AgentConnectionAssignment(
-                    connection_name=ref,
-                    access_level=AccessLevel.READ_WRITE,
-                    allowed_tables=None
-                )
+                AgentConnectionAssignment(connection_name=ref, access_level=AccessLevel.READ_WRITE, allowed_tables=None)
                 for ref in data["connection_references"]
             ]
 

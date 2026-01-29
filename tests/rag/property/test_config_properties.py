@@ -13,35 +13,24 @@ from offline_chat.rag.models import KnowledgeSource, RAGConfig
 
 # Strategy for generating valid agent names (kebab-case)
 agent_name_strategy = st.text(
-    alphabet=st.characters(whitelist_categories=("Ll", "Nd"), whitelist_characters="-"),
-    min_size=3,
-    max_size=30
+    alphabet=st.characters(whitelist_categories=("Ll", "Nd"), whitelist_characters="-"), min_size=3, max_size=30
 ).filter(lambda x: x and x[0] != "-" and x[-1] != "-" and "--" not in x)
 
 
 # Strategy for generating display names
 display_name_strategy = st.text(
-    alphabet=st.characters(blacklist_categories=("Cs", "Cc")),
-    min_size=1,
-    max_size=50
+    alphabet=st.characters(blacklist_categories=("Cs", "Cc")), min_size=1, max_size=50
 ).filter(lambda x: x.strip())
 
 
 # Strategy for generating system prompts
 system_prompt_strategy = st.text(
-    alphabet=st.characters(blacklist_categories=("Cs", "Cc")),
-    min_size=10,
-    max_size=200
+    alphabet=st.characters(blacklist_categories=("Cs", "Cc")), min_size=10, max_size=200
 ).filter(lambda x: x.strip())
 
 
 # Strategy for generating base model names
-base_model_strategy = st.sampled_from([
-    "llama3:latest",
-    "mistral:latest",
-    "phi3:latest",
-    "gemma:latest"
-])
+base_model_strategy = st.sampled_from(["llama3:latest", "mistral:latest", "phi3:latest", "gemma:latest"])
 
 
 # Strategy for generating temperature values
@@ -60,44 +49,46 @@ def knowledge_source_strategy(draw):
 
     if source_type == "web":
         # Generate a URL-like identifier
-        identifier = draw(st.text(
-            alphabet=st.characters(whitelist_categories=("Ll", "Nd"), whitelist_characters=".-/"),
-            min_size=10,
-            max_size=50
-        ).map(lambda x: f"https://example.com/{x}"))
+        identifier = draw(
+            st.text(
+                alphabet=st.characters(whitelist_categories=("Ll", "Nd"), whitelist_characters=".-/"),
+                min_size=10,
+                max_size=50,
+            ).map(lambda x: f"https://example.com/{x}")
+        )
     else:
         # Generate a table name
-        identifier = draw(st.text(
-            alphabet=st.characters(whitelist_categories=("Ll", "Nd"), whitelist_characters="_"),
-            min_size=3,
-            max_size=30
-        ).filter(lambda x: x and x[0] != "_"))
+        identifier = draw(
+            st.text(
+                alphabet=st.characters(whitelist_categories=("Ll", "Nd"), whitelist_characters="_"),
+                min_size=3,
+                max_size=30,
+            ).filter(lambda x: x and x[0] != "_")
+        )
 
     # Randomly include last_indexed or leave it None
-    last_indexed = draw(st.one_of(
-        st.none(),
-        st.datetimes(
-            min_value=datetime(2020, 1, 1),
-            max_value=datetime(2025, 12, 31)
-        ).map(lambda dt: dt.replace(tzinfo=timezone.utc))
-    ))
+    last_indexed = draw(
+        st.one_of(
+            st.none(),
+            st.datetimes(min_value=datetime(2020, 1, 1), max_value=datetime(2025, 12, 31)).map(
+                lambda dt: dt.replace(tzinfo=timezone.utc)
+            ),
+        )
+    )
 
     status = draw(st.sampled_from(["active", "failed", "pending"]))
 
     # Only include error_message if status is "failed"
     error_message = None
     if status == "failed":
-        error_message = draw(st.one_of(
-            st.none(),
-            st.text(min_size=5, max_size=50).filter(lambda x: x.strip())
-        ))
+        error_message = draw(st.one_of(st.none(), st.text(min_size=5, max_size=50).filter(lambda x: x.strip())))
 
     return KnowledgeSource(
         source_type=source_type,
         identifier=identifier,
         last_indexed=last_indexed,
         status=status,
-        error_message=error_message
+        error_message=error_message,
     )
 
 
@@ -110,11 +101,7 @@ def rag_config_strategy(draw):
     min_similarity = draw(st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False))
     chunk_size = draw(st.integers(min_value=100, max_value=2000))
     chunk_overlap = draw(st.integers(min_value=0, max_value=500))
-    embedding_model = draw(st.sampled_from([
-        "all-MiniLM-L6-v2",
-        "all-mpnet-base-v2",
-        "paraphrase-MiniLM-L6-v2"
-    ]))
+    embedding_model = draw(st.sampled_from(["all-MiniLM-L6-v2", "all-mpnet-base-v2", "paraphrase-MiniLM-L6-v2"]))
     knowledge_sources = draw(st.lists(knowledge_source_strategy(), min_size=0, max_size=5))
 
     return RAGConfig(
@@ -124,7 +111,7 @@ def rag_config_strategy(draw):
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
         embedding_model=embedding_model,
-        knowledge_sources=knowledge_sources
+        knowledge_sources=knowledge_sources,
     )
 
 
@@ -139,15 +126,12 @@ def agent_with_rag_strategy(draw):
     temperature = draw(temperature_strategy)
     language = draw(language_strategy)
     web_search_enabled = draw(st.booleans())
-    guidelines = draw(st.lists(
-        st.text(min_size=5, max_size=50).filter(lambda x: x.strip()),
-        min_size=0,
-        max_size=5
-    ))
-    created_at = draw(st.datetimes(
-        min_value=datetime(2020, 1, 1),
-        max_value=datetime(2025, 12, 31)
-    ).map(lambda dt: dt.replace(tzinfo=timezone.utc)))
+    guidelines = draw(st.lists(st.text(min_size=5, max_size=50).filter(lambda x: x.strip()), min_size=0, max_size=5))
+    created_at = draw(
+        st.datetimes(min_value=datetime(2020, 1, 1), max_value=datetime(2025, 12, 31)).map(
+            lambda dt: dt.replace(tzinfo=timezone.utc)
+        )
+    )
 
     # Generate RAG config (can be None or a RAGConfig instance)
     rag_config = draw(st.one_of(st.none(), rag_config_strategy()))
@@ -164,7 +148,7 @@ def agent_with_rag_strategy(draw):
         connection_assignments=[],  # Keep empty for simplicity
         guidelines=guidelines,
         created_at=created_at,
-        rag_config=rag_config
+        rag_config=rag_config,
     )
 
 
@@ -226,8 +210,7 @@ class TestConfigProperties:
 
             # Verify each knowledge source is preserved
             for original_ks, restored_ks in zip(
-                agent.rag_config.knowledge_sources,
-                restored_agent.rag_config.knowledge_sources
+                agent.rag_config.knowledge_sources, restored_agent.rag_config.knowledge_sources
             ):
                 assert restored_ks.source_type == original_ks.source_type
                 assert restored_ks.identifier == original_ks.identifier
@@ -269,7 +252,7 @@ class TestConfigProperties:
             connection_assignments=[],
             guidelines=[],
             created_at=datetime.now(timezone.utc),
-            rag_config=rag_config
+            rag_config=rag_config,
         )
 
         # Serialize to dictionary

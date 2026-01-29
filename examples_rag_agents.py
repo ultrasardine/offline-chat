@@ -32,32 +32,28 @@ def example_1_web_sources():
 
     This agent can answer questions about Python by referencing official documentation.
     """
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Example 1: RAG Agent with Web Sources")
-    print("="*70)
+    print("=" * 70)
 
     manager = AgentManager()
 
     # Create RAG configuration with web sources
     rag_config = RAGConfig(
         enabled=True,
-        top_k=5,                              # Retrieve top 5 most relevant chunks
-        min_similarity=0.3,                   # Minimum similarity threshold
-        chunk_size=512,                       # Size of text chunks
-        chunk_overlap=50,                     # Overlap between chunks
+        top_k=5,  # Retrieve top 5 most relevant chunks
+        min_similarity=0.3,  # Minimum similarity threshold
+        chunk_size=512,  # Size of text chunks
+        chunk_overlap=50,  # Overlap between chunks
         embedding_model="all-MiniLM-L6-v2",  # Sentence transformer model
         knowledge_sources=[
             KnowledgeSource(
-                source_type="web",
-                identifier="https://docs.python.org/3/tutorial/introduction.html",
-                status="pending"
+                source_type="web", identifier="https://docs.python.org/3/tutorial/introduction.html", status="pending"
             ),
             KnowledgeSource(
-                source_type="web",
-                identifier="https://docs.python.org/3/tutorial/controlflow.html",
-                status="pending"
+                source_type="web", identifier="https://docs.python.org/3/tutorial/controlflow.html", status="pending"
             ),
-        ]
+        ],
     )
 
     # Create agent with RAG
@@ -69,7 +65,7 @@ def example_1_web_sources():
         official Python documentation. Always cite your sources and provide accurate
         information from the documentation.""",
         temperature=0.5,
-        rag_config=rag_config
+        rag_config=rag_config,
     )
 
     try:
@@ -92,9 +88,9 @@ def example_2_database_sources():
     This agent can answer questions about company sales data by querying
     indexed database tables.
     """
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Example 2: RAG Agent with Database Sources")
-    print("="*70)
+    print("=" * 70)
 
     manager = AgentManager()
 
@@ -109,28 +105,16 @@ def example_2_database_sources():
     # Create RAG configuration with database sources
     rag_config = RAGConfig(
         enabled=True,
-        top_k=8,                              # More chunks for database queries
-        min_similarity=0.25,                  # Lower threshold for structured data
-        chunk_size=256,                       # Smaller chunks for database rows
-        chunk_overlap=0,                      # No overlap for structured data
+        top_k=8,  # More chunks for database queries
+        min_similarity=0.25,  # Lower threshold for structured data
+        chunk_size=256,  # Smaller chunks for database rows
+        chunk_overlap=0,  # No overlap for structured data
         embedding_model="all-MiniLM-L6-v2",
         knowledge_sources=[
-            KnowledgeSource(
-                source_type="database",
-                identifier="customers",
-                status="pending"
-            ),
-            KnowledgeSource(
-                source_type="database",
-                identifier="products",
-                status="pending"
-            ),
-            KnowledgeSource(
-                source_type="database",
-                identifier="orders",
-                status="pending"
-            ),
-        ]
+            KnowledgeSource(source_type="database", identifier="customers", status="pending"),
+            KnowledgeSource(source_type="database", identifier="products", status="pending"),
+            KnowledgeSource(source_type="database", identifier="orders", status="pending"),
+        ],
     )
 
     # Create agent with RAG
@@ -143,7 +127,7 @@ def example_2_database_sources():
         insights about customers, products, and orders. Always cite which tables you're
         referencing.""",
         temperature=0.3,  # Lower temperature for factual data
-        rag_config=rag_config
+        rag_config=rag_config,
     )
 
     try:
@@ -167,9 +151,9 @@ def example_3_mixed_sources():
     This agent combines web documentation with database information to provide
     comprehensive answers that reference both external knowledge and internal data.
     """
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Example 3: RAG Agent with Mixed Sources (Web + Database)")
-    print("="*70)
+    print("=" * 70)
 
     manager = AgentManager()
 
@@ -184,7 +168,7 @@ def example_3_mixed_sources():
     # Create RAG configuration with mixed sources
     rag_config = RAGConfig(
         enabled=True,
-        top_k=10,                             # More chunks for diverse sources
+        top_k=10,  # More chunks for diverse sources
         min_similarity=0.3,
         chunk_size=512,
         chunk_overlap=50,
@@ -192,22 +176,12 @@ def example_3_mixed_sources():
         knowledge_sources=[
             # Web sources - product documentation
             KnowledgeSource(
-                source_type="web",
-                identifier="https://docs.python.org/3/library/sqlite3.html",
-                status="pending"
+                source_type="web", identifier="https://docs.python.org/3/library/sqlite3.html", status="pending"
             ),
             # Database sources - company data
-            KnowledgeSource(
-                source_type="database",
-                identifier="customers",
-                status="pending"
-            ),
-            KnowledgeSource(
-                source_type="database",
-                identifier="products",
-                status="pending"
-            ),
-        ]
+            KnowledgeSource(source_type="database", identifier="customers", status="pending"),
+            KnowledgeSource(source_type="database", identifier="products", status="pending"),
+        ],
     )
 
     # Create agent with RAG
@@ -222,7 +196,7 @@ def example_3_mixed_sources():
         3. Clearly distinguish between external and internal sources
         4. Provide comprehensive answers that combine both perspectives""",
         temperature=0.6,
-        rag_config=rag_config
+        rag_config=rag_config,
     )
 
     try:
@@ -260,9 +234,9 @@ async def demo_chat_with_rag_agent():
     3. Chat with the agent
     4. See source citations in responses
     """
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Bonus: Interactive Chat Demo with RAG Agent")
-    print("="*70)
+    print("=" * 70)
 
     manager = AgentManager()
 
@@ -273,11 +247,9 @@ async def demo_chat_with_rag_agent():
         min_similarity=0.3,
         knowledge_sources=[
             KnowledgeSource(
-                source_type="web",
-                identifier="https://docs.python.org/3/tutorial/introduction.html",
-                status="pending"
+                source_type="web", identifier="https://docs.python.org/3/tutorial/introduction.html", status="pending"
             ),
-        ]
+        ],
     )
 
     agent = Agent(
@@ -286,7 +258,7 @@ async def demo_chat_with_rag_agent():
         base_model="llama3:latest",
         system_prompt="You answer questions based on Python documentation.",
         temperature=0.5,
-        rag_config=rag_config
+        rag_config=rag_config,
     )
 
     try:
@@ -321,9 +293,9 @@ async def demo_chat_with_rag_agent():
 
 def main():
     """Run all examples."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("RAG-Enabled Agent Examples")
-    print("="*70)
+    print("=" * 70)
     print("\nThis script demonstrates three types of RAG-enabled agents:")
     print("  1. Web sources only - Answers from web documentation")
     print("  2. Database sources only - Answers from indexed database tables")
@@ -337,9 +309,9 @@ def main():
     # Run interactive demo
     asyncio.run(demo_chat_with_rag_agent())
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("Examples Complete!")
-    print("="*70)
+    print("=" * 70)
     print("\nNext steps:")
     print("  1. Review the created agents: make agents")
     print("  2. Ingest knowledge sources for each agent")

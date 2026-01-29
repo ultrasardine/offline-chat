@@ -120,9 +120,7 @@ class TestWebFetchContentExtraction:
         main_content=st.text(
             min_size=1,
             max_size=200,
-            alphabet=st.characters(
-                whitelist_categories=("L", "N", "P", "Z"), whitelist_characters=" "
-            ),
+            alphabet=st.characters(whitelist_categories=("L", "N", "P", "Z"), whitelist_characters=" "),
         ),
     )
     def test_unwanted_elements_are_removed(self, main_content: str):

@@ -87,10 +87,7 @@ class RAGOrchestrator:
         self._ingestion_status: dict[str, KnowledgeSource] = {}
 
     def process_query(
-        self,
-        query: str,
-        conversation_history: list[Any] | None = None,
-        generate_response: bool = False
+        self, query: str, conversation_history: list[Any] | None = None, generate_response: bool = False
     ) -> RAGResponse | None:
         """
         Process a user query through the RAG pipeline.
@@ -143,19 +140,25 @@ class RAGOrchestrator:
             )
 
             logger.info(
-                f"Retrieved {retrieval_result.total_results} chunks "
-                f"in {retrieval_result.retrieval_time_ms:.2f}ms"
+                f"Retrieved {retrieval_result.total_results} chunks in {retrieval_result.retrieval_time_ms:.2f}ms"
             )
         except Exception as e:
             # Check if this is a vector store unavailability error
             error_str = str(e).lower()
-            if any(keyword in error_str for keyword in [
-                "connection", "unavailable", "not found", "does not exist",
-                "chromadb", "collection", "database"
-            ]):
+            if any(
+                keyword in error_str
+                for keyword in [
+                    "connection",
+                    "unavailable",
+                    "not found",
+                    "does not exist",
+                    "chromadb",
+                    "collection",
+                    "database",
+                ]
+            ):
                 logger.warning(
-                    f"Vector store unavailable for agent '{self.agent_config.name}': {e}. "
-                    f"Falling back to non-RAG mode."
+                    f"Vector store unavailable for agent '{self.agent_config.name}': {e}. Falling back to non-RAG mode."
                 )
                 return None
             else:
@@ -187,11 +190,7 @@ class RAGOrchestrator:
             generation_time_ms=generation_time_ms,
         )
 
-    def get_augmented_prompt(
-        self,
-        query: str,
-        retrieval_result: RetrievalResult
-    ) -> str:
+    def get_augmented_prompt(self, query: str, retrieval_result: RetrievalResult) -> str:
         """
         Get the augmented prompt for a query with retrieved context.
 
@@ -212,9 +211,7 @@ class RAGOrchestrator:
         )
 
     def ingest_knowledge_sources(
-        self,
-        sources: list[KnowledgeSource],
-        show_progress: bool = True
+        self, sources: list[KnowledgeSource], show_progress: bool = True
     ) -> list[IngestionResult]:
         """
         Ingest knowledge sources into the vector store.
@@ -258,9 +255,7 @@ class RAGOrchestrator:
             if show_progress:
                 print(f"\n[{idx + 1}/{len(sources)}] Processing {source.source_type} source: {source.identifier}")
 
-            logger.info(
-                f"Ingesting {source.source_type} source: {source.identifier}"
-            )
+            logger.info(f"Ingesting {source.source_type} source: {source.identifier}")
 
             try:
                 if source.source_type == "web":
@@ -288,10 +283,7 @@ class RAGOrchestrator:
                 self._ingestion_status[source.identifier] = source
 
             except Exception as e:
-                logger.error(
-                    f"Failed to ingest source {source.identifier}: {e}",
-                    exc_info=True
-                )
+                logger.error(f"Failed to ingest source {source.identifier}: {e}", exc_info=True)
 
                 error_msg = f"Ingestion failed: {str(e)}"
                 source.status = "failed"
@@ -314,15 +306,14 @@ class RAGOrchestrator:
         successful = sum(1 for r in results if r.success)
         total_chunks = sum(r.chunks_processed for r in results)
         logger.info(
-            f"Ingestion complete: {successful}/{len(sources)} sources successful, "
-            f"{total_chunks} total chunks processed"
+            f"Ingestion complete: {successful}/{len(sources)} sources successful, {total_chunks} total chunks processed"
         )
 
         if show_progress:
-            print(f"\n{'='*60}")
+            print(f"\n{'=' * 60}")
             print(f"Ingestion Summary: {successful}/{len(sources)} sources successful")
             print(f"Total chunks processed: {total_chunks}")
-            print(f"{'='*60}\n")
+            print(f"{'=' * 60}\n")
 
         return results
 
@@ -387,9 +378,7 @@ class RAGOrchestrator:
         embedding_dim = self.embedding_generator.get_embedding_dimension()
 
         return self.vector_store.rebuild_collection(
-            collection_name=collection_name,
-            embedding_dimension=embedding_dim,
-            force=force
+            collection_name=collection_name, embedding_dimension=embedding_dim, force=force
         )
 
     def _ingest_web_source(self, source: KnowledgeSource, show_progress: bool = False) -> IngestionResult:
@@ -416,9 +405,7 @@ class RAGOrchestrator:
             if show_progress:
                 print("  → Scraping URL...")
             logger.info(f"Scraping URL: {source.identifier}")
-            scraped_content = asyncio.run(
-                self.web_scraper.scrape_url(source.identifier)
-            )
+            scraped_content = asyncio.run(self.web_scraper.scrape_url(source.identifier))
 
             if not scraped_content.success:
                 return IngestionResult(
@@ -450,10 +437,7 @@ class RAGOrchestrator:
                 print(f"  → Generating embeddings for {len(chunks)} chunks...")
             logger.info(f"Generating embeddings for {len(chunks)} chunks")
             chunk_texts = [chunk.text for chunk in chunks]
-            embeddings = self.embedding_generator.generate_embeddings_batch(
-                chunk_texts,
-                show_progress=show_progress
-            )
+            embeddings = self.embedding_generator.generate_embeddings_batch(chunk_texts, show_progress=show_progress)
 
             # Store in vector database
             if show_progress:
@@ -466,10 +450,7 @@ class RAGOrchestrator:
                 embeddings=embeddings,
             )
 
-            logger.info(
-                f"Successfully ingested web source: {source.identifier} "
-                f"({len(chunks)} chunks)"
-            )
+            logger.info(f"Successfully ingested web source: {source.identifier} ({len(chunks)} chunks)")
 
             return IngestionResult(
                 source=source,
@@ -538,10 +519,7 @@ class RAGOrchestrator:
                 print(f"  → Generating embeddings for {len(chunks)} rows...")
             logger.info(f"Generating embeddings for {len(chunks)} rows")
             chunk_texts = [chunk.text for chunk in chunks]
-            embeddings = self.embedding_generator.generate_embeddings_batch(
-                chunk_texts,
-                show_progress=show_progress
-            )
+            embeddings = self.embedding_generator.generate_embeddings_batch(chunk_texts, show_progress=show_progress)
 
             # Store in vector database
             if show_progress:
@@ -554,10 +532,7 @@ class RAGOrchestrator:
                 embeddings=embeddings,
             )
 
-            logger.info(
-                f"Successfully ingested database source: {source.identifier} "
-                f"({len(chunks)} chunks)"
-            )
+            logger.info(f"Successfully ingested database source: {source.identifier} ({len(chunks)} chunks)")
 
             return IngestionResult(
                 source=source,
@@ -575,10 +550,7 @@ class RAGOrchestrator:
                 error_message=str(e),
             )
 
-    def _extract_source_citations(
-        self,
-        retrieval_result: RetrievalResult
-    ) -> list[SourceCitation]:
+    def _extract_source_citations(self, retrieval_result: RetrievalResult) -> list[SourceCitation]:
         """
         Extract unique source citations from retrieval results.
 
@@ -633,12 +605,7 @@ class RAGOrchestrator:
         try:
             # Build messages for Ollama
             # The augmented prompt already contains the system prompt and context
-            messages = [
-                {
-                    "role": "user",
-                    "content": augmented_prompt
-                }
-            ]
+            messages = [{"role": "user", "content": augmented_prompt}]
 
             # Call Ollama with the agent's base model
             response = ollama.chat(

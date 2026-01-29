@@ -37,6 +37,7 @@ def test_read_only_access_blocks_write_queries(temp_dirs):
 
     **Validates: Requirements 12.7, 12.8**
     """
+
     async def run_test():
         agents_dir, history_dir = temp_dirs
         manager = AgentManager(agents_dir=agents_dir, history_dir=history_dir)
@@ -50,19 +51,10 @@ def test_read_only_access_blocks_write_queries(temp_dirs):
             system_prompt="Test agent",
             connection_assignments=[
                 AgentConnectionAssignment(
-                    connection_name="test_db",
-                    access_level=AccessLevel.READ_ONLY,
-                    allowed_tables=None
+                    connection_name="test_db", access_level=AccessLevel.READ_ONLY, allowed_tables=None
                 )
             ],
-            mcp_servers=[
-                MCPServerConfig(
-                    name="test_db",
-                    command="test",
-                    args=[],
-                    database_type="sqlite"
-                )
-            ]
+            mcp_servers=[MCPServerConfig(name="test_db", command="test", args=[], database_type="sqlite")],
         )
 
         # Save agent
@@ -90,10 +82,7 @@ def test_read_only_access_blocks_write_queries(temp_dirs):
             session._database_connections["test_db"] = "sqlite"
 
             # Try to execute a DELETE query (should be blocked)
-            result = await session._execute_tool_async(
-                "query_database",
-                {"query": "DELETE FROM users WHERE id = 1"}
-            )
+            result = await session._execute_tool_async("query_database", {"query": "DELETE FROM users WHERE id = 1"})
 
             # Verify the query was blocked
             assert "Access denied" in result
@@ -110,6 +99,7 @@ def test_read_only_access_allows_select_queries(temp_dirs):
 
     **Validates: Requirements 12.7, 12.8**
     """
+
     async def run_test():
         agents_dir, history_dir = temp_dirs
         manager = AgentManager(agents_dir=agents_dir, history_dir=history_dir)
@@ -123,19 +113,10 @@ def test_read_only_access_allows_select_queries(temp_dirs):
             system_prompt="Test agent",
             connection_assignments=[
                 AgentConnectionAssignment(
-                    connection_name="test_db",
-                    access_level=AccessLevel.READ_ONLY,
-                    allowed_tables=None
+                    connection_name="test_db", access_level=AccessLevel.READ_ONLY, allowed_tables=None
                 )
             ],
-            mcp_servers=[
-                MCPServerConfig(
-                    name="test_db",
-                    command="test",
-                    args=[],
-                    database_type="sqlite"
-                )
-            ]
+            mcp_servers=[MCPServerConfig(name="test_db", command="test", args=[], database_type="sqlite")],
         )
 
         # Save agent
@@ -163,19 +144,13 @@ def test_read_only_access_allows_select_queries(temp_dirs):
             session._database_connections["test_db"] = "sqlite"
 
             # Execute a SELECT query (should be allowed)
-            result = await session._execute_tool_async(
-                "query_database",
-                {"query": "SELECT * FROM users"}
-            )
+            result = await session._execute_tool_async("query_database", {"query": "SELECT * FROM users"})
 
             # Verify the query was allowed
             assert result == "Query results"
 
             # Verify the actual database tool WAS called
-            mock_manager_instance.call_tool.assert_called_once_with(
-                "query_database",
-                {"query": "SELECT * FROM users"}
-            )
+            mock_manager_instance.call_tool.assert_called_once_with("query_database", {"query": "SELECT * FROM users"})
 
     asyncio.run(run_test())
 
@@ -185,6 +160,7 @@ def test_table_specific_access_blocks_disallowed_tables(temp_dirs):
 
     **Validates: Requirements 12.7, 12.8**
     """
+
     async def run_test():
         agents_dir, history_dir = temp_dirs
         manager = AgentManager(agents_dir=agents_dir, history_dir=history_dir)
@@ -200,17 +176,10 @@ def test_table_specific_access_blocks_disallowed_tables(temp_dirs):
                 AgentConnectionAssignment(
                     connection_name="test_db",
                     access_level=AccessLevel.TABLE_SPECIFIC_READ,
-                    allowed_tables=["users", "orders"]
+                    allowed_tables=["users", "orders"],
                 )
             ],
-            mcp_servers=[
-                MCPServerConfig(
-                    name="test_db",
-                    command="test",
-                    args=[],
-                    database_type="sqlite"
-                )
-            ]
+            mcp_servers=[MCPServerConfig(name="test_db", command="test", args=[], database_type="sqlite")],
         )
 
         # Save agent
@@ -238,10 +207,7 @@ def test_table_specific_access_blocks_disallowed_tables(temp_dirs):
             session._database_connections["test_db"] = "sqlite"
 
             # Try to query a disallowed table (should be blocked)
-            result = await session._execute_tool_async(
-                "query_database",
-                {"query": "SELECT * FROM admin_secrets"}
-            )
+            result = await session._execute_tool_async("query_database", {"query": "SELECT * FROM admin_secrets"})
 
             # Verify the query was blocked
             assert "Access denied" in result
@@ -258,6 +224,7 @@ def test_non_query_tools_not_validated(temp_dirs):
 
     **Validates: Requirements 12.7, 12.8**
     """
+
     async def run_test():
         agents_dir, history_dir = temp_dirs
         manager = AgentManager(agents_dir=agents_dir, history_dir=history_dir)
@@ -271,19 +238,10 @@ def test_non_query_tools_not_validated(temp_dirs):
             system_prompt="Test agent",
             connection_assignments=[
                 AgentConnectionAssignment(
-                    connection_name="test_db",
-                    access_level=AccessLevel.READ_ONLY,
-                    allowed_tables=None
+                    connection_name="test_db", access_level=AccessLevel.READ_ONLY, allowed_tables=None
                 )
             ],
-            mcp_servers=[
-                MCPServerConfig(
-                    name="test_db",
-                    command="test",
-                    args=[],
-                    database_type="sqlite"
-                )
-            ]
+            mcp_servers=[MCPServerConfig(name="test_db", command="test", args=[], database_type="sqlite")],
         )
 
         # Save agent
@@ -311,19 +269,13 @@ def test_non_query_tools_not_validated(temp_dirs):
             session._database_connections["test_db"] = "sqlite"
 
             # Execute a non-query tool (should not be validated)
-            result = await session._execute_tool_async(
-                "list_tables",
-                {}
-            )
+            result = await session._execute_tool_async("list_tables", {})
 
             # Verify the tool was executed without validation
             assert result == "users, orders, products"
 
             # Verify the actual database tool WAS called
-            mock_manager_instance.call_tool.assert_called_once_with(
-                "list_tables",
-                {}
-            )
+            mock_manager_instance.call_tool.assert_called_once_with("list_tables", {})
 
     asyncio.run(run_test())
 
@@ -333,6 +285,7 @@ def test_read_write_access_allows_write_queries(temp_dirs):
 
     **Validates: Requirements 12.7, 12.8**
     """
+
     async def run_test():
         agents_dir, history_dir = temp_dirs
         manager = AgentManager(agents_dir=agents_dir, history_dir=history_dir)
@@ -346,19 +299,10 @@ def test_read_write_access_allows_write_queries(temp_dirs):
             system_prompt="Test agent",
             connection_assignments=[
                 AgentConnectionAssignment(
-                    connection_name="test_db",
-                    access_level=AccessLevel.READ_WRITE,
-                    allowed_tables=None
+                    connection_name="test_db", access_level=AccessLevel.READ_WRITE, allowed_tables=None
                 )
             ],
-            mcp_servers=[
-                MCPServerConfig(
-                    name="test_db",
-                    command="test",
-                    args=[],
-                    database_type="sqlite"
-                )
-            ]
+            mcp_servers=[MCPServerConfig(name="test_db", command="test", args=[], database_type="sqlite")],
         )
 
         # Save agent
@@ -387,8 +331,7 @@ def test_read_write_access_allows_write_queries(temp_dirs):
 
             # Execute an UPDATE query (should be allowed)
             result = await session._execute_tool_async(
-                "query_database",
-                {"query": "UPDATE users SET name = 'John' WHERE id = 1"}
+                "query_database", {"query": "UPDATE users SET name = 'John' WHERE id = 1"}
             )
 
             # Verify the query was allowed
@@ -405,6 +348,7 @@ def test_table_specific_access_allows_allowed_tables(temp_dirs):
 
     **Validates: Requirements 12.7, 12.8**
     """
+
     async def run_test():
         agents_dir, history_dir = temp_dirs
         manager = AgentManager(agents_dir=agents_dir, history_dir=history_dir)
@@ -420,17 +364,10 @@ def test_table_specific_access_allows_allowed_tables(temp_dirs):
                 AgentConnectionAssignment(
                     connection_name="test_db",
                     access_level=AccessLevel.TABLE_SPECIFIC_READ,
-                    allowed_tables=["users", "orders"]
+                    allowed_tables=["users", "orders"],
                 )
             ],
-            mcp_servers=[
-                MCPServerConfig(
-                    name="test_db",
-                    command="test",
-                    args=[],
-                    database_type="sqlite"
-                )
-            ]
+            mcp_servers=[MCPServerConfig(name="test_db", command="test", args=[], database_type="sqlite")],
         )
 
         # Save agent
@@ -458,10 +395,7 @@ def test_table_specific_access_allows_allowed_tables(temp_dirs):
             session._database_connections["test_db"] = "sqlite"
 
             # Query an allowed table (should succeed)
-            result = await session._execute_tool_async(
-                "query_database",
-                {"query": "SELECT * FROM users"}
-            )
+            result = await session._execute_tool_async("query_database", {"query": "SELECT * FROM users"})
 
             # Verify the query was allowed
             assert result == "Query results"
@@ -477,6 +411,7 @@ def test_table_specific_read_write_allows_write_on_allowed_tables(temp_dirs):
 
     **Validates: Requirements 12.7, 12.8**
     """
+
     async def run_test():
         agents_dir, history_dir = temp_dirs
         manager = AgentManager(agents_dir=agents_dir, history_dir=history_dir)
@@ -492,17 +427,10 @@ def test_table_specific_read_write_allows_write_on_allowed_tables(temp_dirs):
                 AgentConnectionAssignment(
                     connection_name="test_db",
                     access_level=AccessLevel.TABLE_SPECIFIC_READ_WRITE,
-                    allowed_tables=["users", "orders"]
+                    allowed_tables=["users", "orders"],
                 )
             ],
-            mcp_servers=[
-                MCPServerConfig(
-                    name="test_db",
-                    command="test",
-                    args=[],
-                    database_type="sqlite"
-                )
-            ]
+            mcp_servers=[MCPServerConfig(name="test_db", command="test", args=[], database_type="sqlite")],
         )
 
         # Save agent
@@ -531,8 +459,7 @@ def test_table_specific_read_write_allows_write_on_allowed_tables(temp_dirs):
 
             # Execute an INSERT on allowed table (should succeed)
             result = await session._execute_tool_async(
-                "query_database",
-                {"query": "INSERT INTO users (name) VALUES ('Alice')"}
+                "query_database", {"query": "INSERT INTO users (name) VALUES ('Alice')"}
             )
 
             # Verify the query was allowed
@@ -549,6 +476,7 @@ def test_table_specific_read_write_blocks_write_on_disallowed_tables(temp_dirs):
 
     **Validates: Requirements 12.7, 12.8**
     """
+
     async def run_test():
         agents_dir, history_dir = temp_dirs
         manager = AgentManager(agents_dir=agents_dir, history_dir=history_dir)
@@ -564,17 +492,10 @@ def test_table_specific_read_write_blocks_write_on_disallowed_tables(temp_dirs):
                 AgentConnectionAssignment(
                     connection_name="test_db",
                     access_level=AccessLevel.TABLE_SPECIFIC_READ_WRITE,
-                    allowed_tables=["users", "orders"]
+                    allowed_tables=["users", "orders"],
                 )
             ],
-            mcp_servers=[
-                MCPServerConfig(
-                    name="test_db",
-                    command="test",
-                    args=[],
-                    database_type="sqlite"
-                )
-            ]
+            mcp_servers=[MCPServerConfig(name="test_db", command="test", args=[], database_type="sqlite")],
         )
 
         # Save agent
@@ -603,8 +524,7 @@ def test_table_specific_read_write_blocks_write_on_disallowed_tables(temp_dirs):
 
             # Try to DELETE from disallowed table (should be blocked)
             result = await session._execute_tool_async(
-                "query_database",
-                {"query": "DELETE FROM admin_secrets WHERE id = 1"}
+                "query_database", {"query": "DELETE FROM admin_secrets WHERE id = 1"}
             )
 
             # Verify the query was blocked
@@ -622,6 +542,7 @@ def test_error_message_contains_access_level_info(temp_dirs):
 
     **Validates: Requirements 12.7, 12.8**
     """
+
     async def run_test():
         agents_dir, history_dir = temp_dirs
         manager = AgentManager(agents_dir=agents_dir, history_dir=history_dir)
@@ -635,19 +556,10 @@ def test_error_message_contains_access_level_info(temp_dirs):
             system_prompt="Test agent",
             connection_assignments=[
                 AgentConnectionAssignment(
-                    connection_name="test_db",
-                    access_level=AccessLevel.READ_ONLY,
-                    allowed_tables=None
+                    connection_name="test_db", access_level=AccessLevel.READ_ONLY, allowed_tables=None
                 )
             ],
-            mcp_servers=[
-                MCPServerConfig(
-                    name="test_db",
-                    command="test",
-                    args=[],
-                    database_type="sqlite"
-                )
-            ]
+            mcp_servers=[MCPServerConfig(name="test_db", command="test", args=[], database_type="sqlite")],
         )
 
         # Save agent
@@ -676,8 +588,7 @@ def test_error_message_contains_access_level_info(temp_dirs):
 
             # Try to execute an INSERT query (should be blocked)
             result = await session._execute_tool_async(
-                "query_database",
-                {"query": "INSERT INTO users (name) VALUES ('Bob')"}
+                "query_database", {"query": "INSERT INTO users (name) VALUES ('Bob')"}
             )
 
             # Verify the error message is descriptive
@@ -692,6 +603,7 @@ def test_multiple_connections_with_different_access_levels(temp_dirs):
 
     **Validates: Requirements 12.7, 12.8**
     """
+
     async def run_test():
         agents_dir, history_dir = temp_dirs
         manager = AgentManager(agents_dir=agents_dir, history_dir=history_dir)
@@ -705,30 +617,16 @@ def test_multiple_connections_with_different_access_levels(temp_dirs):
             system_prompt="Test agent",
             connection_assignments=[
                 AgentConnectionAssignment(
-                    connection_name="readonly_db",
-                    access_level=AccessLevel.READ_ONLY,
-                    allowed_tables=None
+                    connection_name="readonly_db", access_level=AccessLevel.READ_ONLY, allowed_tables=None
                 ),
                 AgentConnectionAssignment(
-                    connection_name="readwrite_db",
-                    access_level=AccessLevel.READ_WRITE,
-                    allowed_tables=None
-                )
+                    connection_name="readwrite_db", access_level=AccessLevel.READ_WRITE, allowed_tables=None
+                ),
             ],
             mcp_servers=[
-                MCPServerConfig(
-                    name="readonly_db",
-                    command="test",
-                    args=[],
-                    database_type="sqlite"
-                ),
-                MCPServerConfig(
-                    name="readwrite_db",
-                    command="test",
-                    args=[],
-                    database_type="sqlite"
-                )
-            ]
+                MCPServerConfig(name="readonly_db", command="test", args=[], database_type="sqlite"),
+                MCPServerConfig(name="readwrite_db", command="test", args=[], database_type="sqlite"),
+            ],
         )
 
         # Save agent
@@ -748,10 +646,7 @@ def test_multiple_connections_with_different_access_levels(temp_dirs):
             mock_manager_instance.get_all_tools = MagicMock(return_value=[])
             mock_manager_instance.tool_registry = {"query_database": "readonly_db"}
             mock_manager_instance.call_tool = AsyncMock(return_value="Query executed")
-            mock_manager_instance.clients = {
-                "readonly_db": MagicMock(),
-                "readwrite_db": MagicMock()
-            }
+            mock_manager_instance.clients = {"readonly_db": MagicMock(), "readwrite_db": MagicMock()}
 
             await session.start_async("test-agent")
 
@@ -760,10 +655,7 @@ def test_multiple_connections_with_different_access_levels(temp_dirs):
             session._database_connections["readwrite_db"] = "sqlite"
 
             # Try to DELETE on readonly_db (should be blocked)
-            result = await session._execute_tool_async(
-                "query_database",
-                {"query": "DELETE FROM users WHERE id = 1"}
-            )
+            result = await session._execute_tool_async("query_database", {"query": "DELETE FROM users WHERE id = 1"})
 
             # Verify the query was blocked
             assert "Access denied" in result
@@ -772,10 +664,7 @@ def test_multiple_connections_with_different_access_levels(temp_dirs):
             mock_manager_instance.tool_registry = {"query_database": "readwrite_db"}
             mock_manager_instance.call_tool = AsyncMock(return_value="1 row deleted")
 
-            result = await session._execute_tool_async(
-                "query_database",
-                {"query": "DELETE FROM users WHERE id = 1"}
-            )
+            result = await session._execute_tool_async("query_database", {"query": "DELETE FROM users WHERE id = 1"})
 
             # Verify the query was allowed
             assert result == "1 row deleted"
@@ -788,6 +677,7 @@ def test_agent_without_connection_assignments(temp_dirs):
 
     **Validates: Requirements 12.7, 12.8**
     """
+
     async def run_test():
         agents_dir, history_dir = temp_dirs
         manager = AgentManager(agents_dir=agents_dir, history_dir=history_dir)
@@ -800,14 +690,7 @@ def test_agent_without_connection_assignments(temp_dirs):
             base_model="llama3:latest",
             system_prompt="Test agent",
             connection_assignments=[],  # Empty
-            mcp_servers=[
-                MCPServerConfig(
-                    name="test_db",
-                    command="test",
-                    args=[],
-                    database_type="sqlite"
-                )
-            ]
+            mcp_servers=[MCPServerConfig(name="test_db", command="test", args=[], database_type="sqlite")],
         )
 
         # Save agent
@@ -835,10 +718,7 @@ def test_agent_without_connection_assignments(temp_dirs):
             session._database_connections["test_db"] = "sqlite"
 
             # Try to execute a query (should not crash, but may not validate)
-            result = await session._execute_tool_async(
-                "query_database",
-                {"query": "SELECT * FROM users"}
-            )
+            result = await session._execute_tool_async("query_database", {"query": "SELECT * FROM users"})
 
             # The query should execute (no validation without assignment)
             # This is expected behavior - if no assignment, no validation
@@ -852,6 +732,7 @@ def test_query_with_different_parameter_names(temp_dirs):
 
     **Validates: Requirements 12.7, 12.8**
     """
+
     async def run_test():
         agents_dir, history_dir = temp_dirs
         manager = AgentManager(agents_dir=agents_dir, history_dir=history_dir)
@@ -865,19 +746,10 @@ def test_query_with_different_parameter_names(temp_dirs):
             system_prompt="Test agent",
             connection_assignments=[
                 AgentConnectionAssignment(
-                    connection_name="test_db",
-                    access_level=AccessLevel.READ_ONLY,
-                    allowed_tables=None
+                    connection_name="test_db", access_level=AccessLevel.READ_ONLY, allowed_tables=None
                 )
             ],
-            mcp_servers=[
-                MCPServerConfig(
-                    name="test_db",
-                    command="test",
-                    args=[],
-                    database_type="sqlite"
-                )
-            ]
+            mcp_servers=[MCPServerConfig(name="test_db", command="test", args=[], database_type="sqlite")],
         )
 
         # Save agent
@@ -905,17 +777,11 @@ def test_query_with_different_parameter_names(temp_dirs):
             session._database_connections["test_db"] = "sqlite"
 
             # Test with "sql" parameter name
-            result = await session._execute_tool_async(
-                "run-sql",
-                {"sql": "DELETE FROM users"}
-            )
+            result = await session._execute_tool_async("run-sql", {"sql": "DELETE FROM users"})
             assert "Access denied" in result
 
             # Test with "statement" parameter name
-            result = await session._execute_tool_async(
-                "run-sql",
-                {"statement": "UPDATE users SET name = 'test'"}
-            )
+            result = await session._execute_tool_async("run-sql", {"statement": "UPDATE users SET name = 'test'"})
             assert "Access denied" in result
 
     asyncio.run(run_test())
@@ -926,6 +792,7 @@ def test_namespaced_tool_names(temp_dirs):
 
     **Validates: Requirements 12.7, 12.8**
     """
+
     async def run_test():
         agents_dir, history_dir = temp_dirs
         manager = AgentManager(agents_dir=agents_dir, history_dir=history_dir)
@@ -939,19 +806,10 @@ def test_namespaced_tool_names(temp_dirs):
             system_prompt="Test agent",
             connection_assignments=[
                 AgentConnectionAssignment(
-                    connection_name="test_db",
-                    access_level=AccessLevel.READ_ONLY,
-                    allowed_tables=None
+                    connection_name="test_db", access_level=AccessLevel.READ_ONLY, allowed_tables=None
                 )
             ],
-            mcp_servers=[
-                MCPServerConfig(
-                    name="test_db",
-                    command="test",
-                    args=[],
-                    database_type="sqlite"
-                )
-            ]
+            mcp_servers=[MCPServerConfig(name="test_db", command="test", args=[], database_type="sqlite")],
         )
 
         # Save agent
@@ -980,10 +838,7 @@ def test_namespaced_tool_names(temp_dirs):
             session._database_connections["test_db"] = "sqlite"
 
             # Execute a DELETE query with namespaced tool name (should be blocked)
-            result = await session._execute_tool_async(
-                "test_db_run_sql",
-                {"sql": "DELETE FROM users WHERE id = 1"}
-            )
+            result = await session._execute_tool_async("test_db_run_sql", {"sql": "DELETE FROM users WHERE id = 1"})
 
             # Verify the query was blocked
             assert "Access denied" in result
@@ -999,6 +854,7 @@ def test_table_specific_read_blocks_write_operations(temp_dirs):
 
     **Validates: Requirements 12.7, 12.8**
     """
+
     async def run_test():
         agents_dir, history_dir = temp_dirs
         manager = AgentManager(agents_dir=agents_dir, history_dir=history_dir)
@@ -1014,17 +870,10 @@ def test_table_specific_read_blocks_write_operations(temp_dirs):
                 AgentConnectionAssignment(
                     connection_name="test_db",
                     access_level=AccessLevel.TABLE_SPECIFIC_READ,
-                    allowed_tables=["users", "orders"]
+                    allowed_tables=["users", "orders"],
                 )
             ],
-            mcp_servers=[
-                MCPServerConfig(
-                    name="test_db",
-                    command="test",
-                    args=[],
-                    database_type="sqlite"
-                )
-            ]
+            mcp_servers=[MCPServerConfig(name="test_db", command="test", args=[], database_type="sqlite")],
         )
 
         # Save agent
@@ -1053,8 +902,7 @@ def test_table_specific_read_blocks_write_operations(temp_dirs):
 
             # Try to UPDATE an allowed table (should be blocked - read-only)
             result = await session._execute_tool_async(
-                "query_database",
-                {"query": "UPDATE users SET name = 'test' WHERE id = 1"}
+                "query_database", {"query": "UPDATE users SET name = 'test' WHERE id = 1"}
             )
 
             # Verify the query was blocked

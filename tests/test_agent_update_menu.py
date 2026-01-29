@@ -43,11 +43,9 @@ def sample_agent():
         system_prompt="You are a test agent.",
         connection_assignments=[
             AgentConnectionAssignment(
-                connection_name="prod-db",
-                access_level=AccessLevel.READ_ONLY,
-                allowed_tables=None
+                connection_name="prod-db", access_level=AccessLevel.READ_ONLY, allowed_tables=None
             )
-        ]
+        ],
     )
 
 
@@ -62,7 +60,7 @@ def sample_connections():
             port=5432,
             database="prod",
             username="user",
-            password="pass"
+            password="pass",
         ),
         DatabaseConnection(
             name="dev-db",
@@ -71,7 +69,7 @@ def sample_connections():
             port=3306,
             database="dev",
             username="user",
-            password="pass"
+            password="pass",
         ),
     ]
 
@@ -125,23 +123,14 @@ class TestUpdateDatabaseConnectionsFlow:
     """Tests for update_database_connections_flow function."""
 
     def test_display_current_connections(
-        self,
-        mock_agent_manager,
-        mock_db_manager,
-        sample_agent,
-        sample_connections,
-        capsys
+        self, mock_agent_manager, mock_db_manager, sample_agent, sample_connections, capsys
     ):
         """Test displaying currently assigned connections."""
         mock_agent_manager.get_agent.return_value = sample_agent
         mock_db_manager.list_connections.return_value = sample_connections
 
         with patch("builtins.input", return_value="b"):
-            update_database_connections_flow(
-                mock_agent_manager,
-                mock_db_manager,
-                "test-agent"
-            )
+            update_database_connections_flow(mock_agent_manager, mock_db_manager, "test-agent")
 
         captured = capsys.readouterr()
         assert "Currently Assigned Connections:" in captured.out
@@ -149,36 +138,21 @@ class TestUpdateDatabaseConnectionsFlow:
         assert "read-only" in captured.out
 
     def test_display_available_connections(
-        self,
-        mock_agent_manager,
-        mock_db_manager,
-        sample_agent,
-        sample_connections,
-        capsys
+        self, mock_agent_manager, mock_db_manager, sample_agent, sample_connections, capsys
     ):
         """Test displaying available connections."""
         mock_agent_manager.get_agent.return_value = sample_agent
         mock_db_manager.list_connections.return_value = sample_connections
 
         with patch("builtins.input", return_value="b"):
-            update_database_connections_flow(
-                mock_agent_manager,
-                mock_db_manager,
-                "test-agent"
-            )
+            update_database_connections_flow(mock_agent_manager, mock_db_manager, "test-agent")
 
         captured = capsys.readouterr()
         assert "Available Connections:" in captured.out
         assert "dev-db" in captured.out
         assert "mysql" in captured.out
 
-    def test_no_available_connections_to_add(
-        self,
-        mock_agent_manager,
-        mock_db_manager,
-        sample_agent,
-        capsys
-    ):
+    def test_no_available_connections_to_add(self, mock_agent_manager, mock_db_manager, sample_agent, capsys):
         """Test when all connections are already assigned."""
         # Agent has prod-db assigned
         mock_agent_manager.get_agent.return_value = sample_agent
@@ -191,16 +165,12 @@ class TestUpdateDatabaseConnectionsFlow:
                 port=5432,
                 database="prod",
                 username="user",
-                password="pass"
+                password="pass",
             )
         ]
 
         with patch("builtins.input", side_effect=["a", "b"]):
-            update_database_connections_flow(
-                mock_agent_manager,
-                mock_db_manager,
-                "test-agent"
-            )
+            update_database_connections_flow(mock_agent_manager, mock_db_manager, "test-agent")
 
         captured = capsys.readouterr()
         assert "No available connections to add" in captured.out
@@ -209,11 +179,7 @@ class TestUpdateDatabaseConnectionsFlow:
         """Test when agent is not found."""
         mock_agent_manager.get_agent.return_value = None
 
-        update_database_connections_flow(
-            mock_agent_manager,
-            mock_db_manager,
-            "nonexistent-agent"
-        )
+        update_database_connections_flow(mock_agent_manager, mock_db_manager, "nonexistent-agent")
 
         captured = capsys.readouterr()
         assert "Agent 'nonexistent-agent' not found" in captured.out
@@ -322,12 +288,7 @@ class TestAddConnectionFlow:
     """Tests for adding connections through the flow."""
 
     def test_add_connection_with_read_only_access(
-        self,
-        mock_agent_manager,
-        mock_db_manager,
-        sample_agent,
-        sample_connections,
-        capsys
+        self, mock_agent_manager, mock_db_manager, sample_agent, sample_connections, capsys
     ):
         """Test adding a connection with read-only access."""
         mock_agent_manager.get_agent.return_value = sample_agent
@@ -336,30 +297,18 @@ class TestAddConnectionFlow:
 
         # Select add (a), choose connection 2 (dev-db), select read-only (1), then back (b)
         with patch("builtins.input", side_effect=["a", "1", "1", "b"]):
-            update_database_connections_flow(
-                mock_agent_manager,
-                mock_db_manager,
-                "test-agent"
-            )
+            update_database_connections_flow(mock_agent_manager, mock_db_manager, "test-agent")
 
         captured = capsys.readouterr()
         assert "Connection 'dev-db' assigned successfully" in captured.out
 
         # Verify assign_connection was called correctly
         mock_agent_manager.assign_connection.assert_called_once_with(
-            "test-agent",
-            "dev-db",
-            AccessLevel.READ_ONLY,
-            None
+            "test-agent", "dev-db", AccessLevel.READ_ONLY, None
         )
 
     def test_add_connection_with_table_specific_access(
-        self,
-        mock_agent_manager,
-        mock_db_manager,
-        sample_agent,
-        sample_connections,
-        capsys
+        self, mock_agent_manager, mock_db_manager, sample_agent, sample_connections, capsys
     ):
         """Test adding a connection with table-specific access."""
         mock_agent_manager.get_agent.return_value = sample_agent
@@ -369,11 +318,7 @@ class TestAddConnectionFlow:
         # Select add (a), choose connection 1, select table-specific-read (3),
         # enter tables, then back (b)
         with patch("builtins.input", side_effect=["a", "1", "3", "users, orders", "b"]):
-            update_database_connections_flow(
-                mock_agent_manager,
-                mock_db_manager,
-                "test-agent"
-            )
+            update_database_connections_flow(mock_agent_manager, mock_db_manager, "test-agent")
 
         captured = capsys.readouterr()
         assert "Connection 'dev-db' assigned successfully" in captured.out
@@ -381,19 +326,11 @@ class TestAddConnectionFlow:
 
         # Verify assign_connection was called with allowed_tables
         mock_agent_manager.assign_connection.assert_called_once_with(
-            "test-agent",
-            "dev-db",
-            AccessLevel.TABLE_SPECIFIC_READ,
-            ["users", "orders"]
+            "test-agent", "dev-db", AccessLevel.TABLE_SPECIFIC_READ, ["users", "orders"]
         )
 
     def test_add_connection_failure(
-        self,
-        mock_agent_manager,
-        mock_db_manager,
-        sample_agent,
-        sample_connections,
-        capsys
+        self, mock_agent_manager, mock_db_manager, sample_agent, sample_connections, capsys
     ):
         """Test handling connection assignment failure."""
         mock_agent_manager.get_agent.return_value = sample_agent
@@ -401,11 +338,7 @@ class TestAddConnectionFlow:
         mock_agent_manager.assign_connection.return_value = Err("Connection validation failed")
 
         with patch("builtins.input", side_effect=["a", "1", "1", "b"]):
-            update_database_connections_flow(
-                mock_agent_manager,
-                mock_db_manager,
-                "test-agent"
-            )
+            update_database_connections_flow(mock_agent_manager, mock_db_manager, "test-agent")
 
         captured = capsys.readouterr()
         assert "Error: Connection validation failed" in captured.out
@@ -415,12 +348,7 @@ class TestRemoveConnectionFlow:
     """Tests for removing connections through the flow."""
 
     def test_remove_connection_success(
-        self,
-        mock_agent_manager,
-        mock_db_manager,
-        sample_agent,
-        sample_connections,
-        capsys
+        self, mock_agent_manager, mock_db_manager, sample_agent, sample_connections, capsys
     ):
         """Test successfully removing a connection."""
         mock_agent_manager.get_agent.return_value = sample_agent
@@ -429,27 +357,15 @@ class TestRemoveConnectionFlow:
 
         # Select remove (r), choose connection 1, confirm (y), then back (b)
         with patch("builtins.input", side_effect=["r", "1", "y", "b"]):
-            update_database_connections_flow(
-                mock_agent_manager,
-                mock_db_manager,
-                "test-agent"
-            )
+            update_database_connections_flow(mock_agent_manager, mock_db_manager, "test-agent")
 
         captured = capsys.readouterr()
         assert "Connection 'prod-db' removed successfully" in captured.out
 
-        mock_agent_manager.remove_connection.assert_called_once_with(
-            "test-agent",
-            "prod-db"
-        )
+        mock_agent_manager.remove_connection.assert_called_once_with("test-agent", "prod-db")
 
     def test_remove_connection_cancelled(
-        self,
-        mock_agent_manager,
-        mock_db_manager,
-        sample_agent,
-        sample_connections,
-        capsys
+        self, mock_agent_manager, mock_db_manager, sample_agent, sample_connections, capsys
     ):
         """Test cancelling connection removal."""
         mock_agent_manager.get_agent.return_value = sample_agent
@@ -457,11 +373,7 @@ class TestRemoveConnectionFlow:
 
         # Select remove (r), choose connection 1, cancel (n), then back (b)
         with patch("builtins.input", side_effect=["r", "1", "n", "b"]):
-            update_database_connections_flow(
-                mock_agent_manager,
-                mock_db_manager,
-                "test-agent"
-            )
+            update_database_connections_flow(mock_agent_manager, mock_db_manager, "test-agent")
 
         captured = capsys.readouterr()
         assert "Removal cancelled" in captured.out
@@ -469,31 +381,21 @@ class TestRemoveConnectionFlow:
         # Verify remove_connection was not called
         mock_agent_manager.remove_connection.assert_not_called()
 
-    def test_no_connections_to_remove(
-        self,
-        mock_agent_manager,
-        mock_db_manager,
-        sample_connections,
-        capsys
-    ):
+    def test_no_connections_to_remove(self, mock_agent_manager, mock_db_manager, sample_connections, capsys):
         """Test when agent has no connections to remove."""
         agent_no_connections = Agent(
             name="test-agent",
             display_name="Test Agent",
             base_model="llama3:latest",
             system_prompt="You are a test agent.",
-            connection_assignments=[]
+            connection_assignments=[],
         )
         mock_agent_manager.get_agent.return_value = agent_no_connections
         mock_db_manager.list_connections.return_value = sample_connections
 
         # Try to remove (r), then back (b)
         with patch("builtins.input", side_effect=["r", "b"]):
-            update_database_connections_flow(
-                mock_agent_manager,
-                mock_db_manager,
-                "test-agent"
-            )
+            update_database_connections_flow(mock_agent_manager, mock_db_manager, "test-agent")
 
         captured = capsys.readouterr()
         assert "No connections to remove" in captured.out

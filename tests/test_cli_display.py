@@ -27,9 +27,7 @@ def database_config_strategy(draw):
         st.text(
             min_size=1,
             max_size=20,
-            alphabet=st.characters(
-                whitelist_categories=("Lu", "Ll", "Nd"), whitelist_characters="_-"
-            ),
+            alphabet=st.characters(whitelist_categories=("Lu", "Ll", "Nd"), whitelist_characters="_-"),
         )
     )
 
@@ -61,9 +59,7 @@ def agent_with_databases_strategy(draw):
         st.text(
             min_size=1,
             max_size=20,
-            alphabet=st.characters(
-                whitelist_categories=("Lu", "Ll", "Nd"), whitelist_characters="-"
-            ),
+            alphabet=st.characters(whitelist_categories=("Lu", "Ll", "Nd"), whitelist_characters="-"),
         )
     )
 
@@ -114,9 +110,7 @@ def test_list_agents_shows_database_status(agent):
             output = fake_out.getvalue()
 
         # Verify database status is shown
-        database_servers = [
-            s for s in agent.mcp_servers if hasattr(s, "database_type") and s.database_type
-        ]
+        database_servers = [s for s in agent.mcp_servers if hasattr(s, "database_type") and s.database_type]
 
         if database_servers:
             # Should show "Databases:" in output
@@ -135,16 +129,19 @@ def test_list_agents_shows_database_status(agent):
     password=st.text(
         min_size=8,
         max_size=30,
-        alphabet=st.characters(
-            whitelist_categories=("Lu", "Ll", "Nd"), whitelist_characters="!@#$%^&*"
-        ),
+        alphabet=st.characters(whitelist_categories=("Lu", "Ll", "Nd"), whitelist_characters="!@#$%^&*"),
     ).filter(
         # Filter out passwords that are substrings of common text or vice versa
         lambda p: (
             p not in ["localhost", "testdb", "testuser", "****", "connection", "database", "assigned"]
             and len(p) >= 8  # Ensure minimum length
-            and not any(word in p.lower() for word in ["localhost", "testdb", "testuser", "connection", "database", "assigned"])
-            and not any(p.lower() in word for word in ["localhost", "testdb", "testuser", "connection", "database", "assigned", "connections"])
+            and not any(
+                word in p.lower() for word in ["localhost", "testdb", "testuser", "connection", "database", "assigned"]
+            )
+            and not any(
+                p.lower() in word
+                for word in ["localhost", "testdb", "testuser", "connection", "database", "assigned", "connections"]
+            )
         )
     ),
 )
@@ -303,9 +300,7 @@ def test_agent_details_shows_all_databases(agent):
             output = fake_out.getvalue()
 
     # Verify all databases are shown in detail view
-    database_servers = [
-        s for s in agent.mcp_servers if hasattr(s, "database_type") and s.database_type
-    ]
+    database_servers = [s for s in agent.mcp_servers if hasattr(s, "database_type") and s.database_type]
 
     for db in database_servers:
         if not db.disabled:

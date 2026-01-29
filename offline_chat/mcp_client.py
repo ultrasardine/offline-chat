@@ -109,14 +109,10 @@ class MCPClient:
             self._exit_stack = AsyncExitStack()
 
             # Enter the stdio client context
-            read_stream, write_stream = await self._exit_stack.enter_async_context(
-                stdio_client(server_params)
-            )
+            read_stream, write_stream = await self._exit_stack.enter_async_context(stdio_client(server_params))
 
             # Create and enter the client session context
-            self.session = await self._exit_stack.enter_async_context(
-                ClientSession(read_stream, write_stream)
-            )
+            self.session = await self._exit_stack.enter_async_context(ClientSession(read_stream, write_stream))
 
             # Initialize the session
             await self.session.initialize()
@@ -125,9 +121,7 @@ class MCPClient:
             await self._fetch_tools()
 
             self._connected = True
-            logger.info(
-                f"Connected to MCP server '{self.config.name}' with {len(self.tools)} tools"
-            )
+            logger.info(f"Connected to MCP server '{self.config.name}' with {len(self.tools)} tools")
             return True
 
         except Exception as e:
@@ -283,9 +277,7 @@ class MCPClientManager:
                 success = await client.connect()
                 if success:
                     self.clients[config.name] = client
-                    logger.info(
-                        f"Connected to MCP server '{config.name}' with {len(client.tools)} tools"
-                    )
+                    logger.info(f"Connected to MCP server '{config.name}' with {len(client.tools)} tools")
                 else:
                     logger.warning(f"Failed to connect to MCP server '{config.name}'")
             except Exception as e:

@@ -206,34 +206,34 @@ def list_connections_display(manager: DatabaseConnectionManager) -> None:
         print(f"Type: {masked['database_type']}")
 
         # Display connection details based on type
-        if masked['database_type'] == "oracle":
-            if masked.get('host') and masked.get('port'):
+        if masked["database_type"] == "oracle":
+            if masked.get("host") and masked.get("port"):
                 print(f"Host: {masked['host']}:{masked['port']}")
-            if masked.get('service_name'):
+            if masked.get("service_name"):
                 print(f"Service: {masked['service_name']}")
-            if masked.get('username'):
+            if masked.get("username"):
                 print(f"Username: {masked['username']}")
-            if masked.get('password'):
+            if masked.get("password"):
                 print(f"Password: {masked['password']}")
 
-        elif masked['database_type'] in ("postgresql", "mysql"):
-            if masked.get('host') and masked.get('port'):
+        elif masked["database_type"] in ("postgresql", "mysql"):
+            if masked.get("host") and masked.get("port"):
                 print(f"Host: {masked['host']}:{masked['port']}")
-            if masked.get('database'):
+            if masked.get("database"):
                 print(f"Database: {masked['database']}")
-            if masked.get('username'):
+            if masked.get("username"):
                 print(f"Username: {masked['username']}")
-            if masked.get('password'):
+            if masked.get("password"):
                 print(f"Password: {masked['password']}")
 
-        elif masked['database_type'] == "sqlite":
-            if masked.get('file_path'):
+        elif masked["database_type"] == "sqlite":
+            if masked.get("file_path"):
                 print(f"Path: {masked['file_path']}")
 
         # Display any additional parameters (with sensitive fields masked)
-        if masked.get('additional_params'):
+        if masked.get("additional_params"):
             print("Additional parameters:")
-            for key, value in masked['additional_params'].items():
+            for key, value in masked["additional_params"].items():
                 print(f"  {key}: {value}")
 
         # Show which agents are using this connection
@@ -404,6 +404,7 @@ def delete_connection_flow(manager: DatabaseConnectionManager) -> None:
 
 # Helper functions
 
+
 def _select_database_type() -> Optional[str]:
     """Prompt for database type selection.
 
@@ -440,8 +441,7 @@ def _select_database_type() -> Optional[str]:
 
 
 def _select_connection(
-    manager: DatabaseConnectionManager,
-    prompt: str = "Select connection"
+    manager: DatabaseConnectionManager, prompt: str = "Select connection"
 ) -> Optional[DatabaseConnection]:
     """Display connection list and let user select one.
 
@@ -525,7 +525,7 @@ def _configure_oracle_connection(name: str) -> Optional[DatabaseConnection]:
         port=port,
         service_name=service_name,
         username=username,
-        password=password
+        password=password,
     )
 
 
@@ -571,7 +571,7 @@ def _configure_postgresql_connection(name: str) -> Optional[DatabaseConnection]:
         port=port,
         database=database,
         username=username,
-        password=password
+        password=password,
     )
 
 
@@ -611,13 +611,7 @@ def _configure_mysql_connection(name: str) -> Optional[DatabaseConnection]:
         return None
 
     return DatabaseConnection(
-        name=name,
-        database_type="mysql",
-        host=host,
-        port=port,
-        database=database,
-        username=username,
-        password=password
+        name=name, database_type="mysql", host=host, port=port, database=database, username=username, password=password
     )
 
 
@@ -637,11 +631,7 @@ def _configure_sqlite_connection(name: str) -> Optional[DatabaseConnection]:
         print("\nError: File path is required.")
         return None
 
-    return DatabaseConnection(
-        name=name,
-        database_type="sqlite",
-        file_path=file_path
-    )
+    return DatabaseConnection(name=name, database_type="sqlite", file_path=file_path)
 
 
 def _prompt_oracle_updates(connection: DatabaseConnection) -> dict:

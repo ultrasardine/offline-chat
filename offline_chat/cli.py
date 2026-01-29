@@ -330,7 +330,7 @@ class CLI:
                     result = self.db_manager.get_connection(assignment.connection_name)
                     if isinstance(result, Ok):
                         conn = result.value
-                        access = assignment.access_level.value.replace('_', ' ').title()
+                        access = assignment.access_level.value.replace("_", " ").title()
                         db_info.append(f"{conn.database_type}:{conn.name}({access})")
                 if db_info:
                     db_status = f"[DB: {', '.join(db_info)}]"
@@ -338,8 +338,9 @@ class CLI:
                     db_status = "[DB: connections not found]"
             elif agent.mcp_servers:
                 # Backward compatibility: check for database-type MCP servers
-                db_servers = [s for s in agent.mcp_servers
-                             if hasattr(s, 'database_type') and s.database_type and not s.disabled]
+                db_servers = [
+                    s for s in agent.mcp_servers if hasattr(s, "database_type") and s.database_type and not s.disabled
+                ]
                 if db_servers:
                     db_info = [f"{s.database_type}:{s.name}" for s in db_servers]
                     db_status = f"[Databases: {', '.join(db_info)}]"
@@ -431,8 +432,9 @@ class CLI:
                         print(f"  Allowed Tables: {', '.join(assignment.allowed_tables)}")
         elif agent.mcp_servers:
             # Backward compatibility: check for database-type MCP servers
-            db_servers = [s for s in agent.mcp_servers
-                         if hasattr(s, 'database_type') and s.database_type and not s.disabled]
+            db_servers = [
+                s for s in agent.mcp_servers if hasattr(s, "database_type") and s.database_type and not s.disabled
+            ]
             if db_servers:
                 print("\nDatabase Connections (Legacy):")
                 for server in db_servers:
@@ -442,22 +444,22 @@ class CLI:
 
                     # Show type-specific details
                     if server.database_type == "oracle":
-                        if hasattr(server, 'oracle_connection_name') and server.oracle_connection_name:
+                        if hasattr(server, "oracle_connection_name") and server.oracle_connection_name:
                             print(f"  Connection: {server.oracle_connection_name}")
-                        if hasattr(server, 'database_user') and server.database_user:
+                        if hasattr(server, "database_user") and server.database_user:
                             print(f"  Username: {server.database_user}")
                             print("  Password: ****")
                     elif server.database_type == "sqlite":
-                        if hasattr(server, 'database_path') and server.database_path:
+                        if hasattr(server, "database_path") and server.database_path:
                             print(f"  Path: {server.database_path}")
                     elif server.database_type in ["postgresql", "mysql"]:
-                        if hasattr(server, 'database_host') and server.database_host:
+                        if hasattr(server, "database_host") and server.database_host:
                             print(f"  Host: {server.database_host}")
-                        if hasattr(server, 'database_port') and server.database_port:
+                        if hasattr(server, "database_port") and server.database_port:
                             print(f"  Port: {server.database_port}")
-                        if hasattr(server, 'database_name') and server.database_name:
+                        if hasattr(server, "database_name") and server.database_name:
                             print(f"  Database: {server.database_name}")
-                        if hasattr(server, 'database_user') and server.database_user:
+                        if hasattr(server, "database_user") and server.database_user:
                             print(f"  Username: {server.database_user}")
                             print("  Password: ****")
             else:
@@ -878,8 +880,9 @@ class CLI:
                     response_chunks = await self.session.send_message_async(user_input)
 
                     # Debug: Log response info
-                    logger.debug(f"Received {len(response_chunks)} chunks, "
-                               f"total chars: {sum(len(c) for c in response_chunks)}")
+                    logger.debug(
+                        f"Received {len(response_chunks)} chunks, total chars: {sum(len(c) for c in response_chunks)}"
+                    )
 
                     # Display response
                     if response_chunks:

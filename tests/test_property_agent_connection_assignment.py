@@ -32,36 +32,29 @@ from offline_chat.manager import AgentManager
 # ============================================================================
 
 # Valid connection names (kebab-case)
-valid_connection_names = st.text(
-    alphabet="abcdefghijklmnopqrstuvwxyz0123456789-",
-    min_size=1,
-    max_size=30
-).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s and s[0] not in '0123456789')
+valid_connection_names = st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=30).filter(
+    lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s and s[0] not in "0123456789"
+)
 
 # Valid agent names (kebab-case)
-valid_agent_names = st.text(
-    alphabet="abcdefghijklmnopqrstuvwxyz0123456789-",
-    min_size=1,
-    max_size=30
-).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s and s[0] not in '0123456789')
+valid_agent_names = st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=30).filter(
+    lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s and s[0] not in "0123456789"
+)
 
 # Access levels
-access_levels = st.sampled_from([
-    AccessLevel.READ_ONLY,
-    AccessLevel.READ_WRITE,
-    AccessLevel.TABLE_SPECIFIC_READ,
-    AccessLevel.TABLE_SPECIFIC_READ_WRITE,
-])
+access_levels = st.sampled_from(
+    [
+        AccessLevel.READ_ONLY,
+        AccessLevel.READ_WRITE,
+        AccessLevel.TABLE_SPECIFIC_READ,
+        AccessLevel.TABLE_SPECIFIC_READ_WRITE,
+    ]
+)
 
 # Table names
 table_names = st.text(
-    alphabet=st.characters(
-        whitelist_categories=("Ll", "Lu", "Nd"),
-        whitelist_characters="_"
-    ),
-    min_size=1,
-    max_size=20
-).filter(lambda s: s[0] not in ('_', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'))
+    alphabet=st.characters(whitelist_categories=("Ll", "Lu", "Nd"), whitelist_characters="_"), min_size=1, max_size=20
+).filter(lambda s: s[0] not in ("_", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"))
 
 # Lists of table names
 table_lists = st.lists(table_names, min_size=1, max_size=10, unique=True)
@@ -70,6 +63,7 @@ table_lists = st.lists(table_names, min_size=1, max_size=10, unique=True)
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
 
 def setup_test_environment():
     """Set up test environment with temporary directories and managers."""
@@ -102,11 +96,7 @@ def setup_test_environment():
 
 def create_test_connection(db_manager, name: str, temp_path: Path) -> bool:
     """Create a test SQLite connection."""
-    conn = DatabaseConnection(
-        name=name,
-        database_type="sqlite",
-        file_path=str(temp_path / f"{name}.db")
-    )
+    conn = DatabaseConnection(name=name, database_type="sqlite", file_path=str(temp_path / f"{name}.db"))
     result = db_manager.create_connection(conn)
     return is_ok(result)
 
@@ -135,6 +125,7 @@ def create_test_agent(agent_manager, name: str) -> bool:
 # Property 14: Agent Connection Assignment Validation
 # ============================================================================
 
+
 @given(
     agent_name=valid_agent_names,
     connection_name=valid_connection_names,
@@ -142,9 +133,7 @@ def create_test_agent(agent_manager, name: str) -> bool:
 )
 @settings(deadline=1000, max_examples=50)
 @pytest.mark.property_test
-def test_property_14_assignment_validation_existing_connection(
-    agent_name, connection_name, access_level
-):
+def test_property_14_assignment_validation_existing_connection(agent_name, connection_name, access_level):
     """Property 14: Agent Connection Assignment Validation
 
     **Validates: Requirements 6.2**
@@ -167,10 +156,11 @@ def test_property_14_assignment_validation_existing_connection(
     assert create_test_agent(agent_manager, agent_name)
 
     # Prepare allowed_tables if needed
-    allowed_tables = ["test_table"] if access_level in (
-        AccessLevel.TABLE_SPECIFIC_READ,
-        AccessLevel.TABLE_SPECIFIC_READ_WRITE
-    ) else None
+    allowed_tables = (
+        ["test_table"]
+        if access_level in (AccessLevel.TABLE_SPECIFIC_READ, AccessLevel.TABLE_SPECIFIC_READ_WRITE)
+        else None
+    )
 
     # Assign the connection - should succeed
     result = agent_manager.assign_connection(
@@ -181,7 +171,9 @@ def test_property_14_assignment_validation_existing_connection(
     )
 
     # Verify assignment succeeded
-    assert is_ok(result), f"Assignment should succeed when connection exists: {unwrap_err(result) if is_err(result) else ''}"
+    assert is_ok(result), (
+        f"Assignment should succeed when connection exists: {unwrap_err(result) if is_err(result) else ''}"
+    )
 
 
 @given(
@@ -220,10 +212,11 @@ def test_property_14_assignment_validation_nonexistent_connection(
     assert create_test_agent(agent_manager, agent_name)
 
     # Prepare allowed_tables if needed
-    allowed_tables = ["test_table"] if access_level in (
-        AccessLevel.TABLE_SPECIFIC_READ,
-        AccessLevel.TABLE_SPECIFIC_READ_WRITE
-    ) else None
+    allowed_tables = (
+        ["test_table"]
+        if access_level in (AccessLevel.TABLE_SPECIFIC_READ, AccessLevel.TABLE_SPECIFIC_READ_WRITE)
+        else None
+    )
 
     # Try to assign the nonexistent connection - should fail
     result = agent_manager.assign_connection(
@@ -243,6 +236,7 @@ def test_property_14_assignment_validation_nonexistent_connection(
 # Property 15: Agent Connection Storage
 # ============================================================================
 
+
 @given(
     agent_name=valid_agent_names,
     connection_names=st.lists(valid_connection_names, min_size=1, max_size=5, unique=True),
@@ -250,9 +244,7 @@ def test_property_14_assignment_validation_nonexistent_connection(
 )
 @settings(deadline=1000, max_examples=50)
 @pytest.mark.property_test
-def test_property_15_connection_storage(
-    agent_name, connection_names, access_level
-):
+def test_property_15_connection_storage(agent_name, connection_names, access_level):
     """Property 15: Agent Connection Storage
 
     **Validates: Requirements 6.3**
@@ -274,10 +266,11 @@ def test_property_15_connection_storage(
     assert create_test_agent(agent_manager, agent_name)
 
     # Prepare allowed_tables if needed
-    allowed_tables = ["test_table"] if access_level in (
-        AccessLevel.TABLE_SPECIFIC_READ,
-        AccessLevel.TABLE_SPECIFIC_READ_WRITE
-    ) else None
+    allowed_tables = (
+        ["test_table"]
+        if access_level in (AccessLevel.TABLE_SPECIFIC_READ, AccessLevel.TABLE_SPECIFIC_READ_WRITE)
+        else None
+    )
 
     # Assign all connections
     for conn_name in connection_names:
@@ -297,24 +290,28 @@ def test_property_15_connection_storage(
     # Verify connection_assignments exists and has correct length
     assert "connection_assignments" in config_data, "Config should have connection_assignments field"
     assignments = config_data["connection_assignments"]
-    assert len(assignments) == len(connection_names), \
+    assert len(assignments) == len(connection_names), (
         f"Should have {len(connection_names)} assignments, got {len(assignments)}"
+    )
 
     # Verify all connection names are present
     stored_names = {a["connection_name"] for a in assignments}
     expected_names = set(connection_names)
-    assert stored_names == expected_names, \
+    assert stored_names == expected_names, (
         f"Stored connection names {stored_names} should match expected {expected_names}"
+    )
 
     # Verify access levels are stored correctly
     for assignment in assignments:
-        assert assignment["access_level"] == access_level.value, \
+        assert assignment["access_level"] == access_level.value, (
             f"Access level should be {access_level.value}, got {assignment['access_level']}"
+        )
 
 
 # ============================================================================
 # Property 16: Connection Assignment Cardinality
 # ============================================================================
+
 
 @given(
     agent_name=valid_agent_names,
@@ -323,9 +320,7 @@ def test_property_15_connection_storage(
 )
 @settings(deadline=1000, max_examples=50)
 @pytest.mark.property_test
-def test_property_16_assignment_cardinality(
-    agent_name, num_connections, access_level
-):
+def test_property_16_assignment_cardinality(agent_name, num_connections, access_level):
     """Property 16: Connection Assignment Cardinality
 
     **Validates: Requirements 6.1**
@@ -349,10 +344,11 @@ def test_property_16_assignment_cardinality(
         assert create_test_connection(db_manager, conn_name, env["connections_file"].parent)
 
     # Prepare allowed_tables if needed
-    allowed_tables = ["test_table"] if access_level in (
-        AccessLevel.TABLE_SPECIFIC_READ,
-        AccessLevel.TABLE_SPECIFIC_READ_WRITE
-    ) else None
+    allowed_tables = (
+        ["test_table"]
+        if access_level in (AccessLevel.TABLE_SPECIFIC_READ, AccessLevel.TABLE_SPECIFIC_READ_WRITE)
+        else None
+    )
 
     # Assign all connections
     for conn_name in connection_names:
@@ -367,15 +363,15 @@ def test_property_16_assignment_cardinality(
     # Load the agent and verify cardinality
     agent = agent_manager.get_agent(agent_name)
     assert agent is not None, "Agent should exist"
-    assert len(agent.connection_assignments) == num_connections, \
+    assert len(agent.connection_assignments) == num_connections, (
         f"Agent should have {num_connections} assignments, got {len(agent.connection_assignments)}"
+    )
 
     # Verify all connection names are present
     if num_connections > 0:
         stored_names = {a.connection_name for a in agent.connection_assignments}
         expected_names = set(connection_names)
-        assert stored_names == expected_names, \
-            "Stored connection names should match expected"
+        assert stored_names == expected_names, "Stored connection names should match expected"
 
 
 @given(
@@ -384,9 +380,7 @@ def test_property_16_assignment_cardinality(
 )
 @settings(deadline=1000, max_examples=50)
 @pytest.mark.property_test
-def test_property_16_assignment_cardinality_zero(
-    agent_name, access_level
-):
+def test_property_16_assignment_cardinality_zero(agent_name, access_level):
     """Property 16: Connection Assignment Cardinality (Zero Case)
 
     **Validates: Requirements 6.1**
@@ -403,13 +397,13 @@ def test_property_16_assignment_cardinality_zero(
     # Load the agent and verify it has zero connections
     agent = agent_manager.get_agent(agent_name)
     assert agent is not None, "Agent should exist"
-    assert len(agent.connection_assignments) == 0, \
-        "Newly created agent should have zero connection assignments"
+    assert len(agent.connection_assignments) == 0, "Newly created agent should have zero connection assignments"
 
 
 # ============================================================================
 # Property 32: Access Level Storage
 # ============================================================================
+
 
 @given(
     agent_name=valid_agent_names,
@@ -419,9 +413,7 @@ def test_property_16_assignment_cardinality_zero(
 )
 @settings(deadline=1000, max_examples=50)
 @pytest.mark.property_test
-def test_property_32_access_level_storage(
-    agent_name, connection_name, access_level, tables
-):
+def test_property_32_access_level_storage(agent_name, connection_name, access_level, tables):
     """Property 32: Access Level Storage
 
     **Validates: Requirements 12.9**
@@ -441,10 +433,9 @@ def test_property_32_access_level_storage(
     assert create_test_agent(agent_manager, agent_name)
 
     # Prepare allowed_tables based on access level
-    allowed_tables = tables if access_level in (
-        AccessLevel.TABLE_SPECIFIC_READ,
-        AccessLevel.TABLE_SPECIFIC_READ_WRITE
-    ) else None
+    allowed_tables = (
+        tables if access_level in (AccessLevel.TABLE_SPECIFIC_READ, AccessLevel.TABLE_SPECIFIC_READ_WRITE) else None
+    )
 
     # Assign the connection with access level
     result = agent_manager.assign_connection(
@@ -464,20 +455,24 @@ def test_property_32_access_level_storage(
     assignment = agent.connection_assignments[0]
 
     # Verify access level is stored correctly
-    assert assignment.access_level == access_level, \
+    assert assignment.access_level == access_level, (
         f"Access level should be {access_level}, got {assignment.access_level}"
+    )
 
     # Verify connection name is stored correctly
-    assert assignment.connection_name == connection_name, \
+    assert assignment.connection_name == connection_name, (
         f"Connection name should be {connection_name}, got {assignment.connection_name}"
+    )
 
     # Verify allowed_tables is stored correctly
     if access_level in (AccessLevel.TABLE_SPECIFIC_READ, AccessLevel.TABLE_SPECIFIC_READ_WRITE):
-        assert assignment.allowed_tables == tables, \
+        assert assignment.allowed_tables == tables, (
             f"Allowed tables should be {tables}, got {assignment.allowed_tables}"
+        )
     else:
-        assert assignment.allowed_tables is None, \
+        assert assignment.allowed_tables is None, (
             f"Allowed tables should be None for {access_level}, got {assignment.allowed_tables}"
+        )
 
 
 @given(
@@ -491,9 +486,7 @@ def test_property_32_access_level_storage(
 @settings(deadline=1000, max_examples=50)
 @pytest.mark.property_test
 def test_property_32_access_level_storage_update(
-    agent_name, connection_name,
-    initial_access, updated_access,
-    initial_tables, updated_tables
+    agent_name, connection_name, initial_access, updated_access, initial_tables, updated_tables
 ):
     """Property 32: Access Level Storage (Update Case)
 
@@ -517,10 +510,11 @@ def test_property_32_access_level_storage_update(
     assert create_test_agent(agent_manager, agent_name)
 
     # Assign with initial access level
-    initial_allowed = initial_tables if initial_access in (
-        AccessLevel.TABLE_SPECIFIC_READ,
-        AccessLevel.TABLE_SPECIFIC_READ_WRITE
-    ) else None
+    initial_allowed = (
+        initial_tables
+        if initial_access in (AccessLevel.TABLE_SPECIFIC_READ, AccessLevel.TABLE_SPECIFIC_READ_WRITE)
+        else None
+    )
 
     result1 = agent_manager.assign_connection(
         agent_name=agent_name,
@@ -531,10 +525,11 @@ def test_property_32_access_level_storage_update(
     assert is_ok(result1), f"Initial assignment failed: {unwrap_err(result1) if is_err(result1) else ''}"
 
     # Update with new access level
-    updated_allowed = updated_tables if updated_access in (
-        AccessLevel.TABLE_SPECIFIC_READ,
-        AccessLevel.TABLE_SPECIFIC_READ_WRITE
-    ) else None
+    updated_allowed = (
+        updated_tables
+        if updated_access in (AccessLevel.TABLE_SPECIFIC_READ, AccessLevel.TABLE_SPECIFIC_READ_WRITE)
+        else None
+    )
 
     result2 = agent_manager.assign_connection(
         agent_name=agent_name,
@@ -549,19 +544,21 @@ def test_property_32_access_level_storage_update(
     assert agent is not None, "Agent should exist"
 
     # Verify only one assignment exists (update, not duplicate)
-    assert len(agent.connection_assignments) == 1, \
-        "Should have exactly one assignment after update"
+    assert len(agent.connection_assignments) == 1, "Should have exactly one assignment after update"
 
     assignment = agent.connection_assignments[0]
 
     # Verify the updated access level is stored
-    assert assignment.access_level == updated_access, \
+    assert assignment.access_level == updated_access, (
         f"Access level should be updated to {updated_access}, got {assignment.access_level}"
+    )
 
     # Verify the updated allowed_tables is stored
     if updated_access in (AccessLevel.TABLE_SPECIFIC_READ, AccessLevel.TABLE_SPECIFIC_READ_WRITE):
-        assert assignment.allowed_tables == updated_tables, \
+        assert assignment.allowed_tables == updated_tables, (
             f"Allowed tables should be updated to {updated_tables}, got {assignment.allowed_tables}"
+        )
     else:
-        assert assignment.allowed_tables is None, \
+        assert assignment.allowed_tables is None, (
             f"Allowed tables should be None for {updated_access}, got {assignment.allowed_tables}"
+        )

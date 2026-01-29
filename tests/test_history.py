@@ -410,9 +410,7 @@ class TestConversationHistoryWithRAG:
         agent_name=valid_agent_name_strategy(),
         rag_messages=st.lists(valid_rag_message_strategy(), min_size=1, max_size=10),
     )
-    def test_history_with_rag_messages_round_trip(
-        self, agent_name: str, rag_messages: list[Message]
-    ):
+    def test_history_with_rag_messages_round_trip(self, agent_name: str, rag_messages: list[Message]):
         """History with RAG messages should preserve all source citations.
 
         Property 19: Conversation History Round-Trip with RAG Metadata
@@ -445,9 +443,7 @@ class TestConversationHistoryWithRAG:
                     assert restored_msg.sources is not None
                     assert len(restored_msg.sources) == len(original_msg.sources)
 
-                    for orig_src, rest_src in zip(
-                        original_msg.sources, restored_msg.sources
-                    ):
+                    for orig_src, rest_src in zip(original_msg.sources, restored_msg.sources):
                         assert rest_src.source_type == orig_src.source_type
                         assert rest_src.identifier == orig_src.identifier
                         assert rest_src.relevance_score == orig_src.relevance_score

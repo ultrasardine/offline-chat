@@ -22,11 +22,7 @@ class ContextRetriever:
     3. Return ordered results with similarity scores
     """
 
-    def __init__(
-        self,
-        vector_store: VectorStore,
-        embedding_generator: EmbeddingGenerator
-    ):
+    def __init__(self, vector_store: VectorStore, embedding_generator: EmbeddingGenerator):
         """
         Initialize with vector store and embedding generator.
 
@@ -38,11 +34,7 @@ class ContextRetriever:
         self.embedding_generator = embedding_generator
 
     def retrieve_context(
-        self,
-        collection_name: str,
-        query: str,
-        top_k: int = 5,
-        min_similarity: float = 0.3
+        self, collection_name: str, query: str, top_k: int = 5, min_similarity: float = 0.3
     ) -> RetrievalResult:
         """
         Retrieve relevant context for a query.
@@ -76,10 +68,7 @@ class ContextRetriever:
 
         # Search vector store for similar chunks
         search_results = self.vector_store.search(
-            collection_name=collection_name,
-            query_embedding=query_embedding,
-            top_k=top_k,
-            min_similarity=min_similarity
+            collection_name=collection_name, query_embedding=query_embedding, top_k=top_k, min_similarity=min_similarity
         )
 
         # Results are already ordered by similarity score (descending) from VectorStore
@@ -90,8 +79,5 @@ class ContextRetriever:
 
         # Return retrieval result
         return RetrievalResult(
-            chunks=search_results,
-            query=query,
-            total_results=len(search_results),
-            retrieval_time_ms=retrieval_time_ms
+            chunks=search_results, query=query, total_results=len(search_results), retrieval_time_ms=retrieval_time_ms
         )

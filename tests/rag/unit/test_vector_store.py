@@ -55,21 +55,21 @@ class TestVectorStore:
                 source_type="web",
                 source_identifier="https://example.com/python",
                 chunk_index=0,
-                metadata={"page": 1}
+                metadata={"page": 1},
             ),
             DocumentChunk(
                 text="JavaScript is used for web development",
                 source_type="web",
                 source_identifier="https://example.com/js",
                 chunk_index=0,
-                metadata={"page": 1}
-            )
+                metadata={"page": 1},
+            ),
         ]
 
         # Create simple embeddings (384 dimensions)
         embeddings = [
             [0.1] * 384,  # Simple embedding for Python
-            [0.2] * 384   # Simple embedding for JavaScript
+            [0.2] * 384,  # Simple embedding for JavaScript
         ]
 
         # Add documents
@@ -86,14 +86,7 @@ class TestVectorStore:
         """Test that mismatched chunks and embeddings raises an error."""
         vector_store.create_collection("test-agent", 384)
 
-        chunks = [
-            DocumentChunk(
-                text="Test",
-                source_type="web",
-                source_identifier="https://example.com",
-                chunk_index=0
-            )
-        ]
+        chunks = [DocumentChunk(text="Test", source_type="web", source_identifier="https://example.com", chunk_index=0)]
         embeddings = [[0.1] * 384, [0.2] * 384]  # Two embeddings for one chunk
 
         with pytest.raises(ValueError, match="must match"):
@@ -116,10 +109,7 @@ class TestVectorStore:
 
         chunks = [
             DocumentChunk(
-                text="Test document",
-                source_type="web",
-                source_identifier="https://example.com",
-                chunk_index=0
+                text="Test document", source_type="web", source_identifier="https://example.com", chunk_index=0
             )
         ]
         embeddings = [[0.5] * 384]
@@ -154,10 +144,7 @@ class TestVectorStore:
         # Add 5 documents
         chunks = [
             DocumentChunk(
-                text=f"Document {i}",
-                source_type="web",
-                source_identifier=f"https://example.com/{i}",
-                chunk_index=0
+                text=f"Document {i}", source_type="web", source_identifier=f"https://example.com/{i}", chunk_index=0
             )
             for i in range(5)
         ]
@@ -180,7 +167,7 @@ class TestVectorStore:
             source_type="database",
             source_identifier="users_table",
             chunk_index=5,
-            metadata={"row_id": 123, "custom_field": "value"}
+            metadata={"row_id": 123, "custom_field": "value"},
         )
         embeddings = [[0.1] * 384]
 
@@ -219,10 +206,7 @@ class TestVectorStore:
         # Add some data
         chunks = [
             DocumentChunk(
-                text="Test document",
-                source_type="web",
-                source_identifier="https://example.com",
-                chunk_index=0
+                text="Test document", source_type="web", source_identifier="https://example.com", chunk_index=0
             )
         ]
         embeddings = [[0.1] * 384]
@@ -257,10 +241,7 @@ class TestVectorStore:
         # Add documents
         chunks = [
             DocumentChunk(
-                text="Document to be deleted",
-                source_type="web",
-                source_identifier="https://example.com",
-                chunk_index=0
+                text="Document to be deleted", source_type="web", source_identifier="https://example.com", chunk_index=0
             )
         ]
         embeddings = [[0.1] * 384]
@@ -284,10 +265,7 @@ class TestVectorStore:
 
         chunks = [
             DocumentChunk(
-                text=f"Document {i}",
-                source_type="web",
-                source_identifier=f"https://example.com/{i}",
-                chunk_index=0
+                text=f"Document {i}", source_type="web", source_identifier=f"https://example.com/{i}", chunk_index=0
             )
             for i in range(10)
         ]
@@ -320,18 +298,12 @@ class TestVectorStore:
         # Add different documents to each
         chunks_1 = [
             DocumentChunk(
-                text="Agent 1 document",
-                source_type="web",
-                source_identifier="https://agent1.com",
-                chunk_index=0
+                text="Agent 1 document", source_type="web", source_identifier="https://agent1.com", chunk_index=0
             )
         ]
         chunks_2 = [
             DocumentChunk(
-                text="Agent 2 document",
-                source_type="web",
-                source_identifier="https://agent2.com",
-                chunk_index=0
+                text="Agent 2 document", source_type="web", source_identifier="https://agent2.com", chunk_index=0
             )
         ]
 

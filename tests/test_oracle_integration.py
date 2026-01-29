@@ -32,9 +32,7 @@ def mock_oracle_tools():
                 "description": "Execute SQL query against Oracle database",
                 "parameters": {
                     "type": "object",
-                    "properties": {
-                        "sql": {"type": "string", "description": "SQL query to execute"}
-                    },
+                    "properties": {"sql": {"type": "string", "description": "SQL query to execute"}},
                     "required": ["sql"],
                 },
             },
@@ -64,9 +62,7 @@ def test_create_agent_with_oracle_sqlcl_connection(temp_agents_dir, temp_history
     manager = AgentManager(agents_dir=str(temp_agents_dir), history_dir=str(temp_history_dir))
 
     # Create Oracle database configuration using SQLcl connection
-    oracle_config = create_database_mcp_config(
-        "oracle", "prod_db", connection_name="PROD_ANALYTICS"
-    )
+    oracle_config = create_database_mcp_config("oracle", "prod_db", connection_name="PROD_ANALYTICS")
 
     # Verify configuration properties
     assert oracle_config.database_type == "oracle"
@@ -116,9 +112,7 @@ def test_chat_session_with_oracle_database(temp_agents_dir, temp_history_dir, mo
         manager = AgentManager(agents_dir=str(temp_agents_dir), history_dir=str(temp_history_dir))
 
         # Create Oracle database configuration
-        oracle_config = create_database_mcp_config(
-            "oracle", "prod_db", connection_name="PROD_ANALYTICS"
-        )
+        oracle_config = create_database_mcp_config("oracle", "prod_db", connection_name="PROD_ANALYTICS")
 
         # Create agent with Oracle database
         agent = Agent(
@@ -185,9 +179,7 @@ def test_execute_oracle_query(temp_agents_dir, temp_history_dir, mock_oracle_too
         manager = AgentManager(agents_dir=str(temp_agents_dir), history_dir=str(temp_history_dir))
 
         # Create Oracle database configuration
-        oracle_config = create_database_mcp_config(
-            "oracle", "prod_db", connection_name="PROD_ANALYTICS"
-        )
+        oracle_config = create_database_mcp_config("oracle", "prod_db", connection_name="PROD_ANALYTICS")
 
         # Create agent with Oracle database
         agent = Agent(
@@ -233,9 +225,7 @@ def test_execute_oracle_query(temp_agents_dir, temp_history_dir, mock_oracle_too
             assert "run-sql" in tool_names
 
             # Execute query through tool
-            result = await session._mcp_manager.call_tool(
-                "run-sql", {"sql": "SELECT employee_id, name FROM employees"}
-            )
+            result = await session._mcp_manager.call_tool("run-sql", {"sql": "SELECT employee_id, name FROM employees"})
 
             # Verify result contains expected data
             assert "EMPLOYEE_ID" in result
@@ -267,9 +257,7 @@ def test_oracle_audit_logging(temp_agents_dir, temp_history_dir, mock_oracle_too
         manager = AgentManager(agents_dir=str(temp_agents_dir), history_dir=str(temp_history_dir))
 
         # Create Oracle database configuration
-        oracle_config = create_database_mcp_config(
-            "oracle", "prod_db", connection_name="PROD_ANALYTICS"
-        )
+        oracle_config = create_database_mcp_config("oracle", "prod_db", connection_name="PROD_ANALYTICS")
 
         # Create agent with Oracle database
         agent = Agent(
@@ -309,9 +297,7 @@ def test_oracle_audit_logging(temp_agents_dir, temp_history_dir, mock_oracle_too
                 mock_manager_instance.disconnect_all = AsyncMock()
                 mock_manager_instance.get_all_tools = MagicMock(return_value=mock_oracle_tools)
                 mock_manager_instance.tool_registry = {"run-sql": "prod_db"}
-                mock_manager_instance.call_tool = AsyncMock(
-                    return_value="Query executed successfully"
-                )
+                mock_manager_instance.call_tool = AsyncMock(return_value="Query executed successfully")
                 mock_manager_instance.clients = {"prod_db": MagicMock()}
 
                 # Start session
@@ -358,9 +344,7 @@ def test_oracle_connection_cleanup(temp_agents_dir, temp_history_dir, mock_oracl
         manager = AgentManager(agents_dir=str(temp_agents_dir), history_dir=str(temp_history_dir))
 
         # Create Oracle database configuration
-        oracle_config = create_database_mcp_config(
-            "oracle", "prod_db", connection_name="PROD_ANALYTICS"
-        )
+        oracle_config = create_database_mcp_config("oracle", "prod_db", connection_name="PROD_ANALYTICS")
 
         # Create agent with Oracle database
         agent = Agent(
@@ -418,9 +402,7 @@ def test_oracle_connection_cleanup(temp_agents_dir, temp_history_dir, mock_oracl
             assert len(session.get_database_connections()) == 0
 
             # Verify cleanup was logged
-            cleanup_logs = [
-                msg for msg in log_messages if "Closing" in msg or "closed" in msg.lower()
-            ]
+            cleanup_logs = [msg for msg in log_messages if "Closing" in msg or "closed" in msg.lower()]
             assert len(cleanup_logs) > 0, "Expected connection cleanup logs"
         finally:
             logger.removeHandler(handler)

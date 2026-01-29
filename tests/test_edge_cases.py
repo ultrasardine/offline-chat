@@ -40,30 +40,20 @@ def temp_workspace(tmp_path):
     history_dir = tmp_path / "history"
     agents_dir.mkdir()
     history_dir.mkdir()
-    return {
-        "store_path": store_path,
-        "agents_dir": agents_dir,
-        "history_dir": history_dir,
-        "tmp_path": tmp_path
-    }
+    return {"store_path": store_path, "agents_dir": agents_dir, "history_dir": history_dir, "tmp_path": tmp_path}
 
 
 @pytest.fixture
 def db_manager(temp_workspace):
     """Create a DatabaseConnectionManager with temp workspace."""
-    return DatabaseConnectionManager(
-        store_path=temp_workspace["store_path"],
-        agents_dir=temp_workspace["agents_dir"]
-    )
+    return DatabaseConnectionManager(store_path=temp_workspace["store_path"], agents_dir=temp_workspace["agents_dir"])
 
 
 @pytest.fixture
 def agent_manager(db_manager, temp_workspace):
     """Create an AgentManager with temp workspace."""
     manager = AgentManager(
-        agents_dir=temp_workspace["agents_dir"],
-        history_dir=temp_workspace["history_dir"],
-        db_manager=db_manager
+        agents_dir=temp_workspace["agents_dir"], history_dir=temp_workspace["history_dir"], db_manager=db_manager
     )
     return manager
 
@@ -120,21 +110,14 @@ class TestConnectionDeletionCancellation:
         error_msg = unwrap_err(result)
         assert "not found" in error_msg.lower()
 
-    def test_delete_connection_in_use_by_agent(
-        self,
-        db_manager,
-        agent_manager,
-        temp_workspace
-    ):
+    def test_delete_connection_in_use_by_agent(self, db_manager, agent_manager, temp_workspace):
         """Test that deletion is prevented when connection is in use."""
         # Create a connection
         connection = DatabaseConnection(
-            name="in-use-conn",
-            database_type="sqlite",
-            file_path=str(temp_workspace["tmp_path"] / "test.db")
+            name="in-use-conn", database_type="sqlite", file_path=str(temp_workspace["tmp_path"] / "test.db")
         )
 
-        with patch.object(db_manager, '_validate_connection', return_value=Ok(None)):
+        with patch.object(db_manager, "_validate_connection", return_value=Ok(None)):
             db_manager.create_connection(connection)
 
         # Create an agent using this connection
@@ -147,15 +130,11 @@ class TestConnectionDeletionCancellation:
             "system_prompt": "You are a test agent.",
             "temperature": 0.7,
             "connection_assignments": [
-                {
-                    "connection_name": "in-use-conn",
-                    "access_level": "read-only",
-                    "allowed_tables": []
-                }
+                {"connection_name": "in-use-conn", "access_level": "read-only", "allowed_tables": []}
             ],
             "guidelines": [],
             "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat()
+            "updated_at": datetime.now().isoformat(),
         }
         with open(agent_dir / "config.json", "w") as f:
             json.dump(agent_config, f)
@@ -172,21 +151,14 @@ class TestConnectionDeletionCancellation:
         result = db_manager.get_connection("in-use-conn")
         assert is_ok(result)
 
-    def test_delete_connection_after_removing_from_all_agents(
-        self,
-        db_manager,
-        agent_manager,
-        temp_workspace
-    ):
+    def test_delete_connection_after_removing_from_all_agents(self, db_manager, agent_manager, temp_workspace):
         """Test successful deletion after removing connection from all agents."""
         # Create a connection
         connection = DatabaseConnection(
-            name="removable-conn",
-            database_type="sqlite",
-            file_path=str(temp_workspace["tmp_path"] / "test.db")
+            name="removable-conn", database_type="sqlite", file_path=str(temp_workspace["tmp_path"] / "test.db")
         )
 
-        with patch.object(db_manager, '_validate_connection', return_value=Ok(None)):
+        with patch.object(db_manager, "_validate_connection", return_value=Ok(None)):
             db_manager.create_connection(connection)
 
         # Create an agent using this connection
@@ -199,15 +171,11 @@ class TestConnectionDeletionCancellation:
             "system_prompt": "You are a temp agent.",
             "temperature": 0.7,
             "connection_assignments": [
-                {
-                    "connection_name": "removable-conn",
-                    "access_level": "read-only",
-                    "allowed_tables": []
-                }
+                {"connection_name": "removable-conn", "access_level": "read-only", "allowed_tables": []}
             ],
             "guidelines": [],
             "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat()
+            "updated_at": datetime.now().isoformat(),
         }
         with open(agent_dir / "config.json", "w") as f:
             json.dump(agent_config, f)
@@ -235,7 +203,7 @@ class TestFilePermissionErrors:
     **Validates: Requirement 5.5**
     """
 
-    @pytest.mark.skipif(os.name == 'nt', reason="Unix permissions not applicable on Windows")
+    @pytest.mark.skipif(os.name == "nt", reason="Unix permissions not applicable on Windows")
     def test_read_store_with_no_read_permission(self, temp_workspace):
         """Test handling of store file with no read permissions."""
         store_path = temp_workspace["store_path"]
@@ -249,10 +217,7 @@ class TestFilePermissionErrors:
 
         try:
             # Attempt to create manager (should handle gracefully)
-            manager = DatabaseConnectionManager(
-                store_path=store_path,
-                agents_dir=temp_workspace["agents_dir"]
-            )
+            manager = DatabaseConnectionManager(store_path=store_path, agents_dir=temp_workspace["agents_dir"])
 
             # Attempt to list connections (should handle error)
             connections = manager.list_connections()
@@ -263,7 +228,7 @@ class TestFilePermissionErrors:
             # Restore permissions for cleanup
             os.chmod(store_path, 0o600)
 
-    @pytest.mark.skipif(os.name == 'nt', reason="Unix permissions not applicable on Windows")
+    @pytest.mark.skipif(os.name == "nt", reason="Unix permissions not applicable on Windows")
     def test_write_store_with_no_write_permission(self, temp_workspace):
         """Test handling of store file with no write permissions."""
         store_path = temp_workspace["store_path"]
@@ -276,19 +241,12 @@ class TestFilePermissionErrors:
         os.chmod(store_path, 0o400)
 
         try:
-            manager = DatabaseConnectionManager(
-                store_path=store_path,
-                agents_dir=temp_workspace["agents_dir"]
-            )
+            manager = DatabaseConnectionManager(store_path=store_path, agents_dir=temp_workspace["agents_dir"])
 
             # Attempt to create a connection (should fail gracefully)
-            connection = DatabaseConnection(
-                name="test-conn",
-                database_type="sqlite",
-                file_path="/tmp/test.db"
-            )
+            connection = DatabaseConnection(name="test-conn", database_type="sqlite", file_path="/tmp/test.db")
 
-            with patch.object(manager, '_validate_connection', return_value=Ok(None)):
+            with patch.object(manager, "_validate_connection", return_value=Ok(None)):
                 result = manager.create_connection(connection)
 
             # The manager may succeed if it can write to the file despite permissions
@@ -308,17 +266,14 @@ class TestFilePermissionErrors:
         agents_dir = tmp_path / "agents"
         agents_dir.mkdir()
 
-        if os.name != 'nt':
+        if os.name != "nt":
             # Make directory read-only
             os.chmod(store_dir, 0o500)
 
             try:
                 # Attempt to create manager (should raise PermissionError)
                 with pytest.raises(PermissionError):
-                    DatabaseConnectionManager(
-                        store_path=store_path,
-                        agents_dir=agents_dir
-                    )
+                    DatabaseConnectionManager(store_path=store_path, agents_dir=agents_dir)
             finally:
                 # Restore permissions for cleanup
                 os.chmod(store_dir, 0o700)
@@ -338,10 +293,7 @@ class TestStoreFileMissing:
         assert not store_path.exists()
 
         # Create manager
-        DatabaseConnectionManager(
-            store_path=store_path,
-            agents_dir=temp_workspace["agents_dir"]
-        )
+        DatabaseConnectionManager(store_path=store_path, agents_dir=temp_workspace["agents_dir"])
 
         # Store should now exist
         assert store_path.exists()
@@ -362,10 +314,7 @@ class TestStoreFileMissing:
         # Ensure store doesn't exist
         assert not store_path.exists()
 
-        manager = DatabaseConnectionManager(
-            store_path=store_path,
-            agents_dir=temp_workspace["agents_dir"]
-        )
+        manager = DatabaseConnectionManager(store_path=store_path, agents_dir=temp_workspace["agents_dir"])
 
         # Should return empty list
         connections = manager.list_connections()
@@ -375,18 +324,13 @@ class TestStoreFileMissing:
     def test_store_deleted_between_operations(self, temp_workspace):
         """Test handling when store is deleted between operations."""
         manager = DatabaseConnectionManager(
-            store_path=temp_workspace["store_path"],
-            agents_dir=temp_workspace["agents_dir"]
+            store_path=temp_workspace["store_path"], agents_dir=temp_workspace["agents_dir"]
         )
 
         # Create a connection
-        connection = DatabaseConnection(
-            name="test-conn",
-            database_type="sqlite",
-            file_path="/tmp/test.db"
-        )
+        connection = DatabaseConnection(name="test-conn", database_type="sqlite", file_path="/tmp/test.db")
 
-        with patch.object(manager, '_validate_connection', return_value=Ok(None)):
+        with patch.object(manager, "_validate_connection", return_value=Ok(None)):
             result = manager.create_connection(connection)
 
         assert is_ok(result)
@@ -410,9 +354,7 @@ class TestInvalidConnectionReferences:
     def test_resolve_nonexistent_connection(self, db_manager):
         """Test resolving a connection that doesn't exist."""
         assignment = AgentConnectionAssignment(
-            connection_name="nonexistent-conn",
-            access_level=AccessLevel.READ_ONLY,
-            allowed_tables=[]
+            connection_name="nonexistent-conn", access_level=AccessLevel.READ_ONLY, allowed_tables=[]
         )
 
         result = db_manager.resolve_connections([assignment])
@@ -426,26 +368,20 @@ class TestInvalidConnectionReferences:
         """Test resolving multiple connections where one doesn't exist."""
         # Create one valid connection
         connection = DatabaseConnection(
-            name="valid-conn",
-            database_type="sqlite",
-            file_path=str(temp_workspace["tmp_path"] / "test.db")
+            name="valid-conn", database_type="sqlite", file_path=str(temp_workspace["tmp_path"] / "test.db")
         )
 
-        with patch.object(db_manager, '_validate_connection', return_value=Ok(None)):
+        with patch.object(db_manager, "_validate_connection", return_value=Ok(None)):
             db_manager.create_connection(connection)
 
         # Try to resolve valid and invalid connections
         assignments = [
             AgentConnectionAssignment(
-                connection_name="valid-conn",
-                access_level=AccessLevel.READ_ONLY,
-                allowed_tables=[]
+                connection_name="valid-conn", access_level=AccessLevel.READ_ONLY, allowed_tables=[]
             ),
             AgentConnectionAssignment(
-                connection_name="invalid-conn",
-                access_level=AccessLevel.READ_ONLY,
-                allowed_tables=[]
-            )
+                connection_name="invalid-conn", access_level=AccessLevel.READ_ONLY, allowed_tables=[]
+            ),
         ]
 
         result = db_manager.resolve_connections(assignments)
@@ -454,11 +390,7 @@ class TestInvalidConnectionReferences:
         error_msg = unwrap_err(result)
         assert "invalid-conn" in error_msg
 
-    def test_assign_nonexistent_connection_to_agent(
-        self,
-        agent_manager,
-        temp_workspace
-    ):
+    def test_assign_nonexistent_connection_to_agent(self, agent_manager, temp_workspace):
         """Test assigning a nonexistent connection to an agent."""
         # Create an agent
         agent_dir = temp_workspace["agents_dir"] / "test-agent"
@@ -472,28 +404,19 @@ class TestInvalidConnectionReferences:
             "connection_assignments": [],
             "guidelines": [],
             "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat()
+            "updated_at": datetime.now().isoformat(),
         }
         with open(agent_dir / "config.json", "w") as f:
             json.dump(agent_config, f)
 
         # Attempt to assign nonexistent connection
-        result = agent_manager.assign_connection(
-            "test-agent",
-            "nonexistent-conn",
-            AccessLevel.READ_ONLY,
-            []
-        )
+        result = agent_manager.assign_connection("test-agent", "nonexistent-conn", AccessLevel.READ_ONLY, [])
 
         assert is_err(result)
         error_msg = unwrap_err(result)
         assert "not found" in error_msg.lower() or "does not exist" in error_msg.lower()
 
-    def test_remove_nonexistent_connection_from_agent(
-        self,
-        agent_manager,
-        temp_workspace
-    ):
+    def test_remove_nonexistent_connection_from_agent(self, agent_manager, temp_workspace):
         """Test removing a connection that agent doesn't have."""
         # Create an agent without any connections
         agent_dir = temp_workspace["agents_dir"] / "test-agent"
@@ -507,7 +430,7 @@ class TestInvalidConnectionReferences:
             "connection_assignments": [],
             "guidelines": [],
             "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat()
+            "updated_at": datetime.now().isoformat(),
         }
         with open(agent_dir / "config.json", "w") as f:
             json.dump(agent_config, f)
@@ -530,21 +453,12 @@ class TestInvalidAccessLevelSpecifications:
         """Test creating assignment with invalid access level string via from_dict."""
         # The AccessLevel enum will raise ValueError when given an invalid value
         # through the from_dict method
-        invalid_data = {
-            "connection_name": "test-conn",
-            "access_level": "invalid-level",
-            "allowed_tables": []
-        }
+        invalid_data = {"connection_name": "test-conn", "access_level": "invalid-level", "allowed_tables": []}
 
         with pytest.raises(ValueError):
             AgentConnectionAssignment.from_dict(invalid_data)
 
-    def test_table_specific_access_without_tables(
-        self,
-        agent_manager,
-        db_manager,
-        temp_workspace
-    ):
+    def test_table_specific_access_without_tables(self, agent_manager, db_manager, temp_workspace):
         """Test table-specific access level without specifying tables."""
         # Create a connection
         connection = DatabaseConnection(
@@ -554,10 +468,10 @@ class TestInvalidAccessLevelSpecifications:
             port=5432,
             database="testdb",
             username="testuser",
-            password="testpass"
+            password="testpass",
         )
 
-        with patch.object(db_manager, '_validate_connection', return_value=Ok(None)):
+        with patch.object(db_manager, "_validate_connection", return_value=Ok(None)):
             db_manager.create_connection(connection)
 
         # Create an agent
@@ -572,7 +486,7 @@ class TestInvalidAccessLevelSpecifications:
             "connection_assignments": [],
             "guidelines": [],
             "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat()
+            "updated_at": datetime.now().isoformat(),
         }
         with open(agent_dir / "config.json", "w") as f:
             json.dump(agent_config, f)
@@ -582,7 +496,7 @@ class TestInvalidAccessLevelSpecifications:
             "test-agent",
             "test-conn",
             AccessLevel.TABLE_SPECIFIC_READ,
-            []  # Empty tables list
+            [],  # Empty tables list
         )
 
         # Should fail validation
@@ -590,12 +504,7 @@ class TestInvalidAccessLevelSpecifications:
         error_msg = unwrap_err(result)
         assert "table" in error_msg.lower()
 
-    def test_non_table_specific_access_with_tables(
-        self,
-        agent_manager,
-        db_manager,
-        temp_workspace
-    ):
+    def test_non_table_specific_access_with_tables(self, agent_manager, db_manager, temp_workspace):
         """Test non-table-specific access level with tables specified."""
         # Create a connection
         connection = DatabaseConnection(
@@ -605,10 +514,10 @@ class TestInvalidAccessLevelSpecifications:
             port=5432,
             database="testdb",
             username="testuser",
-            password="testpass"
+            password="testpass",
         )
 
-        with patch.object(db_manager, '_validate_connection', return_value=Ok(None)):
+        with patch.object(db_manager, "_validate_connection", return_value=Ok(None)):
             db_manager.create_connection(connection)
 
         # Create an agent
@@ -623,7 +532,7 @@ class TestInvalidAccessLevelSpecifications:
             "connection_assignments": [],
             "guidelines": [],
             "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat()
+            "updated_at": datetime.now().isoformat(),
         }
         with open(agent_dir / "config.json", "w") as f:
             json.dump(agent_config, f)
@@ -633,7 +542,7 @@ class TestInvalidAccessLevelSpecifications:
             "test-agent",
             "test-conn",
             AccessLevel.READ_ONLY,
-            ["users", "orders"]  # Tables specified but not needed
+            ["users", "orders"],  # Tables specified but not needed
         )
 
         # Should succeed (tables are ignored for non-table-specific access)
@@ -652,7 +561,7 @@ class TestInvalidAccessLevelSpecifications:
         invalid_data = {
             "connection_name": "test-conn",
             "access_level": "super-admin",  # Invalid
-            "allowed_tables": []
+            "allowed_tables": [],
         }
 
         with pytest.raises(ValueError):
@@ -676,7 +585,7 @@ class TestEmptyGuidelinesList:
             "connection_assignments": [],
             "guidelines": [],
             "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat()
+            "updated_at": datetime.now().isoformat(),
         }
 
         agent = Agent.from_dict(agent_config)
@@ -695,7 +604,7 @@ class TestEmptyGuidelinesList:
             "connection_assignments": [],
             "guidelines": [],
             "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat()
+            "updated_at": datetime.now().isoformat(),
         }
 
         agent = Agent.from_dict(agent_config)
@@ -719,7 +628,7 @@ class TestEmptyGuidelinesList:
             "connection_assignments": [],
             "guidelines": [],
             "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat()
+            "updated_at": datetime.now().isoformat(),
         }
         with open(agent_dir / "config.json", "w") as f:
             json.dump(agent_config, f)
@@ -745,7 +654,7 @@ class TestEmptyGuidelinesList:
             "connection_assignments": [],
             "guidelines": [],
             "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat()
+            "updated_at": datetime.now().isoformat(),
         }
         with open(agent_dir / "config.json", "w") as f:
             json.dump(agent_config, f)
@@ -771,7 +680,7 @@ class TestEmptyGuidelinesList:
             "connection_assignments": [],
             "guidelines": [],
             "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat()
+            "updated_at": datetime.now().isoformat(),
         }
         with open(agent_dir / "config.json", "w") as f:
             json.dump(agent_config, f)
@@ -794,13 +703,13 @@ class TestEmptyGuidelinesList:
             "connection_assignments": [],
             # No guidelines field
             "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat()
+            "updated_at": datetime.now().isoformat(),
         }
 
         agent = Agent.from_dict(agent_config)
 
         # Should default to empty list
-        assert hasattr(agent, 'guidelines')
+        assert hasattr(agent, "guidelines")
         assert agent.guidelines == []
 
         # System prompt should work normally

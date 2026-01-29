@@ -56,11 +56,7 @@ class EmbeddingGenerator:
         embedding = model.encode(text, convert_to_numpy=True)
         return embedding.tolist()
 
-    def generate_embeddings_batch(
-        self,
-        texts: list[str],
-        show_progress: bool = False
-    ) -> list[list[float]]:
+    def generate_embeddings_batch(self, texts: list[str], show_progress: bool = False) -> list[list[float]]:
         """
         Generate embeddings for multiple texts efficiently.
 

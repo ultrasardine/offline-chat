@@ -448,9 +448,7 @@ class TestToolNamespacingForMultipleDatabases:
             unique_by=lambda t: t.name,
         ),
     )
-    def test_multiple_databases_have_namespaced_tools(
-        self, num_databases: int, tools_per_db: list[MockMCPTool]
-    ):
+    def test_multiple_databases_have_namespaced_tools(self, num_databases: int, tools_per_db: list[MockMCPTool]):
         """Tools from multiple databases should be namespaced with database name."""
         from offline_chat import convert_mcp_tool_to_ollama
 
@@ -540,9 +538,7 @@ class TestToolNamespacingForMultipleDatabases:
             unique_by=lambda t: t.name,
         ),
     )
-    def test_regular_mcp_servers_not_namespaced(
-        self, db_tools: list[MockMCPTool], regular_tools: list[MockMCPTool]
-    ):
+    def test_regular_mcp_servers_not_namespaced(self, db_tools: list[MockMCPTool], regular_tools: list[MockMCPTool]):
         """Regular MCP servers should not have their tools namespaced."""
         from offline_chat import convert_mcp_tool_to_ollama
 

@@ -35,7 +35,7 @@ class TestRAGFallbackBehavior:
                 enabled=True,
                 top_k=5,
                 min_similarity=0.3,
-            )
+            ),
         )
 
         # Create real components
@@ -79,7 +79,7 @@ class TestRAGFallbackBehavior:
                 enabled=True,
                 top_k=5,
                 min_similarity=0.3,
-            )
+            ),
         )
 
         # Create components with mocked vector store that simulates unavailability
@@ -119,7 +119,7 @@ class TestRAGFallbackBehavior:
                 enabled=True,
                 top_k=5,
                 min_similarity=0.3,
-            )
+            ),
         )
 
         # Create real components
@@ -152,7 +152,7 @@ class TestRAGFallbackBehavior:
                 source_type="web",
                 source_identifier="https://example.com/python",
                 chunk_index=0,
-                metadata={"title": "Python Introduction"}
+                metadata={"title": "Python Introduction"},
             )
         ]
 
@@ -163,8 +163,8 @@ class TestRAGFallbackBehavior:
         result = orchestrator.process_query("What is Python?")
 
         assert result is not None, "Should return RAGResponse when vector store is available"
-        assert hasattr(result, 'sources'), "Result should have sources attribute"
-        assert hasattr(result, 'retrieval_result'), "Result should have retrieval_result"
+        assert hasattr(result, "sources"), "Result should have sources attribute"
+        assert hasattr(result, "retrieval_result"), "Result should have retrieval_result"
         assert result.retrieval_result.total_results >= 0, "Should have retrieval results"
 
     def test_fallback_logs_appropriate_warning(self, caplog):
@@ -174,6 +174,7 @@ class TestRAGFallbackBehavior:
         This ensures operators can diagnose why RAG isn't working.
         """
         import logging
+
         caplog.set_level(logging.WARNING)
 
         # Create agent with RAG enabled
@@ -186,7 +187,7 @@ class TestRAGFallbackBehavior:
                 enabled=True,
                 top_k=5,
                 min_similarity=0.3,
-            )
+            ),
         )
 
         # Create mock components that simulate vector store unavailability
@@ -213,10 +214,12 @@ class TestRAGFallbackBehavior:
         # Check that a warning was logged with helpful information
         warning_found = False
         for record in caplog.records:
-            if (record.levelname == "WARNING" and
-                "Vector store unavailable" in record.message and
-                "my-agent" in record.message and
-                "Falling back to non-RAG mode" in record.message):
+            if (
+                record.levelname == "WARNING"
+                and "Vector store unavailable" in record.message
+                and "my-agent" in record.message
+                and "Falling back to non-RAG mode" in record.message
+            ):
                 warning_found = True
                 break
 
@@ -248,7 +251,7 @@ class TestRAGFallbackIntegrationWithChatSession:
                 enabled=True,
                 top_k=5,
                 min_similarity=0.3,
-            )
+            ),
         )
 
         # Create components with mocked vector store that simulates unavailability
@@ -298,7 +301,7 @@ class TestRAGFallbackIntegrationWithChatSession:
                 enabled=True,
                 top_k=5,
                 min_similarity=0.3,
-            )
+            ),
         )
 
         # Create components and set up vector store

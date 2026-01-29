@@ -180,6 +180,7 @@ class TestAndThen:
 
     def test_and_then_ok_to_ok(self):
         """Test and_then chains Ok to Ok."""
+
         def double(x: int) -> Result[int, str]:
             return Ok(x * 2)
 
@@ -190,6 +191,7 @@ class TestAndThen:
 
     def test_and_then_ok_to_err(self):
         """Test and_then chains Ok to Err."""
+
         def divide_by_zero(x: int) -> Result[int, str]:
             return Err("division by zero")
 
@@ -216,6 +218,7 @@ class TestAndThen:
 
     def test_and_then_multiple_chains(self):
         """Test chaining multiple operations."""
+
         def add_one(x: int) -> Result[int, str]:
             return Ok(x + 1)
 
@@ -319,6 +322,7 @@ def test_map_err_preserves_ok(value: int):
 @given(st.integers())
 def test_and_then_left_identity(value: int):
     """Property: and_then(Ok(x), f) == f(x) (left identity)."""
+
     def f(x: int) -> Result[int, str]:
         return Ok(x * 2)
 
@@ -340,6 +344,7 @@ def test_and_then_right_identity(value: int):
 @given(st.integers())
 def test_and_then_associativity(value: int):
     """Property: and_then is associative."""
+
     def f(x: int) -> Result[int, str]:
         return Ok(x + 1)
 
@@ -397,6 +402,7 @@ class TestResultIntegration:
 
     def test_database_connection_simulation(self):
         """Test Result type in simulated database connection scenario."""
+
         def connect_to_db(host: str) -> Result[str, str]:
             if not host:
                 return Err("Host cannot be empty")
@@ -426,6 +432,7 @@ class TestResultIntegration:
 
     def test_validation_chain(self):
         """Test Result type in validation chain scenario."""
+
         def validate_name(name: str) -> Result[str, str]:
             if not name:
                 return Err("Name cannot be empty")

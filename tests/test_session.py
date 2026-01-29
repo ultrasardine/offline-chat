@@ -517,9 +517,7 @@ class TestHistoryPersistenceExcludesToolMessages:
         user_message=st.text(min_size=1, max_size=100).filter(lambda s: s.strip()),
         final_response=st.text(min_size=1, max_size=200).filter(lambda s: s.strip()),
     )
-    def test_history_excludes_tool_messages(
-        self, agent: Agent, user_message: str, final_response: str
-    ):
+    def test_history_excludes_tool_messages(self, agent: Agent, user_message: str, final_response: str):
         """History should only contain user and final assistant messages."""
         with tempfile.TemporaryDirectory() as tmpdir:
             agents_dir = Path(tmpdir) / "agents"
@@ -581,9 +579,7 @@ class TestHistoryPersistenceExcludesToolMessages:
 
             # Verify history contains only user and assistant messages
             for msg in loaded_history.messages:
-                assert msg.role in ["user", "assistant"], (
-                    f"Found unexpected role '{msg.role}' in history"
-                )
+                assert msg.role in ["user", "assistant"], f"Found unexpected role '{msg.role}' in history"
 
             # Verify no tool-related content in message roles
             roles = [msg.role for msg in loaded_history.messages]
@@ -1208,9 +1204,7 @@ class TestConnectionLifecycleManagement:
                 mock_manager_instance.connect_all = pytest.helpers.AsyncMock()
                 mock_manager_instance.get_all_tools.return_value = []
                 mock_manager_instance.tool_registry = {"run_sql": "oracle_db"}
-                mock_manager_instance.call_tool = pytest.helpers.AsyncMock(
-                    return_value="Query result"
-                )
+                mock_manager_instance.call_tool = pytest.helpers.AsyncMock(return_value="Query result")
                 # Add clients dict to indicate successful connection
                 mock_client = type("MockClient", (), {"config": oracle_config})()
                 mock_manager_instance.clients = {"oracle_db": mock_client}
@@ -1223,9 +1217,7 @@ class TestConnectionLifecycleManagement:
 
                     # Verify Oracle audit logging message was logged
                     oracle_log_calls = [
-                        call
-                        for call in mock_logger.info.call_args_list
-                        if "DBTOOLS$MCP_LOG" in str(call)
+                        call for call in mock_logger.info.call_args_list if "DBTOOLS$MCP_LOG" in str(call)
                     ]
                     assert len(oracle_log_calls) > 0, "Expected Oracle audit logging message"
 
@@ -1387,9 +1379,7 @@ class TestConnectionLifecycleManagement:
                 mock_manager_instance.disconnect_all = pytest.helpers.AsyncMock()
                 mock_manager_instance.get_all_tools.return_value = []
                 mock_manager_instance.tool_registry = {"query_database": "test_db"}
-                mock_manager_instance.call_tool = pytest.helpers.AsyncMock(
-                    return_value="Query result"
-                )
+                mock_manager_instance.call_tool = pytest.helpers.AsyncMock(return_value="Query result")
 
                 import asyncio
 
@@ -1402,11 +1392,7 @@ class TestConnectionLifecycleManagement:
 
                 # Execute multiple queries
                 for i in range(5):
-                    asyncio.run(
-                        session._execute_tool_async(
-                            "query_database", {"query": f"SELECT * FROM table{i}"}
-                        )
-                    )
+                    asyncio.run(session._execute_tool_async("query_database", {"query": f"SELECT * FROM table{i}"}))
 
                 # Verify connect_all was NOT called again (connection reused)
                 assert mock_manager_instance.connect_all.call_count == initial_call_count
@@ -1575,9 +1561,7 @@ class TestConnectionLifecycleManagement:
                 mock_manager_instance.connect_all = pytest.helpers.AsyncMock()
                 mock_manager_instance.get_all_tools.return_value = []
                 mock_manager_instance.tool_registry = {"run_sql": "oracle_db"}
-                mock_manager_instance.call_tool = pytest.helpers.AsyncMock(
-                    return_value="Query result"
-                )
+                mock_manager_instance.call_tool = pytest.helpers.AsyncMock(return_value="Query result")
                 # Add clients dict to indicate successful connection
                 mock_client = type("MockClient", (), {"config": oracle_config})()
                 mock_manager_instance.clients = {"oracle_db": mock_client}
@@ -1589,9 +1573,7 @@ class TestConnectionLifecycleManagement:
 
                 # Execute database tool with logging
                 with patch("offline_chat.session.logger") as mock_logger:
-                    asyncio.run(
-                        session._execute_tool_async("run_sql", {"query": "SELECT * FROM users"})
-                    )
+                    asyncio.run(session._execute_tool_async("run_sql", {"query": "SELECT * FROM users"}))
 
                     # Verify execution was logged
                     info_calls = [str(call) for call in mock_logger.info.call_args_list]
@@ -1749,9 +1731,7 @@ class TestErrorHandlingProperties:
             with patch("offline_chat.session.MCPClientManager") as MockManager:
                 mock_manager_instance = MockManager.return_value
                 # Simulate connection failure by raising an exception
-                mock_manager_instance.connect_all = pytest.helpers.AsyncMock(
-                    side_effect=Exception("Connection failed")
-                )
+                mock_manager_instance.connect_all = pytest.helpers.AsyncMock(side_effect=Exception("Connection failed"))
 
                 # Start session should succeed despite connection failure
                 result = asyncio.run(session.start_async(agent.name))
@@ -1829,17 +1809,13 @@ class TestErrorHandlingProperties:
                 mock_manager_instance.tool_registry = {"test_tool": "test_db"}
 
                 # Mock call_tool to raise an exception (simulating syntax error)
-                mock_manager_instance.call_tool = pytest.helpers.AsyncMock(
-                    side_effect=Exception(error_message)
-                )
+                mock_manager_instance.call_tool = pytest.helpers.AsyncMock(side_effect=Exception(error_message))
 
                 # Start session
                 asyncio.run(session.start_async(agent.name))
 
                 # Execute tool - should return error message, not raise exception
-                result = asyncio.run(
-                    session._execute_tool_async("test_tool", {"query": "INVALID SQL"})
-                )
+                result = asyncio.run(session._execute_tool_async("test_tool", {"query": "INVALID SQL"}))
 
                 # Result should be an error message string, not an exception
                 assert isinstance(result, str)

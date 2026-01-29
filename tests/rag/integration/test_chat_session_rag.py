@@ -85,9 +85,7 @@ def mock_manager(temp_data_dir, rag_enabled_agent, non_rag_agent):
         agent_name="test-rag-agent",
         messages=[],
     )
-    manager.get_agent.side_effect = lambda name: (
-        rag_enabled_agent if name == "test-rag-agent" else non_rag_agent
-    )
+    manager.get_agent.side_effect = lambda name: (rag_enabled_agent if name == "test-rag-agent" else non_rag_agent)
     return manager
 
 
@@ -163,11 +161,13 @@ class TestRAGEnabledChatSession:
         # Mock Ollama response
         with patch("offline_chat.session.ollama.chat") as mock_ollama:
             # Mock streaming response
-            mock_ollama.return_value = iter([
-                {"message": {"content": "Response "}},
-                {"message": {"content": "based "}},
-                {"message": {"content": "on context"}},
-            ])
+            mock_ollama.return_value = iter(
+                [
+                    {"message": {"content": "Response "}},
+                    {"message": {"content": "based "}},
+                    {"message": {"content": "on context"}},
+                ]
+            )
 
             # Send a message
             response_chunks = list(session.send_message("test query"))
@@ -251,11 +251,13 @@ class TestRAGEnabledChatSession:
         # Mock Ollama response
         with patch("offline_chat.session.ollama.chat") as mock_ollama:
             # Mock streaming response
-            mock_ollama.return_value = iter([
-                {"message": {"content": "Response "}},
-                {"message": {"content": "with "}},
-                {"message": {"content": "multiple sources"}},
-            ])
+            mock_ollama.return_value = iter(
+                [
+                    {"message": {"content": "Response "}},
+                    {"message": {"content": "with "}},
+                    {"message": {"content": "multiple sources"}},
+                ]
+            )
 
             # Send a message
             list(session.send_message("test query"))
@@ -298,11 +300,13 @@ class TestFallbackBehavior:
         # Mock Ollama response for standard mode
         with patch("offline_chat.session.ollama.chat") as mock_ollama:
             # Mock streaming response
-            mock_ollama.return_value = iter([
-                {"message": {"content": "Standard "}},
-                {"message": {"content": "response "}},
-                {"message": {"content": "without RAG"}},
-            ])
+            mock_ollama.return_value = iter(
+                [
+                    {"message": {"content": "Standard "}},
+                    {"message": {"content": "response "}},
+                    {"message": {"content": "without RAG"}},
+                ]
+            )
 
             # Send a message
             response_chunks = list(session.send_message("test query"))
@@ -334,11 +338,13 @@ class TestFallbackBehavior:
         # Mock Ollama response for standard mode
         with patch("offline_chat.session.ollama.chat") as mock_ollama:
             # Mock streaming response
-            mock_ollama.return_value = iter([
-                {"message": {"content": "Standard "}},
-                {"message": {"content": "response "}},
-                {"message": {"content": "after error"}},
-            ])
+            mock_ollama.return_value = iter(
+                [
+                    {"message": {"content": "Standard "}},
+                    {"message": {"content": "response "}},
+                    {"message": {"content": "after error"}},
+                ]
+            )
 
             # Send a message - should not raise exception
             response_chunks = list(session.send_message("test query"))
@@ -364,9 +370,11 @@ class TestFallbackBehavior:
         # Mock Ollama response
         with patch("offline_chat.session.ollama.chat") as mock_ollama:
             # Mock streaming response
-            mock_ollama.return_value = iter([
-                {"message": {"content": "Standard response"}},
-            ])
+            mock_ollama.return_value = iter(
+                [
+                    {"message": {"content": "Standard response"}},
+                ]
+            )
 
             # Send a message
             response_chunks = list(session.send_message("test query"))
@@ -470,11 +478,13 @@ class TestAsyncRAGChat:
         # Mock Ollama response
         with patch("offline_chat.session.ollama.chat") as mock_ollama:
             # Mock streaming response
-            mock_ollama.return_value = iter([
-                {"message": {"content": "Async "}},
-                {"message": {"content": "response "}},
-                {"message": {"content": "with RAG"}},
-            ])
+            mock_ollama.return_value = iter(
+                [
+                    {"message": {"content": "Async "}},
+                    {"message": {"content": "response "}},
+                    {"message": {"content": "with RAG"}},
+                ]
+            )
 
             # Send a message asynchronously
             response_chunks = await session.send_message_async("test query")

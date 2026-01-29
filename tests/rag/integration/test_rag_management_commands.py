@@ -20,8 +20,7 @@ from offline_chat.rag.models import RAGConfig
 @pytest.fixture
 def temp_dirs():
     """Create temporary directories for testing."""
-    with tempfile.TemporaryDirectory() as agents_dir, \
-         tempfile.TemporaryDirectory() as history_dir:
+    with tempfile.TemporaryDirectory() as agents_dir, tempfile.TemporaryDirectory() as history_dir:
         yield Path(agents_dir), Path(history_dir)
 
 
@@ -71,7 +70,7 @@ class TestAddKnowledgeSource:
     def test_add_web_source_without_ingestion(self, manager, rag_agent):
         """Test adding a web source without immediate ingestion."""
         # Create agent
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
             manager.create_agent(rag_agent)
 
@@ -97,7 +96,7 @@ class TestAddKnowledgeSource:
     def test_add_web_source_with_ingestion(self, manager, rag_agent):
         """Test adding a web source with immediate ingestion."""
         # Create agent
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
             manager.create_agent(rag_agent)
 
@@ -106,7 +105,7 @@ class TestAddKnowledgeSource:
         mock_result = Mock(success=True, chunks_processed=10, error_message=None)
         mock_orchestrator.ingest_knowledge_sources.return_value = [mock_result]
 
-        with patch.object(manager, 'get_rag_orchestrator', return_value=mock_orchestrator):
+        with patch.object(manager, "get_rag_orchestrator", return_value=mock_orchestrator):
             result = manager.add_knowledge_source(
                 agent_name=rag_agent.name,
                 source_type="web",
@@ -132,7 +131,7 @@ class TestAddKnowledgeSource:
     def test_add_database_source(self, manager, rag_agent):
         """Test adding a database source."""
         # Create agent
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
             manager.create_agent(rag_agent)
 
@@ -158,7 +157,7 @@ class TestAddKnowledgeSource:
     def test_add_source_to_non_rag_agent(self, manager, non_rag_agent):
         """Test that adding a source to a non-RAG agent fails."""
         # Create agent
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
             manager.create_agent(non_rag_agent)
 
@@ -177,7 +176,7 @@ class TestAddKnowledgeSource:
     def test_add_duplicate_source(self, manager, rag_agent):
         """Test that adding a duplicate source fails."""
         # Create agent
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
             manager.create_agent(rag_agent)
 
@@ -205,7 +204,7 @@ class TestAddKnowledgeSource:
     def test_add_source_invalid_url(self, manager, rag_agent):
         """Test that adding an invalid URL fails."""
         # Create agent
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
             manager.create_agent(rag_agent)
 
@@ -224,7 +223,7 @@ class TestAddKnowledgeSource:
     def test_add_source_with_progress_callback(self, manager, rag_agent):
         """Test adding a source with progress callback."""
         # Create agent
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
             manager.create_agent(rag_agent)
 
@@ -239,7 +238,7 @@ class TestAddKnowledgeSource:
         def progress_callback(message):
             progress_messages.append(message)
 
-        with patch.object(manager, 'get_rag_orchestrator', return_value=mock_orchestrator):
+        with patch.object(manager, "get_rag_orchestrator", return_value=mock_orchestrator):
             result = manager.add_knowledge_source(
                 agent_name=rag_agent.name,
                 source_type="web",
@@ -260,7 +259,7 @@ class TestReindexKnowledgeSource:
     def test_reindex_existing_source(self, manager, rag_agent):
         """Test re-indexing an existing knowledge source."""
         # Create agent with a source
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
             manager.create_agent(rag_agent)
 
@@ -277,7 +276,7 @@ class TestReindexKnowledgeSource:
         mock_result = Mock(success=True, chunks_processed=15, error_message=None)
         mock_orchestrator.ingest_knowledge_sources.return_value = [mock_result]
 
-        with patch.object(manager, 'get_rag_orchestrator', return_value=mock_orchestrator):
+        with patch.object(manager, "get_rag_orchestrator", return_value=mock_orchestrator):
             result = manager.reindex_knowledge_source(
                 agent_name=rag_agent.name,
                 source_identifier="https://example.com/docs",
@@ -295,7 +294,7 @@ class TestReindexKnowledgeSource:
     def test_reindex_nonexistent_source(self, manager, rag_agent):
         """Test that re-indexing a non-existent source fails."""
         # Create agent
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
             manager.create_agent(rag_agent)
 
@@ -312,7 +311,7 @@ class TestReindexKnowledgeSource:
     def test_reindex_with_progress_callback(self, manager, rag_agent):
         """Test re-indexing with progress callback."""
         # Create agent with a source
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
             manager.create_agent(rag_agent)
 
@@ -335,7 +334,7 @@ class TestReindexKnowledgeSource:
         def progress_callback(message):
             progress_messages.append(message)
 
-        with patch.object(manager, 'get_rag_orchestrator', return_value=mock_orchestrator):
+        with patch.object(manager, "get_rag_orchestrator", return_value=mock_orchestrator):
             result = manager.reindex_knowledge_source(
                 agent_name=rag_agent.name,
                 source_identifier="https://example.com/docs",
@@ -353,7 +352,7 @@ class TestListKnowledgeSources:
     def test_list_sources_for_agent_with_sources(self, manager, rag_agent):
         """Test listing sources for an agent with knowledge sources."""
         # Create agent
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
             manager.create_agent(rag_agent)
 
@@ -387,7 +386,7 @@ class TestListKnowledgeSources:
     def test_list_sources_for_agent_without_sources(self, manager, rag_agent):
         """Test listing sources for an agent with no knowledge sources."""
         # Create agent
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
             manager.create_agent(rag_agent)
 
@@ -401,7 +400,7 @@ class TestListKnowledgeSources:
     def test_list_sources_for_non_rag_agent(self, manager, non_rag_agent):
         """Test that listing sources for a non-RAG agent fails."""
         # Create agent
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
             manager.create_agent(non_rag_agent)
 
@@ -427,7 +426,7 @@ class TestEndToEndWorkflow:
     def test_complete_workflow(self, manager, rag_agent):
         """Test complete workflow: add, list, re-index."""
         # Create agent
-        with patch('subprocess.run') as mock_run:
+        with patch("subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0)
             manager.create_agent(rag_agent)
 
@@ -452,7 +451,7 @@ class TestEndToEndWorkflow:
         mock_result = Mock(success=True, chunks_processed=10, error_message=None)
         mock_orchestrator.ingest_knowledge_sources.return_value = [mock_result]
 
-        with patch.object(manager, 'get_rag_orchestrator', return_value=mock_orchestrator):
+        with patch.object(manager, "get_rag_orchestrator", return_value=mock_orchestrator):
             result = manager.reindex_knowledge_source(
                 agent_name=rag_agent.name,
                 source_identifier="https://example.com/docs",

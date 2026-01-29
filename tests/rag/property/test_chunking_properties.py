@@ -16,11 +16,9 @@ class TestChunkingProperties:
     @given(
         content=st.text(min_size=1, max_size=5000),
         chunk_size=st.integers(min_value=10, max_value=500),
-        chunk_overlap=st.integers(min_value=0, max_value=50)
+        chunk_overlap=st.integers(min_value=0, max_value=50),
     )
-    def test_document_chunking_preserves_content(
-        self, content: str, chunk_size: int, chunk_overlap: int
-    ):
+    def test_document_chunking_preserves_content(self, content: str, chunk_size: int, chunk_overlap: int):
         """
         Feature: rag-capabilities, Property 3: Document Chunking Preserves Content
 
@@ -51,17 +49,14 @@ class TestChunkingProperties:
             assert char in concatenated, f"Character '{char}' from original content not found in chunks"
 
         # The first chunk should start with the beginning of the content
-        assert content.startswith(chunks[0].text[:min(len(chunks[0].text), len(content))])
+        assert content.startswith(chunks[0].text[: min(len(chunks[0].text), len(content))])
 
         # The last chunk should end with the end of the content
         if len(content) > chunk_size:
             # For multi-chunk documents, verify the last chunk contains the end
-            assert content.endswith(chunks[-1].text[-min(len(chunks[-1].text), len(content)):])
+            assert content.endswith(chunks[-1].text[-min(len(chunks[-1].text), len(content)) :])
 
-    @given(
-        content=st.text(min_size=1, max_size=5000),
-        source_url=st.text(min_size=1, max_size=200)
-    )
+    @given(content=st.text(min_size=1, max_size=5000), source_url=st.text(min_size=1, max_size=200))
     def test_chunk_metadata_invariant(self, content: str, source_url: str):
         """
         Feature: rag-capabilities, Property 4: Chunk Metadata Invariant
@@ -84,26 +79,29 @@ class TestChunkingProperties:
             assert chunk.metadata["total_chunks"] == len(chunks)
 
     @given(
-        table_name=st.text(min_size=1, max_size=100, alphabet=st.characters(whitelist_categories=("Lu", "Ll", "Nd"), whitelist_characters="_")),
+        table_name=st.text(
+            min_size=1,
+            max_size=100,
+            alphabet=st.characters(whitelist_categories=("Lu", "Ll", "Nd"), whitelist_characters="_"),
+        ),
         rows=st.lists(
             st.dictionaries(
-                keys=st.text(min_size=1, max_size=20, alphabet=st.characters(whitelist_categories=("Lu", "Ll", "Nd"), whitelist_characters="_")),
+                keys=st.text(
+                    min_size=1,
+                    max_size=20,
+                    alphabet=st.characters(whitelist_categories=("Lu", "Ll", "Nd"), whitelist_characters="_"),
+                ),
                 values=st.one_of(
-                    st.none(),
-                    st.integers(),
-                    st.floats(allow_nan=False, allow_infinity=False),
-                    st.text(max_size=100)
+                    st.none(), st.integers(), st.floats(allow_nan=False, allow_infinity=False), st.text(max_size=100)
                 ),
                 min_size=1,
-                max_size=10
+                max_size=10,
             ),
             min_size=1,
-            max_size=50
-        )
+            max_size=50,
+        ),
     )
-    def test_database_row_text_completeness(
-        self, table_name: str, rows: list[dict]
-    ):
+    def test_database_row_text_completeness(self, table_name: str, rows: list[dict]):
         """
         Feature: rag-capabilities, Property 8: Database Row Text Representation Completeness
 

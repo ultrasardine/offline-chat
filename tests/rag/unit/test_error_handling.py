@@ -31,7 +31,7 @@ class TestVectorStoreUnavailableFallback:
                 enabled=True,
                 top_k=5,
                 min_similarity=0.3,
-            )
+            ),
         )
 
         # Create mock components
@@ -40,9 +40,7 @@ class TestVectorStoreUnavailableFallback:
         context_retriever = Mock(spec=ContextRetriever)
 
         # Simulate collection not found error
-        context_retriever.retrieve_context.side_effect = Exception(
-            "Collection 'test-agent' does not exist"
-        )
+        context_retriever.retrieve_context.side_effect = Exception("Collection 'test-agent' does not exist")
 
         # Create orchestrator
         orchestrator = RAGOrchestrator(
@@ -70,7 +68,7 @@ class TestVectorStoreUnavailableFallback:
                 enabled=True,
                 top_k=5,
                 min_similarity=0.3,
-            )
+            ),
         )
 
         # Create mock components
@@ -79,9 +77,7 @@ class TestVectorStoreUnavailableFallback:
         context_retriever = Mock(spec=ContextRetriever)
 
         # Simulate ChromaDB connection error
-        context_retriever.retrieve_context.side_effect = Exception(
-            "ChromaDB connection unavailable"
-        )
+        context_retriever.retrieve_context.side_effect = Exception("ChromaDB connection unavailable")
 
         # Create orchestrator
         orchestrator = RAGOrchestrator(
@@ -108,7 +104,7 @@ class TestVectorStoreUnavailableFallback:
                 enabled=True,
                 top_k=5,
                 min_similarity=0.3,
-            )
+            ),
         )
 
         # Create mock components
@@ -117,9 +113,7 @@ class TestVectorStoreUnavailableFallback:
         context_retriever = Mock(spec=ContextRetriever)
 
         # Simulate database unavailable error
-        context_retriever.retrieve_context.side_effect = Exception(
-            "Database connection failed"
-        )
+        context_retriever.retrieve_context.side_effect = Exception("Database connection failed")
 
         # Create orchestrator
         orchestrator = RAGOrchestrator(
@@ -146,7 +140,7 @@ class TestVectorStoreUnavailableFallback:
                 enabled=True,
                 top_k=5,
                 min_similarity=0.3,
-            )
+            ),
         )
 
         # Create mock components
@@ -155,9 +149,7 @@ class TestVectorStoreUnavailableFallback:
         context_retriever = Mock(spec=ContextRetriever)
 
         # Simulate a different kind of error (not storage-related)
-        context_retriever.retrieve_context.side_effect = ValueError(
-            "Invalid query format"
-        )
+        context_retriever.retrieve_context.side_effect = ValueError("Invalid query format")
 
         # Create orchestrator
         orchestrator = RAGOrchestrator(
@@ -174,6 +166,7 @@ class TestVectorStoreUnavailableFallback:
     def test_fallback_logs_warning(self, caplog):
         """Test that fallback to non-RAG mode logs a warning."""
         import logging
+
         caplog.set_level(logging.WARNING)
 
         # Create agent with RAG enabled
@@ -186,7 +179,7 @@ class TestVectorStoreUnavailableFallback:
                 enabled=True,
                 top_k=5,
                 min_similarity=0.3,
-            )
+            ),
         )
 
         # Create mock components
@@ -195,9 +188,7 @@ class TestVectorStoreUnavailableFallback:
         context_retriever = Mock(spec=ContextRetriever)
 
         # Simulate vector store unavailable
-        context_retriever.retrieve_context.side_effect = Exception(
-            "Collection not found"
-        )
+        context_retriever.retrieve_context.side_effect = Exception("Collection not found")
 
         # Create orchestrator
         orchestrator = RAGOrchestrator(
@@ -213,14 +204,14 @@ class TestVectorStoreUnavailableFallback:
         # Check that warning was logged
         assert result is None
         assert any(
-            "Vector store unavailable" in record.message and
-            "Falling back to non-RAG mode" in record.message
+            "Vector store unavailable" in record.message and "Falling back to non-RAG mode" in record.message
             for record in caplog.records
         )
 
     def test_fallback_includes_agent_name_in_log(self, caplog):
         """Test that fallback log includes agent name for debugging."""
         import logging
+
         caplog.set_level(logging.WARNING)
 
         # Create agent with RAG enabled
@@ -233,7 +224,7 @@ class TestVectorStoreUnavailableFallback:
                 enabled=True,
                 top_k=5,
                 min_similarity=0.3,
-            )
+            ),
         )
 
         # Create mock components
@@ -242,9 +233,7 @@ class TestVectorStoreUnavailableFallback:
         context_retriever = Mock(spec=ContextRetriever)
 
         # Simulate vector store unavailable
-        context_retriever.retrieve_context.side_effect = Exception(
-            "Collection unavailable"
-        )
+        context_retriever.retrieve_context.side_effect = Exception("Collection unavailable")
 
         # Create orchestrator
         orchestrator = RAGOrchestrator(
@@ -258,10 +247,7 @@ class TestVectorStoreUnavailableFallback:
         orchestrator.process_query("What is Python?")
 
         # Check that agent name is in the log
-        assert any(
-            "my-special-agent" in record.message
-            for record in caplog.records
-        )
+        assert any("my-special-agent" in record.message for record in caplog.records)
 
 
 class TestIngestionErrorHandling:
@@ -270,6 +256,7 @@ class TestIngestionErrorHandling:
     def test_ingest_logs_error_and_continues_on_exception(self, caplog):
         """Test that ingestion logs errors and continues with other sources."""
         import logging
+
         caplog.set_level(logging.ERROR)
 
         # Create agent with RAG enabled
@@ -281,7 +268,7 @@ class TestIngestionErrorHandling:
             rag_config=RAGConfig(
                 enabled=True,
                 knowledge_sources=[],
-            )
+            ),
         )
 
         # Create mock components
@@ -302,6 +289,7 @@ class TestIngestionErrorHandling:
 
         # Create knowledge sources
         from offline_chat.rag.models import KnowledgeSource
+
         sources = [
             KnowledgeSource(
                 source_type="web",
@@ -331,8 +319,7 @@ class TestIngestionErrorHandling:
 
         # Check that error was logged
         assert any(
-            "Error ingesting" in record.message and
-            "https://example.com/doc1" in record.message
+            "Error ingesting" in record.message and "https://example.com/doc1" in record.message
             for record in caplog.records
         )
 
@@ -386,9 +373,11 @@ class TestCorruptedCollectionDetection:
 
         def corrupted_get_collection(name):
             collection = original_get_collection(name)
+
             # Mock the get method to raise an error
             def failing_get(*args, **kwargs):
                 raise Exception("SQLite database is corrupted")
+
             collection.get = failing_get
             return collection
 
@@ -417,8 +406,10 @@ class TestCorruptedCollectionDetection:
 
         def corrupted_get_collection(name):
             collection = original_get_collection(name)
+
             def failing_get(*args, **kwargs):
                 raise Exception("Database disk I/O error")
+
             collection.get = failing_get
             return collection
 
@@ -465,6 +456,7 @@ class TestCorruptedCollectionRecovery:
         vector_store.create_collection(collection_name, 384)
 
         from offline_chat.rag.models import DocumentChunk
+
         chunks = [
             DocumentChunk(
                 text="Test content",
@@ -530,6 +522,7 @@ class TestCorruptedCollectionRecovery:
 
         # Mock create_collection to fail
         original_create = vector_store.create_collection
+
         def failing_create(name, dim):
             raise Exception("Cannot create collection")
 
@@ -556,9 +549,7 @@ class TestEmbeddingGenerationFailure:
         embedding_generator = Mock(spec=EmbeddingGenerator)
 
         # Simulate embedding generation failure
-        embedding_generator.generate_embedding.side_effect = Exception(
-            "Model loading failed"
-        )
+        embedding_generator.generate_embedding.side_effect = Exception("Model loading failed")
 
         # Create context retriever
         context_retriever = ContextRetriever(vector_store, embedding_generator)
@@ -583,7 +574,7 @@ class TestEmbeddingGenerationFailure:
             rag_config=RAGConfig(
                 enabled=True,
                 knowledge_sources=[],
-            )
+            ),
         )
 
         # Create mock components
@@ -598,9 +589,7 @@ class TestEmbeddingGenerationFailure:
         embedding_generator.get_embedding_dimension.return_value = 384
 
         # Simulate embedding generation failure
-        embedding_generator.generate_embeddings_batch.side_effect = Exception(
-            "CUDA out of memory"
-        )
+        embedding_generator.generate_embeddings_batch.side_effect = Exception("CUDA out of memory")
 
         # Create orchestrator with web scraper
         from offline_chat.rag.models import KnowledgeSource, ScrapedContent
@@ -650,7 +639,7 @@ class TestEmbeddingGenerationFailure:
             rag_config=RAGConfig(
                 enabled=True,
                 knowledge_sources=[],
-            )
+            ),
         )
 
         # Create mock components
@@ -665,9 +654,7 @@ class TestEmbeddingGenerationFailure:
         embedding_generator.get_embedding_dimension.return_value = 384
 
         # Simulate embedding generation failure
-        embedding_generator.generate_embeddings_batch.side_effect = RuntimeError(
-            "Embedding model not available"
-        )
+        embedding_generator.generate_embeddings_batch.side_effect = RuntimeError("Embedding model not available")
 
         # Create orchestrator with web scraper
         from offline_chat.rag.models import KnowledgeSource, ScrapedContent
@@ -720,7 +707,7 @@ class TestWebScrapingFailure:
             rag_config=RAGConfig(
                 enabled=True,
                 knowledge_sources=[],
-            )
+            ),
         )
 
         # Create components
@@ -783,7 +770,7 @@ class TestWebScrapingFailure:
             rag_config=RAGConfig(
                 enabled=True,
                 knowledge_sources=[],
-            )
+            ),
         )
 
         # Create components
@@ -841,7 +828,7 @@ class TestWebScrapingFailure:
             rag_config=RAGConfig(
                 enabled=True,
                 knowledge_sources=[],
-            )
+            ),
         )
 
         # Create components
@@ -903,7 +890,7 @@ class TestWebScrapingFailure:
             rag_config=RAGConfig(
                 enabled=True,
                 knowledge_sources=[],
-            )
+            ),
         )
 
         # Create components
@@ -987,6 +974,7 @@ class TestCollectionInfo:
 
         # Add some documents
         from offline_chat.rag.models import DocumentChunk
+
         chunks = [
             DocumentChunk(
                 text="Test content 1",
@@ -1059,7 +1047,7 @@ class TestOrchestratorCollectionHealth:
                 enabled=True,
                 top_k=5,
                 min_similarity=0.3,
-            )
+            ),
         )
 
         # Create real components
@@ -1114,7 +1102,7 @@ class TestOrchestratorCollectionHealth:
                 enabled=True,
                 top_k=5,
                 min_similarity=0.3,
-            )
+            ),
         )
 
         # Create components without creating collection
@@ -1151,7 +1139,7 @@ class TestOrchestratorCollectionHealth:
                 enabled=True,
                 top_k=5,
                 min_similarity=0.3,
-            )
+            ),
         )
 
         # Create components and empty collection
@@ -1193,7 +1181,7 @@ class TestOrchestratorCollectionHealth:
                 enabled=True,
                 top_k=5,
                 min_similarity=0.3,
-            )
+            ),
         )
 
         # Create components
@@ -1237,7 +1225,7 @@ class TestOrchestratorCollectionHealth:
                 enabled=True,
                 top_k=5,
                 min_similarity=0.3,
-            )
+            ),
         )
 
         # Create components

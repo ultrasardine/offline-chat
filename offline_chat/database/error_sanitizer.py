@@ -13,9 +13,7 @@ from offline_chat.database.connection import DatabaseConnection
 
 
 def sanitize_error_message(
-    error_message: str,
-    connection: DatabaseConnection | None = None,
-    additional_secrets: list[str] | None = None
+    error_message: str, connection: DatabaseConnection | None = None, additional_secrets: list[str] | None = None
 ) -> str:
     """Remove credentials from error messages.
 
@@ -86,8 +84,7 @@ def sanitize_error_message(
     # Filter out secrets that are too short or are already masked
     # Short secrets (< 3 chars) are likely to cause false positives
     secrets_to_sanitize = [
-        secret for secret in secrets_to_sanitize
-        if isinstance(secret, str) and len(secret) >= 3 and secret != "****"
+        secret for secret in secrets_to_sanitize if isinstance(secret, str) and len(secret) >= 3 and secret != "****"
     ]
 
     # Sort by length (longest first) to avoid partial replacements
@@ -146,13 +143,13 @@ def sanitize_connection_string(connection_string: str) -> str:
     # Pattern 1: Oracle format (user/password@host)
     # Matches: user/password@host:port/service
     # The password part is everything between / and the last @
-    oracle_pattern = r'([a-zA-Z0-9_]+)/(.+?)@'
-    sanitized = re.sub(oracle_pattern, r'\1/****@', sanitized)
+    oracle_pattern = r"([a-zA-Z0-9_]+)/(.+?)@"
+    sanitized = re.sub(oracle_pattern, r"\1/****@", sanitized)
 
     # Pattern 2: URL format (protocol://user:password@host)
     # Matches: postgresql://user:password@host, mysql://user:password@host, etc.
-    url_pattern = r'([a-zA-Z][a-zA-Z0-9+.-]*://[^:]+):([^@\s]+)@'
-    sanitized = re.sub(url_pattern, r'\1:****@', sanitized)
+    url_pattern = r"([a-zA-Z][a-zA-Z0-9+.-]*://[^:]+):([^@\s]+)@"
+    sanitized = re.sub(url_pattern, r"\1:****@", sanitized)
 
     return sanitized
 
@@ -190,10 +187,16 @@ def sanitize_dict(data: dict[str, Any]) -> dict[str, Any]:
 
     # List of sensitive key patterns
     sensitive_patterns = [
-        "password", "passwd", "pwd",
-        "token", "secret", "key",
-        "credential", "auth",
-        "api_key", "apikey"
+        "password",
+        "passwd",
+        "pwd",
+        "token",
+        "secret",
+        "key",
+        "credential",
+        "auth",
+        "api_key",
+        "apikey",
     ]
 
     # Mask sensitive fields

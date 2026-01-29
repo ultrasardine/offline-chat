@@ -39,11 +39,7 @@ class DocumentProcessor:
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
 
-    def process_text_document(
-        self,
-        content: str,
-        source_url: str
-    ) -> list[DocumentChunk]:
+    def process_text_document(self, content: str, source_url: str) -> list[DocumentChunk]:
         """
         Process a text document into chunks with metadata.
 
@@ -65,20 +61,12 @@ class DocumentProcessor:
                 source_type="web",
                 source_identifier=source_url,
                 chunk_index=idx,
-                metadata={
-                    "source_url": source_url,
-                    "chunk_index": idx,
-                    "total_chunks": len(chunks)
-                }
+                metadata={"source_url": source_url, "chunk_index": idx, "total_chunks": len(chunks)},
             )
             for idx, chunk_text in enumerate(chunks)
         ]
 
-    def process_database_rows(
-        self,
-        table_name: str,
-        rows: list[dict[str, Any]]
-    ) -> list[DocumentChunk]:
+    def process_database_rows(self, table_name: str, rows: list[dict[str, Any]]) -> list[DocumentChunk]:
         """
         Convert database rows into text chunks with metadata.
 
@@ -118,11 +106,7 @@ class DocumentProcessor:
 
             chunks.append(
                 DocumentChunk(
-                    text=text,
-                    source_type="database",
-                    source_identifier=table_name,
-                    chunk_index=idx,
-                    metadata=metadata
+                    text=text, source_type="database", source_identifier=table_name, chunk_index=idx, metadata=metadata
                 )
             )
 

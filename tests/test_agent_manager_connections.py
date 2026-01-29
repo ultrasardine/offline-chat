@@ -44,14 +44,10 @@ def db_manager(temp_dirs):
 
     # Create test connections
     conn1 = DatabaseConnection(
-        name="test-sqlite-1",
-        database_type="sqlite",
-        file_path=str(temp_dirs["connections_file"].parent / "test1.db")
+        name="test-sqlite-1", database_type="sqlite", file_path=str(temp_dirs["connections_file"].parent / "test1.db")
     )
     conn2 = DatabaseConnection(
-        name="test-sqlite-2",
-        database_type="sqlite",
-        file_path=str(temp_dirs["connections_file"].parent / "test2.db")
+        name="test-sqlite-2", database_type="sqlite", file_path=str(temp_dirs["connections_file"].parent / "test2.db")
     )
 
     manager.create_connection(conn1)

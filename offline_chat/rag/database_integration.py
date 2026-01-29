@@ -63,20 +63,13 @@ class DatabaseIntegration:
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
-                cursor.execute(
-                    "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-                    (table_name,)
-                )
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
                 result = cursor.fetchone()
                 return result is not None
         except sqlite3.Error:
             return False
 
-    def fetch_table_rows(
-        self,
-        table_name: str,
-        limit: int | None = None
-    ) -> list[dict[str, Any]]:
+    def fetch_table_rows(self, table_name: str, limit: int | None = None) -> list[dict[str, Any]]:
         """
         Fetch rows from a table as dictionaries.
 
@@ -114,11 +107,7 @@ class DatabaseIntegration:
         except sqlite3.Error as e:
             raise sqlite3.Error(f"Error fetching rows from table '{table_name}': {e}") from e
 
-    def get_table_as_chunks(
-        self,
-        table_name: str,
-        limit: int | None = None
-    ) -> list[DocumentChunk]:
+    def get_table_as_chunks(self, table_name: str, limit: int | None = None) -> list[DocumentChunk]:
         """
         Fetch table rows and convert them to DocumentChunk objects.
 
@@ -152,9 +141,7 @@ class DatabaseIntegration:
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
-                cursor.execute(
-                    "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-                )
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
                 return [row[0] for row in cursor.fetchall()]
         except sqlite3.Error as e:
             raise sqlite3.Error(f"Error listing tables: {e}") from e
@@ -193,9 +180,6 @@ class DatabaseIntegration:
                 cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
                 row_count = cursor.fetchone()[0]
 
-                return {
-                    "columns": columns,
-                    "row_count": row_count
-                }
+                return {"columns": columns, "row_count": row_count}
         except sqlite3.Error as e:
             raise sqlite3.Error(f"Error getting table info for '{table_name}': {e}") from e

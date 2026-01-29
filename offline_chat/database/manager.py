@@ -58,6 +58,7 @@ class DatabaseConnectionManager:
         if agents_dir is None:
             # Check if OFFLINE_CHAT_DATA_DIR environment variable is set
             import os
+
             env_data_dir = os.environ.get("OFFLINE_CHAT_DATA_DIR")
             if env_data_dir:
                 self.agents_dir = Path(env_data_dir) / "agents"
@@ -81,10 +82,7 @@ class DatabaseConnectionManager:
 
         # Create store file with initial structure if it doesn't exist
         if not self.store_path.exists():
-            initial_data = {
-                "version": "1.0",
-                "connections": []
-            }
+            initial_data = {"version": "1.0", "connections": []}
             self._save_store(initial_data)
 
     def _set_secure_permissions(self) -> None:
@@ -159,43 +157,31 @@ class DatabaseConnectionManager:
 
         # Load JSON data
         try:
-            with open(self.store_path, 'r', encoding='utf-8') as f:
+            with open(self.store_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
         except json.JSONDecodeError as e:
-            raise ValueError(
-                f"Connection store contains invalid JSON: {e.msg} at line {e.lineno}, column {e.colno}"
-            )
+            raise ValueError(f"Connection store contains invalid JSON: {e.msg} at line {e.lineno}, column {e.colno}")
 
         # Validate top-level structure
         if not isinstance(data, dict):
-            raise ValueError(
-                "Connection store must be a JSON object (dictionary), "
-                f"but found {type(data).__name__}"
-            )
+            raise ValueError(f"Connection store must be a JSON object (dictionary), but found {type(data).__name__}")
 
         # Validate required top-level fields
         if "version" not in data:
-            raise ValueError(
-                "Connection store is missing required field 'version'"
-            )
+            raise ValueError("Connection store is missing required field 'version'")
 
         if "connections" not in data:
-            raise ValueError(
-                "Connection store is missing required field 'connections'"
-            )
+            raise ValueError("Connection store is missing required field 'connections'")
 
         # Validate connections is an array
         if not isinstance(data["connections"], list):
-            raise ValueError(
-                f"Field 'connections' must be an array, but found {type(data['connections']).__name__}"
-            )
+            raise ValueError(f"Field 'connections' must be an array, but found {type(data['connections']).__name__}")
 
         # Validate each connection object
         for i, conn in enumerate(data["connections"]):
             if not isinstance(conn, dict):
                 raise ValueError(
-                    f"Connection at index {i} must be an object (dictionary), "
-                    f"but found {type(conn).__name__}"
+                    f"Connection at index {i} must be an object (dictionary), but found {type(conn).__name__}"
                 )
 
             # Check for required fields in connection object
@@ -204,9 +190,7 @@ class DatabaseConnectionManager:
 
             if missing_fields:
                 conn_name = conn.get("name", f"<unnamed at index {i}>")
-                raise ValueError(
-                    f"Connection '{conn_name}' is missing required fields: {', '.join(missing_fields)}"
-                )
+                raise ValueError(f"Connection '{conn_name}' is missing required fields: {', '.join(missing_fields)}")
 
             # Validate database_type is a string
             if not isinstance(conn["database_type"], str):
@@ -230,7 +214,7 @@ class DatabaseConnectionManager:
         Args:
             data: Dictionary containing version and connections list.
         """
-        with open(self.store_path, 'w', encoding='utf-8') as f:
+        with open(self.store_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
 
         # Ensure permissions are set after writing
@@ -278,21 +262,18 @@ class DatabaseConnectionManager:
 
         # Validate connection name format (kebab-case)
         if not self._is_valid_kebab_case(connection.name):
-            return Err(
-                "Connection name must be in kebab-case format "
-                "(lowercase letters, numbers, and hyphens only)"
-            )
+            return Err("Connection name must be in kebab-case format (lowercase letters, numbers, and hyphens only)")
 
         # Validate database type
         if connection.database_type not in SUPPORTED_DB_TYPES:
             return Err(
-                f"Invalid database type '{connection.database_type}'. "
-                f"Supported types: {', '.join(SUPPORTED_DB_TYPES)}"
+                f"Invalid database type '{connection.database_type}'. Supported types: {', '.join(SUPPORTED_DB_TYPES)}"
             )
 
         # Validate connection parameters based on database type
         validation_result = self._validate_connection(connection)
         from offline_chat.database.result import is_err, unwrap_err
+
         if is_err(validation_result):
             return Err(unwrap_err(validation_result))
 
@@ -425,9 +406,7 @@ class DatabaseConnectionManager:
         """
         # Check if trying to change name
         if "name" in updates and updates["name"] != name:
-            return Err(
-                "Cannot change connection name. Create a new connection instead."
-            )
+            return Err("Cannot change connection name. Create a new connection instead.")
 
         # Load existing connection
         result = self.get_connection(name)
@@ -448,6 +427,7 @@ class DatabaseConnectionManager:
 
         # Update the updated_at timestamp
         from datetime import datetime
+
         conn_dict["updated_at"] = datetime.now().isoformat()
 
         # Create new connection object from updated dict
@@ -534,10 +514,7 @@ class DatabaseConnectionManager:
 
         if agents_using:
             agent_list = ", ".join(agents_using)
-            return Err(
-                f"Cannot delete connection '{name}'. "
-                f"Used by agents: {agent_list}"
-            )
+            return Err(f"Cannot delete connection '{name}'. Used by agents: {agent_list}")
 
         # Load store and remove the connection
         try:
@@ -547,10 +524,7 @@ class DatabaseConnectionManager:
 
         # Find and remove the connection
         original_count = len(store_data.get("connections", []))
-        store_data["connections"] = [
-            conn for conn in store_data.get("connections", [])
-            if conn.get("name") != name
-        ]
+        store_data["connections"] = [conn for conn in store_data.get("connections", []) if conn.get("name") != name]
 
         # Verify connection was removed
         if len(store_data["connections"]) == original_count:
@@ -565,8 +539,7 @@ class DatabaseConnectionManager:
         return Ok(None)
 
     def resolve_connections(
-        self,
-        assignments: list["AgentConnectionAssignment"]
+        self, assignments: list["AgentConnectionAssignment"]
     ) -> Result[list[tuple["DatabaseConnection", "AccessLevel", list[str] | None]], str]:
         """Resolve connection assignments to full configurations.
 
@@ -615,11 +588,7 @@ class DatabaseConnectionManager:
                 missing_connections.append(assignment.connection_name)
             else:
                 connection = unwrap(result)
-                resolved.append((
-                    connection,
-                    assignment.access_level,
-                    assignment.allowed_tables
-                ))
+                resolved.append((connection, assignment.access_level, assignment.allowed_tables))
 
         # If any connections were not found, return error
         if missing_connections:
@@ -676,7 +645,7 @@ class DatabaseConnectionManager:
 
                 # Load and parse the config
                 try:
-                    with open(config_path, 'r', encoding='utf-8') as f:
+                    with open(config_path, "r", encoding="utf-8") as f:
                         config_data = json.load(f)
 
                     # Check connection_assignments field
@@ -766,4 +735,3 @@ class DatabaseConnectionManager:
             return ConnectionValidator.validate_sqlite(connection)
         else:
             return Err(f"Unsupported database type: {connection.database_type}")
-

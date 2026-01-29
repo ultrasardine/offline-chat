@@ -31,18 +31,14 @@ from offline_chat.manager import AgentManager
 # ============================================================================
 
 # Valid connection names (kebab-case)
-valid_connection_names = st.text(
-    alphabet="abcdefghijklmnopqrstuvwxyz0123456789-",
-    min_size=1,
-    max_size=30
-).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s and s[0] not in '0123456789')
+valid_connection_names = st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=30).filter(
+    lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s and s[0] not in "0123456789"
+)
 
 # Valid agent names (kebab-case)
-valid_agent_names = st.text(
-    alphabet="abcdefghijklmnopqrstuvwxyz0123456789-",
-    min_size=1,
-    max_size=30
-).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s and s[0] not in '0123456789')
+valid_agent_names = st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=30).filter(
+    lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s and s[0] not in "0123456789"
+)
 
 # System prompts
 system_prompts = st.text(min_size=10, max_size=200)
@@ -51,11 +47,7 @@ system_prompts = st.text(min_size=10, max_size=200)
 temperatures = st.floats(min_value=0.0, max_value=1.0)
 
 # Languages (use simple alphabetic strings)
-languages = st.text(
-    alphabet=st.characters(whitelist_categories=("Ll", "Lu")),
-    min_size=3,
-    max_size=20
-)
+languages = st.text(alphabet=st.characters(whitelist_categories=("Ll", "Lu")), min_size=3, max_size=20)
 
 # Web search enabled
 web_search_flags = st.booleans()
@@ -65,24 +57,27 @@ guidelines = st.lists(
     st.text(
         alphabet=st.characters(whitelist_categories=("Ll", "Lu", "Nd"), whitelist_characters=" .,"),
         min_size=5,
-        max_size=50
+        max_size=50,
     ),
     min_size=0,
-    max_size=5
+    max_size=5,
 )
 
 # Access levels
-access_levels = st.sampled_from([
-    AccessLevel.READ_ONLY,
-    AccessLevel.READ_WRITE,
-    AccessLevel.TABLE_SPECIFIC_READ,
-    AccessLevel.TABLE_SPECIFIC_READ_WRITE,
-])
+access_levels = st.sampled_from(
+    [
+        AccessLevel.READ_ONLY,
+        AccessLevel.READ_WRITE,
+        AccessLevel.TABLE_SPECIFIC_READ,
+        AccessLevel.TABLE_SPECIFIC_READ_WRITE,
+    ]
+)
 
 
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
 
 def setup_test_environment():
     """Set up test environment with temporary directories and managers."""
@@ -115,11 +110,7 @@ def setup_test_environment():
 
 def create_test_connection(db_manager, name: str, temp_path: Path) -> bool:
     """Create a test SQLite connection."""
-    conn = DatabaseConnection(
-        name=name,
-        database_type="sqlite",
-        file_path=str(temp_path / f"{name}.db")
-    )
+    conn = DatabaseConnection(name=name, database_type="sqlite", file_path=str(temp_path / f"{name}.db"))
     result = db_manager.create_connection(conn)
     return is_ok(result)
 
@@ -152,6 +143,7 @@ def create_test_agent(agent_manager, name: str, **kwargs) -> bool:
 # Property 19: Agent Update Persistence
 # ============================================================================
 
+
 @given(
     agent_name=valid_agent_names,
     initial_prompt=system_prompts,
@@ -169,8 +161,16 @@ def create_test_agent(agent_manager, name: str, **kwargs) -> bool:
 @pytest.mark.property_test
 def test_property_19_agent_update_persistence(
     agent_name,
-    initial_prompt, initial_temp, initial_language, initial_web_search, initial_guidelines,
-    updated_prompt, updated_temp, updated_language, updated_web_search, updated_guidelines
+    initial_prompt,
+    initial_temp,
+    initial_language,
+    initial_web_search,
+    initial_guidelines,
+    updated_prompt,
+    updated_temp,
+    updated_language,
+    updated_web_search,
+    updated_guidelines,
 ):
     """Property 19: Agent Update Persistence
 
@@ -205,10 +205,7 @@ def test_property_19_agent_update_persistence(
     }
 
     # Update the agent
-    result = agent_manager.update_agent(
-        agent_name=agent_name,
-        updates=updates
-    )
+    result = agent_manager.update_agent(agent_name=agent_name, updates=updates)
 
     # Verify update succeeded
     assert is_ok(result), f"Update should succeed: {unwrap_err(result) if is_err(result) else ''}"
@@ -218,16 +215,21 @@ def test_property_19_agent_update_persistence(
     assert reloaded_agent is not None, "Agent should exist after update"
 
     # Verify all updates persisted
-    assert reloaded_agent.system_prompt == updated_prompt, \
+    assert reloaded_agent.system_prompt == updated_prompt, (
         f"System prompt should be updated to '{updated_prompt}', got '{reloaded_agent.system_prompt}'"
-    assert reloaded_agent.temperature == updated_temp, \
+    )
+    assert reloaded_agent.temperature == updated_temp, (
         f"Temperature should be updated to {updated_temp}, got {reloaded_agent.temperature}"
-    assert reloaded_agent.language == updated_language, \
+    )
+    assert reloaded_agent.language == updated_language, (
         f"Language should be updated to '{updated_language}', got '{reloaded_agent.language}'"
-    assert reloaded_agent.web_search_enabled == updated_web_search, \
+    )
+    assert reloaded_agent.web_search_enabled == updated_web_search, (
         f"Web search should be updated to {updated_web_search}, got {reloaded_agent.web_search_enabled}"
-    assert reloaded_agent.guidelines == updated_guidelines, \
+    )
+    assert reloaded_agent.guidelines == updated_guidelines, (
         f"Guidelines should be updated to {updated_guidelines}, got {reloaded_agent.guidelines}"
+    )
 
 
 @given(
@@ -237,9 +239,7 @@ def test_property_19_agent_update_persistence(
 )
 @settings(deadline=1000, max_examples=50)
 @pytest.mark.property_test
-def test_property_19_agent_update_persistence_single_field(
-    agent_name, system_prompt, temperature
-):
+def test_property_19_agent_update_persistence_single_field(agent_name, system_prompt, temperature):
     """Property 19: Agent Update Persistence (Single Field)
 
     **Validates: Requirements 7.4, 7.5, 7.6**
@@ -266,10 +266,7 @@ def test_property_19_agent_update_persistence_single_field(
     )
 
     # Update only system_prompt
-    result = agent_manager.update_agent(
-        agent_name=agent_name,
-        updates={"system_prompt": system_prompt}
-    )
+    result = agent_manager.update_agent(agent_name=agent_name, updates={"system_prompt": system_prompt})
 
     assert is_ok(result), f"Update should succeed: {unwrap_err(result) if is_err(result) else ''}"
 
@@ -280,10 +277,7 @@ def test_property_19_agent_update_persistence_single_field(
     assert reloaded_agent.language == initial_language, "Language should be preserved"
 
     # Update only temperature
-    result = agent_manager.update_agent(
-        agent_name=agent_name,
-        updates={"temperature": temperature}
-    )
+    result = agent_manager.update_agent(agent_name=agent_name, updates={"temperature": temperature})
 
     assert is_ok(result), f"Update should succeed: {unwrap_err(result) if is_err(result) else ''}"
 
@@ -298,6 +292,7 @@ def test_property_19_agent_update_persistence_single_field(
 # Property 25: Connection Addition to Agent
 # ============================================================================
 
+
 @given(
     agent_name=valid_agent_names,
     connection_name=valid_connection_names,
@@ -305,9 +300,7 @@ def test_property_19_agent_update_persistence_single_field(
 )
 @settings(deadline=1000, max_examples=50)
 @pytest.mark.property_test
-def test_property_25_connection_addition(
-    agent_name, connection_name, access_level
-):
+def test_property_25_connection_addition(agent_name, connection_name, access_level):
     """Property 25: Connection Addition to Agent
 
     **Validates: Requirements 7.4**
@@ -332,10 +325,11 @@ def test_property_25_connection_addition(
     initial_count = len(agent.connection_assignments)
 
     # Prepare allowed_tables if needed
-    allowed_tables = ["test_table"] if access_level in (
-        AccessLevel.TABLE_SPECIFIC_READ,
-        AccessLevel.TABLE_SPECIFIC_READ_WRITE
-    ) else None
+    allowed_tables = (
+        ["test_table"]
+        if access_level in (AccessLevel.TABLE_SPECIFIC_READ, AccessLevel.TABLE_SPECIFIC_READ_WRITE)
+        else None
+    )
 
     # Add the connection
     result = agent_manager.assign_connection(
@@ -353,18 +347,21 @@ def test_property_25_connection_addition(
     assert reloaded_agent is not None, "Agent should exist after connection addition"
 
     # Verify the connection was added
-    assert len(reloaded_agent.connection_assignments) == initial_count + 1, \
+    assert len(reloaded_agent.connection_assignments) == initial_count + 1, (
         f"Should have {initial_count + 1} connections after addition, got {len(reloaded_agent.connection_assignments)}"
+    )
 
     # Verify the connection name appears in the assignments
     connection_names = {a.connection_name for a in reloaded_agent.connection_assignments}
-    assert connection_name in connection_names, \
+    assert connection_name in connection_names, (
         f"Connection '{connection_name}' should be in assignments: {connection_names}"
+    )
 
     # Verify the access level is correct
     added_assignment = next(a for a in reloaded_agent.connection_assignments if a.connection_name == connection_name)
-    assert added_assignment.access_level == access_level, \
+    assert added_assignment.access_level == access_level, (
         f"Access level should be {access_level}, got {added_assignment.access_level}"
+    )
 
 
 @given(
@@ -374,9 +371,7 @@ def test_property_25_connection_addition(
 )
 @settings(deadline=1000, max_examples=50)
 @pytest.mark.property_test
-def test_property_25_connection_addition_multiple(
-    agent_name, connection_names, access_level
-):
+def test_property_25_connection_addition_multiple(agent_name, connection_names, access_level):
     """Property 25: Connection Addition to Agent (Multiple Connections)
 
     **Validates: Requirements 7.4**
@@ -398,10 +393,11 @@ def test_property_25_connection_addition_multiple(
     assert create_test_agent(agent_manager, agent_name)
 
     # Prepare allowed_tables if needed
-    allowed_tables = ["test_table"] if access_level in (
-        AccessLevel.TABLE_SPECIFIC_READ,
-        AccessLevel.TABLE_SPECIFIC_READ_WRITE
-    ) else None
+    allowed_tables = (
+        ["test_table"]
+        if access_level in (AccessLevel.TABLE_SPECIFIC_READ, AccessLevel.TABLE_SPECIFIC_READ_WRITE)
+        else None
+    )
 
     # Add each connection
     for conn_name in connection_names:
@@ -418,19 +414,22 @@ def test_property_25_connection_addition_multiple(
     assert reloaded_agent is not None, "Agent should exist after connection additions"
 
     # Verify all connections were added
-    assert len(reloaded_agent.connection_assignments) == len(connection_names), \
+    assert len(reloaded_agent.connection_assignments) == len(connection_names), (
         f"Should have {len(connection_names)} connections, got {len(reloaded_agent.connection_assignments)}"
+    )
 
     # Verify all connection names appear in the assignments
     stored_names = {a.connection_name for a in reloaded_agent.connection_assignments}
     expected_names = set(connection_names)
-    assert stored_names == expected_names, \
+    assert stored_names == expected_names, (
         f"Stored connection names {stored_names} should match expected {expected_names}"
+    )
 
 
 # ============================================================================
 # Property 26: Connection Removal from Agent
 # ============================================================================
+
 
 @given(
     agent_name=valid_agent_names,
@@ -439,9 +438,7 @@ def test_property_25_connection_addition_multiple(
 )
 @settings(deadline=1000, max_examples=50)
 @pytest.mark.property_test
-def test_property_26_connection_removal(
-    agent_name, connection_name, access_level
-):
+def test_property_26_connection_removal(agent_name, connection_name, access_level):
     """Property 26: Connection Removal from Agent
 
     **Validates: Requirements 7.5**
@@ -462,10 +459,11 @@ def test_property_26_connection_removal(
     assert create_test_agent(agent_manager, agent_name)
 
     # Prepare allowed_tables if needed
-    allowed_tables = ["test_table"] if access_level in (
-        AccessLevel.TABLE_SPECIFIC_READ,
-        AccessLevel.TABLE_SPECIFIC_READ_WRITE
-    ) else None
+    allowed_tables = (
+        ["test_table"]
+        if access_level in (AccessLevel.TABLE_SPECIFIC_READ, AccessLevel.TABLE_SPECIFIC_READ_WRITE)
+        else None
+    )
 
     # Add the connection first
     result = agent_manager.assign_connection(
@@ -495,13 +493,15 @@ def test_property_26_connection_removal(
     assert reloaded_agent is not None, "Agent should exist after connection removal"
 
     # Verify the connection was removed
-    assert len(reloaded_agent.connection_assignments) == 0, \
+    assert len(reloaded_agent.connection_assignments) == 0, (
         f"Should have 0 connections after removal, got {len(reloaded_agent.connection_assignments)}"
+    )
 
     # Verify the connection name does not appear in the assignments
     connection_names = {a.connection_name for a in reloaded_agent.connection_assignments}
-    assert connection_name not in connection_names, \
+    assert connection_name not in connection_names, (
         f"Connection '{connection_name}' should not be in assignments: {connection_names}"
+    )
 
 
 @given(
@@ -511,9 +511,7 @@ def test_property_26_connection_removal(
 )
 @settings(deadline=1000, max_examples=50)
 @pytest.mark.property_test
-def test_property_26_connection_removal_from_multiple(
-    agent_name, connection_names, access_level
-):
+def test_property_26_connection_removal_from_multiple(agent_name, connection_names, access_level):
     """Property 26: Connection Removal from Agent (Multiple Connections)
 
     **Validates: Requirements 7.5**
@@ -537,10 +535,11 @@ def test_property_26_connection_removal_from_multiple(
     assert create_test_agent(agent_manager, agent_name)
 
     # Prepare allowed_tables if needed
-    allowed_tables = ["test_table"] if access_level in (
-        AccessLevel.TABLE_SPECIFIC_READ,
-        AccessLevel.TABLE_SPECIFIC_READ_WRITE
-    ) else None
+    allowed_tables = (
+        ["test_table"]
+        if access_level in (AccessLevel.TABLE_SPECIFIC_READ, AccessLevel.TABLE_SPECIFIC_READ_WRITE)
+        else None
+    )
 
     # Add all connections
     for conn_name in connection_names:
@@ -571,18 +570,21 @@ def test_property_26_connection_removal_from_multiple(
     assert reloaded_agent is not None, "Agent should exist after connection removal"
 
     # Verify the connection count decreased by 1
-    assert len(reloaded_agent.connection_assignments) == len(connection_names) - 1, \
+    assert len(reloaded_agent.connection_assignments) == len(connection_names) - 1, (
         f"Should have {len(connection_names) - 1} connections after removal, got {len(reloaded_agent.connection_assignments)}"
+    )
 
     # Verify the removed connection is not in the assignments
     stored_names = {a.connection_name for a in reloaded_agent.connection_assignments}
-    assert connection_to_remove not in stored_names, \
+    assert connection_to_remove not in stored_names, (
         f"Removed connection '{connection_to_remove}' should not be in assignments: {stored_names}"
+    )
 
     # Verify the other connections are still present
     expected_remaining = set(connection_names[1:])
-    assert stored_names == expected_remaining, \
+    assert stored_names == expected_remaining, (
         f"Remaining connections {stored_names} should match expected {expected_remaining}"
+    )
 
 
 @given(
@@ -592,9 +594,7 @@ def test_property_26_connection_removal_from_multiple(
 )
 @settings(deadline=1000, max_examples=50)
 @pytest.mark.property_test
-def test_property_26_connection_removal_all(
-    agent_name, connection_names, access_level
-):
+def test_property_26_connection_removal_all(agent_name, connection_names, access_level):
     """Property 26: Connection Removal from Agent (Remove All)
 
     **Validates: Requirements 7.5**
@@ -615,10 +615,11 @@ def test_property_26_connection_removal_all(
     assert create_test_agent(agent_manager, agent_name)
 
     # Prepare allowed_tables if needed
-    allowed_tables = ["test_table"] if access_level in (
-        AccessLevel.TABLE_SPECIFIC_READ,
-        AccessLevel.TABLE_SPECIFIC_READ_WRITE
-    ) else None
+    allowed_tables = (
+        ["test_table"]
+        if access_level in (AccessLevel.TABLE_SPECIFIC_READ, AccessLevel.TABLE_SPECIFIC_READ_WRITE)
+        else None
+    )
 
     # Add all connections
     for conn_name in connection_names:
@@ -647,9 +648,9 @@ def test_property_26_connection_removal_all(
     assert reloaded_agent is not None, "Agent should exist after removing all connections"
 
     # Verify all connections were removed
-    assert len(reloaded_agent.connection_assignments) == 0, \
+    assert len(reloaded_agent.connection_assignments) == 0, (
         f"Should have 0 connections after removing all, got {len(reloaded_agent.connection_assignments)}"
+    )
 
     # Verify the assignments array is empty
-    assert reloaded_agent.connection_assignments == [], \
-        "Connection assignments should be an empty list"
+    assert reloaded_agent.connection_assignments == [], "Connection assignments should be an empty list"

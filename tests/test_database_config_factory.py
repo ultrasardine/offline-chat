@@ -115,9 +115,7 @@ class TestOracleConfigurationAcceptance:
     )
     def test_oracle_with_tns_name(self, name: str, tns_name: str, username: str, password: str):
         """Oracle config with TNS name should be accepted."""
-        config = create_database_mcp_config(
-            "oracle", name, tns_name=tns_name, username=username, password=password
-        )
+        config = create_database_mcp_config("oracle", name, tns_name=tns_name, username=username, password=password)
 
         assert config.database_type == "oracle"
         assert config.name == name
@@ -169,10 +167,7 @@ class TestOracleConfigurationAcceptance:
         """Oracle full connection without required params should raise ValueError."""
         with pytest.raises(ValueError) as exc_info:
             create_database_mcp_config("oracle", "test_db", host="localhost", username="user")
-        assert (
-            "service_name" in str(exc_info.value).lower()
-            or "password" in str(exc_info.value).lower()
-        )
+        assert "service_name" in str(exc_info.value).lower() or "password" in str(exc_info.value).lower()
 
 
 class TestSQLiteConfigurationAcceptance:
@@ -265,9 +260,7 @@ class TestPostgreSQLMySQLConfigurationAcceptance:
         username=st.text(min_size=1, max_size=50).filter(lambda s: s.strip()),
         password=st.text(min_size=0, max_size=50),
     )
-    def test_mysql_with_all_params(
-        self, name: str, host: str, port: int, database: str, username: str, password: str
-    ):
+    def test_mysql_with_all_params(self, name: str, host: str, port: int, database: str, username: str, password: str):
         """MySQL config with all parameters should be accepted."""
         config = create_database_mcp_config(
             "mysql",

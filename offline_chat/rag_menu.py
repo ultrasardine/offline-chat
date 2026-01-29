@@ -60,10 +60,7 @@ def _add_knowledge_source_flow(manager: AgentManager) -> None:
 
     # List agents with RAG enabled
     agents = manager.list_agents()
-    rag_agents = [
-        agent for agent in agents
-        if agent.rag_config and agent.rag_config.enabled
-    ]
+    rag_agents = [agent for agent in agents if agent.rag_config and agent.rag_config.enabled]
 
     if not rag_agents:
         print("\nNo agents with RAG enabled found.")
@@ -170,10 +167,7 @@ def _reindex_knowledge_source_flow(manager: AgentManager) -> None:
 
     # List agents with RAG enabled
     agents = manager.list_agents()
-    rag_agents = [
-        agent for agent in agents
-        if agent.rag_config and agent.rag_config.enabled
-    ]
+    rag_agents = [agent for agent in agents if agent.rag_config and agent.rag_config.enabled]
 
     if not rag_agents:
         print("\nNo agents with RAG enabled found.")
@@ -289,10 +283,7 @@ def _list_knowledge_sources_flow(manager: AgentManager) -> None:
 
     # List agents with RAG enabled
     agents = manager.list_agents()
-    rag_agents = [
-        agent for agent in agents
-        if agent.rag_config and agent.rag_config.enabled
-    ]
+    rag_agents = [agent for agent in agents if agent.rag_config and agent.rag_config.enabled]
 
     if not rag_agents:
         print("\nNo agents with RAG enabled found.")

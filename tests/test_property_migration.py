@@ -31,21 +31,17 @@ from offline_chat.database.result import is_err, is_ok, unwrap, unwrap_err
 # ============================================================================
 
 # Valid agent names (kebab-case)
-valid_agent_names = st.text(
-    alphabet="abcdefghijklmnopqrstuvwxyz0123456789-",
-    min_size=1,
-    max_size=30
-).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s and s[0] not in '0123456789')
+valid_agent_names = st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=30).filter(
+    lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s and s[0] not in "0123456789"
+)
 
 # Database types
-database_types = st.sampled_from(['oracle', 'postgresql', 'mysql', 'sqlite'])
+database_types = st.sampled_from(["oracle", "postgresql", "mysql", "sqlite"])
 
 # Valid connection names (kebab-case)
-valid_connection_names = st.text(
-    alphabet="abcdefghijklmnopqrstuvwxyz0123456789-",
-    min_size=1,
-    max_size=30
-).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s and s[0] not in '0123456789')
+valid_connection_names = st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=30).filter(
+    lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s and s[0] not in "0123456789"
+)
 
 
 # Strategy for generating inline database configs
@@ -59,13 +55,13 @@ def inline_database_config(draw, db_type=None):
 
     # Use text that won't be stripped to empty
     non_empty_text = st.text(
-        alphabet=st.characters(blacklist_categories=('Cc', 'Cs', 'Zs', 'Zl', 'Zp')),
-        min_size=1,
-        max_size=50
-    ).filter(lambda s: s.strip() != '')
+        alphabet=st.characters(blacklist_categories=("Cc", "Cs", "Zs", "Zl", "Zp")), min_size=1, max_size=50
+    ).filter(lambda s: s.strip() != "")
 
     if db_type == "sqlite":
-        config["file_path"] = f"/tmp/test_{draw(st.text(alphabet='abcdefghijklmnopqrstuvwxyz', min_size=5, max_size=10))}.db"
+        config["file_path"] = (
+            f"/tmp/test_{draw(st.text(alphabet='abcdefghijklmnopqrstuvwxyz', min_size=5, max_size=10))}.db"
+        )
     else:
         config["host"] = draw(non_empty_text)
         config["port"] = draw(st.integers(min_value=1, max_value=65535))
@@ -83,6 +79,7 @@ def inline_database_config(draw, db_type=None):
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
 
 def setup_test_environment():
     """Set up test environment with temporary directories and managers."""
@@ -115,7 +112,7 @@ def create_agent_with_inline_config(agents_dir: Path, agent_name: str, database_
         "base_model": "llama3:latest",
         "system_prompt": "You are a test agent.",
         "temperature": 0.7,
-        "database_config": database_config
+        "database_config": database_config,
     }
 
     with open(config_path, "w", encoding="utf-8") as f:
@@ -136,14 +133,13 @@ def create_agent_with_connection_references(agents_dir: Path, agent_name: str, c
         "base_model": "llama3:latest",
         "system_prompt": "You are a test agent.",
         "temperature": 0.7,
-        "connection_references": connection_refs
+        "connection_references": connection_refs,
     }
 
     with open(config_path, "w", encoding="utf-8") as f:
         json.dump(config_data, f, indent=2)
 
     return config_path
-
 
 
 def create_agent_without_inline_config(agents_dir: Path, agent_name: str) -> Path:
@@ -169,6 +165,7 @@ def create_agent_without_inline_config(agents_dir: Path, agent_name: str) -> Pat
 # ============================================================================
 # Property 20: Migration Connection Creation
 # ============================================================================
+
 
 @given(
     agent_name=valid_agent_names,
@@ -209,18 +206,19 @@ def test_property_20_migration_connection_creation(agent_name, db_config):
 
     # Verify connection was created in the store
     conn_result = db_manager.get_connection(expected_connection_name)
-    assert is_ok(conn_result), \
-        f"Connection '{expected_connection_name}' should exist in store"
+    assert is_ok(conn_result), f"Connection '{expected_connection_name}' should exist in store"
 
     # Verify connection has correct database type
     connection = unwrap(conn_result)
-    assert connection.database_type == db_type, \
+    assert connection.database_type == db_type, (
         f"Connection database_type should be {db_type}, got {connection.database_type}"
+    )
 
 
 # ============================================================================
 # Property 21: Migration Config Update
 # ============================================================================
+
 
 @given(
     agent_name=valid_agent_names,
@@ -261,12 +259,10 @@ def test_property_21_migration_config_update(agent_name, db_config):
         updated_config = json.load(f)
 
     # Verify database_config field is removed
-    assert "database_config" not in updated_config, \
-        "database_config field should be removed after migration"
+    assert "database_config" not in updated_config, "database_config field should be removed after migration"
 
     # Verify connection_assignments field exists
-    assert "connection_assignments" in updated_config, \
-        "connection_assignments field should exist after migration"
+    assert "connection_assignments" in updated_config, "connection_assignments field should exist after migration"
 
     # Verify connection_assignments has the correct connection
     db_type = db_config["type"]
@@ -281,12 +277,12 @@ def test_property_21_migration_config_update(agent_name, db_config):
         if assignment["connection_name"] == expected_connection_name:
             found = True
             # Verify access level is READ_WRITE for backward compatibility
-            assert assignment["access_level"] == "read-write", \
+            assert assignment["access_level"] == "read-write", (
                 f"Access level should be 'read-write', got {assignment['access_level']}"
+            )
             break
 
     assert found, f"Connection '{expected_connection_name}' should be in connection_assignments"
-
 
 
 @given(
@@ -311,11 +307,7 @@ def test_property_21_migration_config_update_legacy_references(agent_name, conne
 
     # Create the referenced connections first
     for conn_name in connection_refs:
-        conn = DatabaseConnection(
-            name=conn_name,
-            database_type="sqlite",
-            file_path=f"/tmp/{conn_name}.db"
-        )
+        conn = DatabaseConnection(name=conn_name, database_type="sqlite", file_path=f"/tmp/{conn_name}.db")
         result = db_manager.create_connection(conn)
         assert is_ok(result), f"Failed to create connection {conn_name}"
 
@@ -327,8 +319,7 @@ def test_property_21_migration_config_update_legacy_references(agent_name, conne
         config_data = json.load(f)
 
     # Verify connection_references exists before migration
-    assert "connection_references" in config_data, \
-        "Config should have connection_references before migration"
+    assert "connection_references" in config_data, "Config should have connection_references before migration"
 
     # Run migration
     result = migrate_agent(agent_name, config_data, config_path, db_manager)
@@ -339,45 +330,44 @@ def test_property_21_migration_config_update_legacy_references(agent_name, conne
         updated_config = json.load(f)
 
     # Verify connection_references field is removed
-    assert "connection_references" not in updated_config, \
+    assert "connection_references" not in updated_config, (
         "connection_references field should be removed after migration"
+    )
 
     # Verify connection_assignments field exists
-    assert "connection_assignments" in updated_config, \
-        "connection_assignments field should exist after migration"
+    assert "connection_assignments" in updated_config, "connection_assignments field should exist after migration"
 
     # Verify all connection references are converted to assignments
     assignments = updated_config["connection_assignments"]
-    assert len(assignments) == len(connection_refs), \
+    assert len(assignments) == len(connection_refs), (
         f"Should have {len(connection_refs)} assignments, got {len(assignments)}"
+    )
 
     # Verify all connection names are present with READ_WRITE access
     assignment_names = {a["connection_name"] for a in assignments}
-    assert assignment_names == set(connection_refs), \
+    assert assignment_names == set(connection_refs), (
         f"Assignment names {assignment_names} should match references {set(connection_refs)}"
+    )
 
     for assignment in assignments:
-        assert assignment["access_level"] == "read-write", \
+        assert assignment["access_level"] == "read-write", (
             f"Access level should be 'read-write', got {assignment['access_level']}"
+        )
 
 
 # ============================================================================
 # Property 22: Migration Detection
 # ============================================================================
 
+
 @given(
     agents_with_inline=st.lists(
         st.tuples(valid_agent_names, inline_database_config()),
         min_size=0,
         max_size=5,
-        unique_by=lambda x: x[0]  # Unique by agent name
+        unique_by=lambda x: x[0],  # Unique by agent name
     ),
-    agents_without_inline=st.lists(
-        valid_agent_names,
-        min_size=0,
-        max_size=5,
-        unique=True
-    ),
+    agents_without_inline=st.lists(valid_agent_names, min_size=0, max_size=5, unique=True),
 )
 @settings(deadline=2000, max_examples=50)
 @pytest.mark.property_test
@@ -409,31 +399,26 @@ def test_property_22_migration_detection(agents_with_inline, agents_without_inli
     detected = detect_inline_configs(agents_dir)
 
     # Verify correct number of agents detected
-    assert len(detected) == len(agents_with_inline), \
+    assert len(detected) == len(agents_with_inline), (
         f"Should detect {len(agents_with_inline)} agents, detected {len(detected)}"
+    )
 
     # Verify all agents with inline configs are detected
     detected_names = {name for name, _ in detected}
     expected_names = {name for name, _ in agents_with_inline}
-    assert detected_names == expected_names, \
-        f"Detected names {detected_names} should match expected {expected_names}"
+    assert detected_names == expected_names, f"Detected names {detected_names} should match expected {expected_names}"
 
     # Verify agents without inline configs are not detected
     for agent_name in agents_without_inline:
-        assert agent_name not in detected_names, \
-            f"Agent {agent_name} without inline config should not be detected"
-
+        assert agent_name not in detected_names, f"Agent {agent_name} without inline config should not be detected"
 
 
 @given(
     agents_with_legacy_refs=st.lists(
-        st.tuples(
-            valid_agent_names,
-            st.lists(valid_connection_names, min_size=1, max_size=3, unique=True)
-        ),
+        st.tuples(valid_agent_names, st.lists(valid_connection_names, min_size=1, max_size=3, unique=True)),
         min_size=0,
         max_size=3,
-        unique_by=lambda x: x[0]  # Unique by agent name
+        unique_by=lambda x: x[0],  # Unique by agent name
     ),
 )
 @settings(deadline=2000, max_examples=50)
@@ -457,11 +442,7 @@ def test_property_22_migration_detection_legacy_references(agents_with_legacy_re
         all_connection_names.update(conn_refs)
 
     for conn_name in all_connection_names:
-        conn = DatabaseConnection(
-            name=conn_name,
-            database_type="sqlite",
-            file_path=f"/tmp/{conn_name}.db"
-        )
+        conn = DatabaseConnection(name=conn_name, database_type="sqlite", file_path=f"/tmp/{conn_name}.db")
         result = db_manager.create_connection(conn)
         assert is_ok(result), f"Failed to create connection {conn_name}"
 
@@ -473,19 +454,20 @@ def test_property_22_migration_detection_legacy_references(agents_with_legacy_re
     detected = detect_inline_configs(agents_dir)
 
     # Verify correct number of agents detected
-    assert len(detected) == len(agents_with_legacy_refs), \
+    assert len(detected) == len(agents_with_legacy_refs), (
         f"Should detect {len(agents_with_legacy_refs)} agents, detected {len(detected)}"
+    )
 
     # Verify all agents with legacy references are detected
     detected_names = {name for name, _ in detected}
     expected_names = {name for name, _ in agents_with_legacy_refs}
-    assert detected_names == expected_names, \
-        f"Detected names {detected_names} should match expected {expected_names}"
+    assert detected_names == expected_names, f"Detected names {detected_names} should match expected {expected_names}"
 
 
 # ============================================================================
 # Property 23: Migration Error Handling
 # ============================================================================
+
 
 @given(
     agent_name=valid_agent_names,
@@ -517,6 +499,7 @@ def test_property_23_migration_error_handling_invalid_config(agent_name, db_conf
 
     # Make the config file read-only to simulate an error during save
     import os
+
     os.chmod(config_path, 0o444)
 
     try:
@@ -534,14 +517,15 @@ def test_property_23_migration_error_handling_invalid_config(agent_name, db_conf
             current_config = json.load(f)
 
         # Verify the config is unchanged (still has database_config)
-        assert "database_config" in current_config, \
-            "Original config should be preserved when migration fails"
-        assert current_config["database_config"] == db_config, \
+        assert "database_config" in current_config, "Original config should be preserved when migration fails"
+        assert current_config["database_config"] == db_config, (
             "database_config should be unchanged when migration fails"
+        )
 
         # Verify connection_assignments was not added
-        assert "connection_assignments" not in current_config, \
+        assert "connection_assignments" not in current_config, (
             "connection_assignments should not be added when migration fails"
+        )
 
     finally:
         # Ensure we restore write permissions for cleanup
@@ -583,19 +567,19 @@ def test_property_23_migration_error_handling_missing_connection(agent_name, non
     # Migration should fail
     assert is_err(result), "Migration should fail when referenced connections don't exist"
     error_msg = unwrap_err(result)
-    assert "not found" in error_msg.lower(), \
-        f"Error message should mention 'not found': {error_msg}"
+    assert "not found" in error_msg.lower(), f"Error message should mention 'not found': {error_msg}"
 
     # Load the config from file
     with open(config_path, "r", encoding="utf-8") as f:
         current_config = json.load(f)
 
     # Verify the config is unchanged (still has connection_references)
-    assert "connection_references" in current_config, \
-        "Original config should be preserved when migration fails"
-    assert current_config["connection_references"] == nonexistent_refs, \
+    assert "connection_references" in current_config, "Original config should be preserved when migration fails"
+    assert current_config["connection_references"] == nonexistent_refs, (
         "connection_references should be unchanged when migration fails"
+    )
 
     # Verify connection_assignments was not added
-    assert "connection_assignments" not in current_config, \
+    assert "connection_assignments" not in current_config, (
         "connection_assignments should not be added when migration fails"
+    )

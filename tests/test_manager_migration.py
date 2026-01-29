@@ -16,6 +16,7 @@ from offline_chat.manager import AgentManager
 # Helper Functions
 # ============================================================================
 
+
 def setup_test_environment():
     """Set up test environment with temporary directories and managers."""
     tmp_dir = Path(tempfile.mkdtemp())
@@ -28,11 +29,7 @@ def setup_test_environment():
     history_dir.mkdir(parents=True, exist_ok=True)
 
     db_manager = DatabaseConnectionManager(store_path=connections_file)
-    agent_manager = AgentManager(
-        agents_dir=agents_dir,
-        history_dir=history_dir,
-        db_manager=db_manager
-    )
+    agent_manager = AgentManager(agents_dir=agents_dir, history_dir=history_dir, db_manager=db_manager)
 
     return {
         "tmp_dir": tmp_dir,
@@ -56,7 +53,7 @@ def create_agent_with_inline_config(agents_dir: Path, agent_name: str, database_
         "base_model": "llama3:latest",
         "system_prompt": "You are a test agent.",
         "temperature": 0.7,
-        "database_config": database_config
+        "database_config": database_config,
     }
 
     with open(config_path, "w", encoding="utf-8") as f:
@@ -75,7 +72,7 @@ def create_agent_with_connection_references(agents_dir: Path, agent_name: str, c
         "base_model": "llama3:latest",
         "system_prompt": "You are a test agent.",
         "temperature": 0.7,
-        "connection_references": connection_refs
+        "connection_references": connection_refs,
     }
 
     with open(config_path, "w", encoding="utf-8") as f:
@@ -104,6 +101,7 @@ def create_agent_without_inline_config(agents_dir: Path, agent_name: str):
 # Tests for migrate_inline_configs()
 # ============================================================================
 
+
 def test_migrate_inline_configs_no_agents():
     """Test migrate_inline_configs with no agents needing migration."""
     env = setup_test_environment()
@@ -127,10 +125,7 @@ def test_migrate_inline_configs_single_agent():
     db_manager = env["db_manager"]
 
     # Create agent with inline config
-    db_config = {
-        "type": "sqlite",
-        "file_path": "/tmp/test.db"
-    }
+    db_config = {"type": "sqlite", "file_path": "/tmp/test.db"}
     create_agent_with_inline_config(env["agents_dir"], "test-agent", db_config)
 
     # Run migration
@@ -144,6 +139,7 @@ def test_migrate_inline_configs_single_agent():
     # Verify connection was created
     conn_result = db_manager.get_connection("test-agent-sqlite")
     from offline_chat.database.result import is_ok
+
     assert is_ok(conn_result), "Connection should exist in store"
 
 
@@ -178,6 +174,7 @@ def test_migrate_inline_configs_multiple_agents():
 
     # Verify all connections were created
     from offline_chat.database.result import is_ok
+
     for agent_name, _ in agents:
         conn_name = f"{agent_name}-sqlite"
         conn_result = db_manager.get_connection(conn_name)
@@ -191,25 +188,13 @@ def test_migrate_inline_configs_with_legacy_references():
     db_manager = env["db_manager"]
 
     # Create connections first
-    conn1 = DatabaseConnection(
-        name="existing-conn1",
-        database_type="sqlite",
-        file_path="/tmp/conn1.db"
-    )
-    conn2 = DatabaseConnection(
-        name="existing-conn2",
-        database_type="sqlite",
-        file_path="/tmp/conn2.db"
-    )
+    conn1 = DatabaseConnection(name="existing-conn1", database_type="sqlite", file_path="/tmp/conn1.db")
+    conn2 = DatabaseConnection(name="existing-conn2", database_type="sqlite", file_path="/tmp/conn2.db")
     db_manager.create_connection(conn1)
     db_manager.create_connection(conn2)
 
     # Create agent with legacy connection_references
-    create_agent_with_connection_references(
-        env["agents_dir"],
-        "legacy-agent",
-        ["existing-conn1", "existing-conn2"]
-    )
+    create_agent_with_connection_references(env["agents_dir"], "legacy-agent", ["existing-conn1", "existing-conn2"])
 
     # Run migration
     results = agent_manager.migrate_inline_configs()
@@ -235,10 +220,7 @@ def test_migrate_inline_configs_error_handling():
     agent_manager = env["agent_manager"]
 
     # Create one valid agent
-    db_config1 = {
-        "type": "sqlite",
-        "file_path": "/tmp/valid.db"
-    }
+    db_config1 = {"type": "sqlite", "file_path": "/tmp/valid.db"}
     create_agent_with_inline_config(env["agents_dir"], "valid-agent", db_config1)
 
     # Create one agent with invalid config (missing required fields)
@@ -257,6 +239,7 @@ def test_migrate_inline_configs_error_handling():
 
     # Verify valid agent was migrated
     from offline_chat.database.result import is_ok
+
     conn_result = env["db_manager"].get_connection("valid-agent-sqlite")
     assert is_ok(conn_result), "Valid agent connection should exist"
 
@@ -269,14 +252,11 @@ def test_migrate_inline_configs_no_db_manager():
     agent_manager = AgentManager(
         agents_dir=env["agents_dir"],
         history_dir=env["history_dir"],
-        db_manager=None  # No db_manager
+        db_manager=None,  # No db_manager
     )
 
     # Create agent with inline config
-    db_config = {
-        "type": "sqlite",
-        "file_path": "/tmp/test.db"
-    }
+    db_config = {"type": "sqlite", "file_path": "/tmp/test.db"}
     create_agent_with_inline_config(env["agents_dir"], "test-agent", db_config)
 
     # Run migration - should return empty dict
@@ -292,27 +272,17 @@ def test_migrate_inline_configs_mixed_scenarios():
     db_manager = env["db_manager"]
 
     # Create connection for legacy reference
-    conn = DatabaseConnection(
-        name="shared-conn",
-        database_type="sqlite",
-        file_path="/tmp/shared.db"
-    )
+    conn = DatabaseConnection(name="shared-conn", database_type="sqlite", file_path="/tmp/shared.db")
     db_manager.create_connection(conn)
 
     # Create various agents
     # 1. Agent with inline config
     create_agent_with_inline_config(
-        env["agents_dir"],
-        "inline-agent",
-        {"type": "sqlite", "file_path": "/tmp/inline.db"}
+        env["agents_dir"], "inline-agent", {"type": "sqlite", "file_path": "/tmp/inline.db"}
     )
 
     # 2. Agent with legacy references
-    create_agent_with_connection_references(
-        env["agents_dir"],
-        "legacy-agent",
-        ["shared-conn"]
-    )
+    create_agent_with_connection_references(env["agents_dir"], "legacy-agent", ["shared-conn"])
 
     # 3. Agent without inline config (already migrated or new)
     create_agent_without_inline_config(env["agents_dir"], "modern-agent")
@@ -328,6 +298,7 @@ def test_migrate_inline_configs_mixed_scenarios():
 
     # Verify inline agent connection
     from offline_chat.database.result import is_ok
+
     conn_result = db_manager.get_connection("inline-agent-sqlite")
     assert is_ok(conn_result), "Inline agent connection should exist"
 
@@ -352,10 +323,7 @@ def test_migrate_inline_configs_preserves_other_fields():
         "web_search_enabled": True,
         "mcp_servers": ["server1", "server2"],
         "guidelines": ["Guideline 1", "Guideline 2"],
-        "database_config": {
-            "type": "sqlite",
-            "file_path": "/tmp/test.db"
-        }
+        "database_config": {"type": "sqlite", "file_path": "/tmp/test.db"},
     }
 
     with open(config_path, "w", encoding="utf-8") as f:

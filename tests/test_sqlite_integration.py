@@ -161,9 +161,7 @@ def test_create_agent_with_sqlite_database(temp_agents_dir, temp_history_dir, te
     assert loaded_agent.mcp_servers[0].database_path == temp_sqlite_db
 
 
-def test_chat_session_with_sqlite_database(
-    temp_agents_dir, temp_history_dir, temp_sqlite_db, mock_sqlite_tools
-):
+def test_chat_session_with_sqlite_database(temp_agents_dir, temp_history_dir, temp_sqlite_db, mock_sqlite_tools):
     """Test starting a chat session with SQLite database access.
 
     **Validates: Requirements 2.1**
@@ -295,12 +293,7 @@ def test_execute_sqlite_query(temp_agents_dir, temp_history_dir, temp_sqlite_db,
             # Execute query through tool
             result = await session._mcp_manager.call_tool(
                 "query_database",
-                {
-                    "query": (
-                        "SELECT id, name, price, category FROM products "
-                        "WHERE category = 'Electronics'"
-                    )
-                },
+                {"query": ("SELECT id, name, price, category FROM products WHERE category = 'Electronics'")},
             )
 
             # Verify result contains expected data
@@ -390,9 +383,7 @@ def test_sqlite_list_tables(temp_agents_dir, temp_history_dir, temp_sqlite_db, m
     asyncio.run(run_test())
 
 
-def test_sqlite_connection_cleanup(
-    temp_agents_dir, temp_history_dir, temp_sqlite_db, mock_sqlite_tools
-):
+def test_sqlite_connection_cleanup(temp_agents_dir, temp_history_dir, temp_sqlite_db, mock_sqlite_tools):
     """Test that SQLite database connections are properly closed.
 
     **Validates: Requirements 2.1**
@@ -466,9 +457,7 @@ def test_sqlite_connection_cleanup(
             assert len(session.get_database_connections()) == 0
 
             # Verify cleanup was logged
-            cleanup_logs = [
-                msg for msg in log_messages if "Closing" in msg or "closed" in msg.lower()
-            ]
+            cleanup_logs = [msg for msg in log_messages if "Closing" in msg or "closed" in msg.lower()]
             assert len(cleanup_logs) > 0, "Expected connection cleanup logs"
         finally:
             logger.removeHandler(handler)
@@ -476,9 +465,7 @@ def test_sqlite_connection_cleanup(
     asyncio.run(run_test())
 
 
-def test_sqlite_multiple_queries_same_session(
-    temp_agents_dir, temp_history_dir, temp_sqlite_db, mock_sqlite_tools
-):
+def test_sqlite_multiple_queries_same_session(temp_agents_dir, temp_history_dir, temp_sqlite_db, mock_sqlite_tools):
     """Test executing multiple queries in the same session.
 
     **Validates: Requirements 2.1, 3.2**

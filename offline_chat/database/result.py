@@ -20,6 +20,7 @@ class Ok(Generic[T]):
     Attributes:
         value: The success value of type T
     """
+
     value: T
 
 
@@ -30,6 +31,7 @@ class Err(Generic[E]):
     Attributes:
         error: The error value of type E
     """
+
     error: E
 
 

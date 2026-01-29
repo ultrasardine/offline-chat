@@ -144,14 +144,8 @@ def test_agent_with_mixed_mcp_and_database_servers():
         assert len(loaded_agent.mcp_servers) == 2
 
         # Check that one is a database and one is not
-        db_servers = [
-            s for s in loaded_agent.mcp_servers if hasattr(s, "database_type") and s.database_type
-        ]
-        regular_servers = [
-            s
-            for s in loaded_agent.mcp_servers
-            if not (hasattr(s, "database_type") and s.database_type)
-        ]
+        db_servers = [s for s in loaded_agent.mcp_servers if hasattr(s, "database_type") and s.database_type]
+        regular_servers = [s for s in loaded_agent.mcp_servers if not (hasattr(s, "database_type") and s.database_type)]
 
         assert len(db_servers) == 1
         assert len(regular_servers) == 1
@@ -205,9 +199,7 @@ def test_list_agents_displays_database_status():
         # Mock print to capture output
         output_lines = []
         with patch("builtins.print") as mock_print:
-            mock_print.side_effect = lambda *args, **kwargs: output_lines.append(
-                " ".join(str(arg) for arg in args)
-            )
+            mock_print.side_effect = lambda *args, **kwargs: output_lines.append(" ".join(str(arg) for arg in args))
             cli.list_agents_flow()
 
         # Verify output contains database status

@@ -48,22 +48,22 @@ class TestContextRetriever:
                 source_type="web",
                 source_identifier="https://example.com/python",
                 chunk_index=0,
-                metadata={"topic": "programming"}
+                metadata={"topic": "programming"},
             ),
             DocumentChunk(
                 text="Machine learning is a subset of artificial intelligence.",
                 source_type="web",
                 source_identifier="https://example.com/ml",
                 chunk_index=0,
-                metadata={"topic": "ai"}
+                metadata={"topic": "ai"},
             ),
             DocumentChunk(
                 text="Databases store and organize data efficiently.",
                 source_type="database",
                 source_identifier="tech_docs",
                 chunk_index=0,
-                metadata={"topic": "databases"}
-            )
+                metadata={"topic": "databases"},
+            ),
         ]
 
     def test_initialization(self, vector_store, embedding_generator):
@@ -73,26 +73,19 @@ class TestContextRetriever:
         assert retriever.vector_store is vector_store
         assert retriever.embedding_generator is embedding_generator
 
-    def test_retrieve_context_with_results(
-        self, context_retriever, vector_store, embedding_generator, sample_chunks
-    ):
+    def test_retrieve_context_with_results(self, context_retriever, vector_store, embedding_generator, sample_chunks):
         """Test retrieving context when relevant chunks exist."""
         collection_name = "test-agent"
 
         # Create collection and add documents
         vector_store.create_collection(collection_name, 384)
-        embeddings = embedding_generator.generate_embeddings_batch(
-            [chunk.text for chunk in sample_chunks]
-        )
+        embeddings = embedding_generator.generate_embeddings_batch([chunk.text for chunk in sample_chunks])
         vector_store.add_documents(collection_name, sample_chunks, embeddings)
 
         # Retrieve context for a query
         query = "What is Python?"
         result = context_retriever.retrieve_context(
-            collection_name=collection_name,
-            query=query,
-            top_k=2,
-            min_similarity=0.0
+            collection_name=collection_name, query=query, top_k=2, min_similarity=0.0
         )
 
         # Verify result structure
@@ -109,25 +102,15 @@ class TestContextRetriever:
     def test_retrieve_context_empty_query_raises_error(self, context_retriever):
         """Test that empty query raises ValueError."""
         with pytest.raises(ValueError, match="Query cannot be empty or None"):
-            context_retriever.retrieve_context(
-                collection_name="test-agent",
-                query="",
-                top_k=5
-            )
+            context_retriever.retrieve_context(collection_name="test-agent", query="", top_k=5)
 
         with pytest.raises(ValueError, match="Query cannot be empty or None"):
-            context_retriever.retrieve_context(
-                collection_name="test-agent",
-                query=None,
-                top_k=5
-            )
+            context_retriever.retrieve_context(collection_name="test-agent", query=None, top_k=5)
 
     def test_retrieve_context_nonexistent_collection(self, context_retriever):
         """Test retrieving from a collection that doesn't exist returns empty results."""
         result = context_retriever.retrieve_context(
-            collection_name="nonexistent-collection",
-            query="test query",
-            top_k=5
+            collection_name="nonexistent-collection", query="test query", top_k=5
         )
 
         assert isinstance(result, RetrievalResult)
@@ -136,52 +119,36 @@ class TestContextRetriever:
         assert result.total_results == 0
         assert result.retrieval_time_ms > 0
 
-    def test_retrieve_context_empty_collection(
-        self, context_retriever, vector_store
-    ):
+    def test_retrieve_context_empty_collection(self, context_retriever, vector_store):
         """Test retrieving from an empty collection returns empty results."""
         collection_name = "empty-collection"
         vector_store.create_collection(collection_name, 384)
 
-        result = context_retriever.retrieve_context(
-            collection_name=collection_name,
-            query="test query",
-            top_k=5
-        )
+        result = context_retriever.retrieve_context(collection_name=collection_name, query="test query", top_k=5)
 
         assert isinstance(result, RetrievalResult)
         assert len(result.chunks) == 0
         assert result.total_results == 0
 
-    def test_retrieve_context_respects_top_k(
-        self, context_retriever, vector_store, embedding_generator, sample_chunks
-    ):
+    def test_retrieve_context_respects_top_k(self, context_retriever, vector_store, embedding_generator, sample_chunks):
         """Test that top_k parameter limits the number of results."""
         collection_name = "test-agent-topk"
 
         # Create collection and add documents
         vector_store.create_collection(collection_name, 384)
-        embeddings = embedding_generator.generate_embeddings_batch(
-            [chunk.text for chunk in sample_chunks]
-        )
+        embeddings = embedding_generator.generate_embeddings_batch([chunk.text for chunk in sample_chunks])
         vector_store.add_documents(collection_name, sample_chunks, embeddings)
 
         # Retrieve with top_k=1
         result = context_retriever.retrieve_context(
-            collection_name=collection_name,
-            query="programming",
-            top_k=1,
-            min_similarity=0.0
+            collection_name=collection_name, query="programming", top_k=1, min_similarity=0.0
         )
 
         assert len(result.chunks) <= 1
 
         # Retrieve with top_k=2
         result = context_retriever.retrieve_context(
-            collection_name=collection_name,
-            query="programming",
-            top_k=2,
-            min_similarity=0.0
+            collection_name=collection_name, query="programming", top_k=2, min_similarity=0.0
         )
 
         assert len(result.chunks) <= 2
@@ -194,9 +161,7 @@ class TestContextRetriever:
 
         # Create collection and add documents
         vector_store.create_collection(collection_name, 384)
-        embeddings = embedding_generator.generate_embeddings_batch(
-            [chunk.text for chunk in sample_chunks]
-        )
+        embeddings = embedding_generator.generate_embeddings_batch([chunk.text for chunk in sample_chunks])
         vector_store.add_documents(collection_name, sample_chunks, embeddings)
 
         # Retrieve with very high threshold (should get fewer or no results)
@@ -204,7 +169,7 @@ class TestContextRetriever:
             collection_name=collection_name,
             query="completely unrelated query about quantum physics",
             top_k=10,
-            min_similarity=0.9  # Very high threshold
+            min_similarity=0.9,  # Very high threshold
         )
 
         # Retrieve with low threshold (should get more results)
@@ -212,7 +177,7 @@ class TestContextRetriever:
             collection_name=collection_name,
             query="completely unrelated query about quantum physics",
             top_k=10,
-            min_similarity=0.0  # No threshold
+            min_similarity=0.0,  # No threshold
         )
 
         # Low threshold should return at least as many results as high threshold
@@ -226,17 +191,12 @@ class TestContextRetriever:
 
         # Create collection and add documents
         vector_store.create_collection(collection_name, 384)
-        embeddings = embedding_generator.generate_embeddings_batch(
-            [chunk.text for chunk in sample_chunks]
-        )
+        embeddings = embedding_generator.generate_embeddings_batch([chunk.text for chunk in sample_chunks])
         vector_store.add_documents(collection_name, sample_chunks, embeddings)
 
         # Retrieve context
         result = context_retriever.retrieve_context(
-            collection_name=collection_name,
-            query="Python programming language",
-            top_k=3,
-            min_similarity=0.0
+            collection_name=collection_name, query="Python programming language", top_k=3, min_similarity=0.0
         )
 
         # Verify results are ordered by similarity (descending)
@@ -252,17 +212,12 @@ class TestContextRetriever:
 
         # Create collection and add documents
         vector_store.create_collection(collection_name, 384)
-        embeddings = embedding_generator.generate_embeddings_batch(
-            [chunk.text for chunk in sample_chunks]
-        )
+        embeddings = embedding_generator.generate_embeddings_batch([chunk.text for chunk in sample_chunks])
         vector_store.add_documents(collection_name, sample_chunks, embeddings)
 
         # Retrieve context
         result = context_retriever.retrieve_context(
-            collection_name=collection_name,
-            query="programming",
-            top_k=1,
-            min_similarity=0.0
+            collection_name=collection_name, query="programming", top_k=1, min_similarity=0.0
         )
 
         # Verify metadata is preserved
@@ -281,9 +236,7 @@ class TestContextRetriever:
 
         # Create collection and add documents
         vector_store.create_collection(collection_name, 384)
-        embeddings = embedding_generator.generate_embeddings_batch(
-            [chunk.text for chunk in sample_chunks]
-        )
+        embeddings = embedding_generator.generate_embeddings_batch([chunk.text for chunk in sample_chunks])
         vector_store.add_documents(collection_name, sample_chunks, embeddings)
 
         # Test different query types
@@ -296,35 +249,24 @@ class TestContextRetriever:
 
         for query in queries:
             result = context_retriever.retrieve_context(
-                collection_name=collection_name,
-                query=query,
-                top_k=3,
-                min_similarity=0.0
+                collection_name=collection_name, query=query, top_k=3, min_similarity=0.0
             )
 
             assert isinstance(result, RetrievalResult)
             assert result.query == query
             assert isinstance(result.chunks, list)
 
-    def test_retrieve_context_timing(
-        self, context_retriever, vector_store, embedding_generator, sample_chunks
-    ):
+    def test_retrieve_context_timing(self, context_retriever, vector_store, embedding_generator, sample_chunks):
         """Test that retrieval time is measured and reasonable."""
         collection_name = "test-agent-timing"
 
         # Create collection and add documents
         vector_store.create_collection(collection_name, 384)
-        embeddings = embedding_generator.generate_embeddings_batch(
-            [chunk.text for chunk in sample_chunks]
-        )
+        embeddings = embedding_generator.generate_embeddings_batch([chunk.text for chunk in sample_chunks])
         vector_store.add_documents(collection_name, sample_chunks, embeddings)
 
         # Retrieve context
-        result = context_retriever.retrieve_context(
-            collection_name=collection_name,
-            query="test query",
-            top_k=5
-        )
+        result = context_retriever.retrieve_context(collection_name=collection_name, query="test query", top_k=5)
 
         # Verify timing is recorded and reasonable
         assert result.retrieval_time_ms > 0
@@ -338,25 +280,15 @@ class TestContextRetriever:
 
         # Create collection and add documents
         vector_store.create_collection(collection_name, 384)
-        embeddings = embedding_generator.generate_embeddings_batch(
-            [chunk.text for chunk in sample_chunks]
-        )
+        embeddings = embedding_generator.generate_embeddings_batch([chunk.text for chunk in sample_chunks])
         vector_store.add_documents(collection_name, sample_chunks, embeddings)
 
         # Queries with special characters
-        special_queries = [
-            "What's Python?",
-            "C++ vs Python",
-            "Price: $100",
-            "Email: test@example.com"
-        ]
+        special_queries = ["What's Python?", "C++ vs Python", "Price: $100", "Email: test@example.com"]
 
         for query in special_queries:
             result = context_retriever.retrieve_context(
-                collection_name=collection_name,
-                query=query,
-                top_k=3,
-                min_similarity=0.0
+                collection_name=collection_name, query=query, top_k=3, min_similarity=0.0
             )
 
             assert isinstance(result, RetrievalResult)
@@ -370,16 +302,11 @@ class TestContextRetriever:
 
         # Create collection and add documents
         vector_store.create_collection(collection_name, 384)
-        embeddings = embedding_generator.generate_embeddings_batch(
-            [chunk.text for chunk in sample_chunks]
-        )
+        embeddings = embedding_generator.generate_embeddings_batch([chunk.text for chunk in sample_chunks])
         vector_store.add_documents(collection_name, sample_chunks, embeddings)
 
         # Retrieve with default parameters (top_k=5, min_similarity=0.3)
-        result = context_retriever.retrieve_context(
-            collection_name=collection_name,
-            query="programming"
-        )
+        result = context_retriever.retrieve_context(collection_name=collection_name, query="programming")
 
         assert isinstance(result, RetrievalResult)
         assert len(result.chunks) <= 5  # Default top_k

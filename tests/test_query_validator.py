@@ -100,22 +100,16 @@ class TestReadOnlyQueryValidation:
             transformed = query.lower()
         else:
             # Mixed case
-            transformed = "".join(
-                c.upper() if i % 2 == 0 else c.lower() for i, c in enumerate(query)
-            )
+            transformed = "".join(c.upper() if i % 2 == 0 else c.lower() for i, c in enumerate(query))
 
         assert is_read_only_query(transformed) is True
 
     @settings(max_examples=100)
     @given(
-        write_keyword=st.sampled_from(
-            ["INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "CREATE", "TRUNCATE", "REPLACE"]
-        ),
+        write_keyword=st.sampled_from(["INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "CREATE", "TRUNCATE", "REPLACE"]),
         case_transform=st.sampled_from(["upper", "lower", "mixed"]),
     )
-    def test_write_keywords_detected_case_insensitive(
-        self, write_keyword: str, case_transform: str
-    ):
+    def test_write_keywords_detected_case_insensitive(self, write_keyword: str, case_transform: str):
         """Write keywords should be detected regardless of case."""
         if case_transform == "upper":
             keyword = write_keyword.upper()
@@ -123,9 +117,7 @@ class TestReadOnlyQueryValidation:
             keyword = write_keyword.lower()
         else:
             # Mixed case
-            keyword = "".join(
-                c.upper() if i % 2 == 0 else c.lower() for i, c in enumerate(write_keyword)
-            )
+            keyword = "".join(c.upper() if i % 2 == 0 else c.lower() for i, c in enumerate(write_keyword))
 
         query = f"{keyword} INTO users VALUES (1)"
         assert is_read_only_query(query) is False

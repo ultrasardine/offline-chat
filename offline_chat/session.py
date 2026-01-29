@@ -130,20 +130,14 @@ class ChatSession:
             vector_store = VectorStore(data_dir)
 
             # Initialize embedding generator
-            embedding_generator = EmbeddingGenerator(
-                model_name=self.agent.rag_config.embedding_model
-            )
+            embedding_generator = EmbeddingGenerator(model_name=self.agent.rag_config.embedding_model)
 
             # Initialize context retriever
-            context_retriever = ContextRetriever(
-                vector_store=vector_store,
-                embedding_generator=embedding_generator
-            )
+            context_retriever = ContextRetriever(vector_store=vector_store, embedding_generator=embedding_generator)
 
             # Initialize document processor
             document_processor = DocumentProcessor(
-                chunk_size=self.agent.rag_config.chunk_size,
-                chunk_overlap=self.agent.rag_config.chunk_overlap
+                chunk_size=self.agent.rag_config.chunk_size, chunk_overlap=self.agent.rag_config.chunk_overlap
             )
 
             # Initialize prompt augmenter
@@ -174,7 +168,7 @@ class ChatSession:
                 document_processor=document_processor,
                 prompt_augmenter=prompt_augmenter,
                 web_scraper=web_scraper,
-                database_integration=database_integration
+                database_integration=database_integration,
             )
 
             logger.info(f"RAG orchestrator initialized successfully for agent '{self.agent.name}'")
@@ -223,8 +217,7 @@ class ChatSession:
                         if config.name in self._mcp_manager.clients:
                             self._database_connections[config.name] = config.database_type
                             logger.info(
-                                f"Database connection established: {config.name} "
-                                f"(type: {config.database_type})"
+                                f"Database connection established: {config.name} (type: {config.database_type})"
                             )
                         else:
                             logger.warning(
@@ -242,10 +235,7 @@ class ChatSession:
                         )
             except Exception as e:
                 # Log the error but continue the session without database tools
-                logger.error(
-                    f"Failed to connect to MCP servers: {e}. "
-                    f"Continuing session without database tools."
-                )
+                logger.error(f"Failed to connect to MCP servers: {e}. Continuing session without database tools.")
                 self._mcp_manager = None
                 self._database_connections.clear()
 
@@ -383,16 +373,11 @@ class ChatSession:
             # Log database operations for audit purposes
             if server_name in self._database_connections:
                 db_type = self._database_connections[server_name]
-                logger.info(
-                    f"Executing database tool '{name}' on {db_type} database '{server_name}'"
-                )
+                logger.info(f"Executing database tool '{name}' on {db_type} database '{server_name}'")
 
                 # For Oracle, note that query will be logged in DBTOOLS$MCP_LOG
                 if db_type == "oracle" and "sql" in name.lower():
-                    logger.debug(
-                        f"Oracle query will be logged in DBTOOLS$MCP_LOG table "
-                        f"for database '{server_name}'"
-                    )
+                    logger.debug(f"Oracle query will be logged in DBTOOLS$MCP_LOG table for database '{server_name}'")
 
             try:
                 result = await self._mcp_manager.call_tool(name, arguments)
@@ -419,9 +404,7 @@ class ChatSession:
         # Fall back to built-in tools
         return self._execute_tool(name, arguments)
 
-    def _validate_database_query(
-        self, tool_name: str, arguments: dict[str, Any], server_name: str
-    ) -> str | None:
+    def _validate_database_query(self, tool_name: str, arguments: dict[str, Any], server_name: str) -> str | None:
         """Validate a database query against access level restrictions.
 
         This method checks if the tool is a query execution tool, extracts the SQL
@@ -459,9 +442,7 @@ class ChatSession:
 
         if not sql_query:
             # No SQL query found in arguments, can't validate
-            logger.warning(
-                f"Query tool '{tool_name}' called without recognizable SQL parameter"
-            )
+            logger.warning(f"Query tool '{tool_name}' called without recognizable SQL parameter")
             return None
 
         # Find the connection assignment for this server
@@ -482,24 +463,16 @@ class ChatSession:
 
         if not assignment:
             # No assignment found for this server
-            logger.warning(
-                f"No connection assignment found for server '{server_name}' "
-                f"in agent '{self.agent.name}'"
-            )
+            logger.warning(f"No connection assignment found for server '{server_name}' in agent '{self.agent.name}'")
             return None
 
         # Validate the query using AccessLevelValidator
         allowed_tables = assignment.allowed_tables or []
-        validation_result = AccessLevelValidator.validate_query(
-            sql_query, assignment.access_level, allowed_tables
-        )
+        validation_result = AccessLevelValidator.validate_query(sql_query, assignment.access_level, allowed_tables)
 
         if is_err(validation_result):
             error_msg = unwrap_err(validation_result)
-            logger.info(
-                f"Query validation failed for agent '{self.agent.name}' "
-                f"on server '{server_name}': {error_msg}"
-            )
+            logger.info(f"Query validation failed for agent '{self.agent.name}' on server '{server_name}': {error_msg}")
             return f"Access denied: {error_msg}"
 
         # Validation succeeded
@@ -616,7 +589,7 @@ class ChatSession:
             rag_response = self._rag_orchestrator.process_query(
                 query=content,
                 conversation_history=self.history.messages,
-                generate_response=False  # We'll handle generation ourselves for streaming
+                generate_response=False,  # We'll handle generation ourselves for streaming
             )
 
             # Check if RAG returned None (fallback to non-RAG mode)
@@ -627,8 +600,7 @@ class ChatSession:
 
             # Get the augmented prompt
             augmented_prompt = self._rag_orchestrator.get_augmented_prompt(
-                query=content,
-                retrieval_result=rag_response.retrieval_result
+                query=content, retrieval_result=rag_response.retrieval_result
             )
 
             # Build messages for Ollama
@@ -655,13 +627,11 @@ class ChatSession:
                 role="assistant",
                 content=full_response,
                 timestamp=datetime.now(),
-                sources=rag_response.sources  # Store source citations
+                sources=rag_response.sources,  # Store source citations
             )
             self.history.messages.append(assistant_message)
 
-            logger.info(
-                f"RAG-enhanced response generated with {len(rag_response.sources)} source(s)"
-            )
+            logger.info(f"RAG-enhanced response generated with {len(rag_response.sources)} source(s)")
 
         except Exception as e:
             logger.error(f"Error in RAG-enhanced message processing: {e}", exc_info=True)
@@ -725,9 +695,11 @@ class ChatSession:
 
                 # Debug: Check if response is complete
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.debug(f"Iteration {iteration}: done={response.get('done')}, "
-                               f"content_len={len(message.get('content', ''))}, "
-                               f"tool_calls={len(tool_calls)}")
+                    logger.debug(
+                        f"Iteration {iteration}: done={response.get('done')}, "
+                        f"content_len={len(message.get('content', ''))}, "
+                        f"tool_calls={len(tool_calls)}"
+                    )
 
                 if not tool_calls:
                     # No tool calls - this is the final response
@@ -784,10 +756,12 @@ class ChatSession:
             # If we exit the loop due to max iterations, prompt agent to summarize
             if iteration >= max_iterations:
                 # Add a system message asking the agent to summarize findings
-                messages.append({
-                    "role": "user",
-                    "content": "Please summarize what you've found so far based on the tool results above."
-                })
+                messages.append(
+                    {
+                        "role": "user",
+                        "content": "Please summarize what you've found so far based on the tool results above.",
+                    }
+                )
 
                 # Get summary response
                 response = ollama.chat(
@@ -799,7 +773,9 @@ class ChatSession:
                 summary_content = response.get("message", {}).get("content", "")
                 if summary_content:
                     # Add note about complex query
-                    note = "\n\n[Note: This was a complex query. Feel free to ask follow-up questions for more details.]"
+                    note = (
+                        "\n\n[Note: This was a complex query. Feel free to ask follow-up questions for more details.]"
+                    )
                     full_response = summary_content + note
 
                     # Stream the response
@@ -884,7 +860,7 @@ class ChatSession:
             rag_response = self._rag_orchestrator.process_query(
                 query=content,
                 conversation_history=self.history.messages,
-                generate_response=False  # We'll handle generation ourselves
+                generate_response=False,  # We'll handle generation ourselves
             )
 
             # Check if RAG returned None (fallback to non-RAG mode)
@@ -894,8 +870,7 @@ class ChatSession:
 
             # Get the augmented prompt
             augmented_prompt = self._rag_orchestrator.get_augmented_prompt(
-                query=content,
-                retrieval_result=rag_response.retrieval_result
+                query=content, retrieval_result=rag_response.retrieval_result
             )
 
             # Build messages for Ollama
@@ -922,13 +897,11 @@ class ChatSession:
                 role="assistant",
                 content=full_response,
                 timestamp=datetime.now(),
-                sources=rag_response.sources  # Store source citations
+                sources=rag_response.sources,  # Store source citations
             )
             self.history.messages.append(assistant_message)
 
-            logger.info(
-                f"RAG-enhanced response generated with {len(rag_response.sources)} source(s)"
-            )
+            logger.info(f"RAG-enhanced response generated with {len(rag_response.sources)} source(s)")
 
             return response_chunks
 
@@ -997,9 +970,11 @@ class ChatSession:
 
                 # Debug logging
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.debug(f"Iteration {iteration}: tool_calls={len(tool_calls)}, "
-                               f"content_len={len(message.get('content', ''))}")
-                    if not tool_calls and message.get('content'):
+                    logger.debug(
+                        f"Iteration {iteration}: tool_calls={len(tool_calls)}, "
+                        f"content_len={len(message.get('content', ''))}"
+                    )
+                    if not tool_calls and message.get("content"):
                         logger.debug(f"No tool calls. Content preview: {message.get('content')[:100]}...")
 
                 if not tool_calls:
@@ -1047,10 +1022,12 @@ class ChatSession:
             # If we exit the loop due to max iterations, prompt agent to summarize
             if iteration >= max_iterations:
                 # Add a system message asking the agent to summarize findings
-                messages.append({
-                    "role": "user",
-                    "content": "Please summarize what you've found so far based on the tool results above."
-                })
+                messages.append(
+                    {
+                        "role": "user",
+                        "content": "Please summarize what you've found so far based on the tool results above.",
+                    }
+                )
 
                 # Get summary response
                 response = ollama.chat(
@@ -1062,7 +1039,9 @@ class ChatSession:
                 summary_content = response.get("message", {}).get("content", "")
                 if summary_content:
                     # Add note about complex query
-                    note = "\n\n[Note: This was a complex query. Feel free to ask follow-up questions for more details.]"
+                    note = (
+                        "\n\n[Note: This was a complex query. Feel free to ask follow-up questions for more details.]"
+                    )
                     full_response = summary_content + note
 
                     # Collect response character by character
@@ -1108,38 +1087,38 @@ class ChatSession:
 
         # Pattern to match SQL code blocks
         # Matches: ```sql ... ``` or ```SQL ... ```
-        sql_block_pattern = r'```[sS][qQ][lL]\s*\n.*?\n```'
+        sql_block_pattern = r"```[sS][qQ][lL]\s*\n.*?\n```"
 
         # Patterns for phrases that indicate the model is about to output JSON or execute a tool
         json_intro_patterns = [
-            r'Here is the JSON object for the function call:?\s*$',
-            r'I\'ll call the `\w+` function with (?:a|the) (?:query|parameters):?\s*$',
-            r'Let me call the `\w+` function:?\s*$',
-            r'I need to call the `\w+` function:?\s*$',
-            r'To (?:answer|get) .+, I (?:need to|will|\'ll) call the `\w+` function.+:?\s*$',
-            r'Let me execute (?:this|the) query now\.?\s*$',
-            r'I\'ll execute (?:this|the) query now\.?\s*$',
-            r'Let me (?:try|run) (?:this|that|the) query\.?\s*$',
-            r'Here is the refined query:?\s*$',
-            r'Let me run (?:this|the) following SQL query:?\s*$',
-            r'I will run (?:this|the) following SQL query:?\s*$',
-            r'To find out .+, I\'ll run (?:a|the) query .+:?\s*$',
-            r'Here\'s the query:?\s*$',
-            r'This will give us .+\.?\s*$',
+            r"Here is the JSON object for the function call:?\s*$",
+            r"I\'ll call the `\w+` function with (?:a|the) (?:query|parameters):?\s*$",
+            r"Let me call the `\w+` function:?\s*$",
+            r"I need to call the `\w+` function:?\s*$",
+            r"To (?:answer|get) .+, I (?:need to|will|\'ll) call the `\w+` function.+:?\s*$",
+            r"Let me execute (?:this|the) query now\.?\s*$",
+            r"I\'ll execute (?:this|the) query now\.?\s*$",
+            r"Let me (?:try|run) (?:this|that|the) query\.?\s*$",
+            r"Here is the refined query:?\s*$",
+            r"Let me run (?:this|the) following SQL query:?\s*$",
+            r"I will run (?:this|the) following SQL query:?\s*$",
+            r"To find out .+, I\'ll run (?:a|the) query .+:?\s*$",
+            r"Here\'s the query:?\s*$",
+            r"This will give us .+\.?\s*$",
         ]
 
         # Remove SQL code blocks first
-        filtered = re.sub(sql_block_pattern, '', content, flags=re.DOTALL)
+        filtered = re.sub(sql_block_pattern, "", content, flags=re.DOTALL)
 
         # Remove JSON tool calls
-        filtered = re.sub(json_pattern, '', filtered)
+        filtered = re.sub(json_pattern, "", filtered)
 
         # Remove JSON introduction phrases (at end of text)
         for pattern in json_intro_patterns:
-            filtered = re.sub(pattern, '', filtered, flags=re.IGNORECASE | re.MULTILINE)
+            filtered = re.sub(pattern, "", filtered, flags=re.IGNORECASE | re.MULTILINE)
 
         # Clean up extra whitespace and newlines left behind
-        filtered = re.sub(r'\n\s*\n\s*\n+', '\n\n', filtered)
+        filtered = re.sub(r"\n\s*\n\s*\n+", "\n\n", filtered)
 
         # Only strip if we actually removed something
         if filtered != content:
@@ -1148,7 +1127,9 @@ class ChatSession:
             # If after filtering we're left with very little meaningful content,
             # it means the model was just trying to explain a tool call
             # In this case, don't show anything (empty response will trigger retry)
-            if len(filtered) < 20 and any(phrase in content.lower() for phrase in ['json', 'function call', 'call the', 'execute', 'query', 'sql']):
+            if len(filtered) < 20 and any(
+                phrase in content.lower() for phrase in ["json", "function call", "call the", "execute", "query", "sql"]
+            ):
                 return ""
 
         return filtered

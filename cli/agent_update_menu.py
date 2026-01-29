@@ -29,10 +29,7 @@ from offline_chat.database.result import is_ok, unwrap_err
 from offline_chat.manager import AgentManager
 
 
-def show_update_agent_menu(
-    agent_manager: AgentManager,
-    db_manager: DatabaseConnectionManager
-) -> None:
+def show_update_agent_menu(agent_manager: AgentManager, db_manager: DatabaseConnectionManager) -> None:
     """Display agent update menu and handle agent selection.
 
     This is the main entry point for updating agents. It displays a list
@@ -92,11 +89,7 @@ def show_update_agent_menu(
                 idx = int(choice)
                 if 1 <= idx <= len(agents):
                     selected_agent = agents[idx - 1]
-                    _show_agent_update_options(
-                        agent_manager,
-                        db_manager,
-                        selected_agent.name
-                    )
+                    _show_agent_update_options(agent_manager, db_manager, selected_agent.name)
                 else:
                     print("\nInvalid selection. Please try again.")
             except ValueError:
@@ -108,9 +101,7 @@ def show_update_agent_menu(
 
 
 def _show_agent_update_options(
-    agent_manager: AgentManager,
-    db_manager: DatabaseConnectionManager,
-    agent_name: str
+    agent_manager: AgentManager, db_manager: DatabaseConnectionManager, agent_name: str
 ) -> None:
     """Display update options for a specific agent.
 
@@ -154,10 +145,7 @@ def _show_agent_update_options(
             break
 
 
-def update_base_model_flow(
-    agent_manager: AgentManager,
-    agent_name: str
-) -> None:
+def update_base_model_flow(agent_manager: AgentManager, agent_name: str) -> None:
     """Interactive flow for updating an agent's base model.
 
     This function guides the user through changing the Ollama base model
@@ -248,9 +236,7 @@ def update_base_model_flow(
 
 
 def update_database_connections_flow(
-    agent_manager: AgentManager,
-    db_manager: DatabaseConnectionManager,
-    agent_name: str
+    agent_manager: AgentManager, db_manager: DatabaseConnectionManager, agent_name: str
 ) -> None:
     """Interactive flow for updating agent database connections.
 
@@ -313,10 +299,7 @@ def update_database_connections_flow(
         # Get all available connections
         all_connections = db_manager.list_connections()
         assigned_names = {a.connection_name for a in agent.connection_assignments}
-        available_connections = [
-            conn for conn in all_connections
-            if conn.name not in assigned_names
-        ]
+        available_connections = [conn for conn in all_connections if conn.name not in assigned_names]
 
         # Display available connections
         print("\nAvailable Connections:")
@@ -343,12 +326,7 @@ def update_database_connections_flow(
                     print("\nNo available connections to add.")
                     print("All connections are already assigned to this agent.")
                     continue
-                _add_connection_flow(
-                    agent_manager,
-                    db_manager,
-                    agent_name,
-                    available_connections
-                )
+                _add_connection_flow(agent_manager, db_manager, agent_name, available_connections)
             elif choice == "r":
                 if not agent.connection_assignments:
                     print("\nNo connections to remove.")
@@ -365,10 +343,7 @@ def update_database_connections_flow(
 
 
 def _add_connection_flow(
-    agent_manager: AgentManager,
-    db_manager: DatabaseConnectionManager,
-    agent_name: str,
-    available_connections: list
+    agent_manager: AgentManager, db_manager: DatabaseConnectionManager, agent_name: str, available_connections: list
 ) -> None:
     """Flow for adding a connection to an agent.
 
@@ -406,10 +381,7 @@ def _add_connection_flow(
 
         # Select allowed tables if table-specific access
         allowed_tables = None
-        if access_level in (
-            AccessLevel.TABLE_SPECIFIC_READ,
-            AccessLevel.TABLE_SPECIFIC_READ_WRITE
-        ):
+        if access_level in (AccessLevel.TABLE_SPECIFIC_READ, AccessLevel.TABLE_SPECIFIC_READ_WRITE):
             allowed_tables = select_allowed_tables(db_manager, selected_connection.name)
             if allowed_tables is None:
                 print("\nConnection addition cancelled.")
@@ -417,12 +389,7 @@ def _add_connection_flow(
 
         # Assign the connection
         print("\nAssigning connection...", end=" ", flush=True)
-        result = agent_manager.assign_connection(
-            agent_name,
-            selected_connection.name,
-            access_level,
-            allowed_tables
-        )
+        result = agent_manager.assign_connection(agent_name, selected_connection.name, access_level, allowed_tables)
 
         if is_ok(result):
             print("Done!")
@@ -443,11 +410,7 @@ def _add_connection_flow(
         print("\n\nConnection addition cancelled.")
 
 
-def _remove_connection_flow(
-    agent_manager: AgentManager,
-    agent_name: str,
-    connection_assignments: list
-) -> None:
+def _remove_connection_flow(agent_manager: AgentManager, agent_name: str, connection_assignments: list) -> None:
     """Flow for removing a connection from an agent.
 
     Args:
@@ -480,9 +443,7 @@ def _remove_connection_flow(
         selected_assignment = connection_assignments[idx - 1]
 
         # Confirm removal
-        confirm = input(
-            f"\nRemove connection '{selected_assignment.connection_name}'? (y/N): "
-        ).strip().lower()
+        confirm = input(f"\nRemove connection '{selected_assignment.connection_name}'? (y/N): ").strip().lower()
 
         if confirm != "y":
             print("\nRemoval cancelled.")
@@ -560,10 +521,7 @@ def select_access_level() -> Optional[AccessLevel]:
         return None
 
 
-def select_allowed_tables(
-    db_manager: DatabaseConnectionManager,
-    connection_name: str
-) -> Optional[list[str]]:
+def select_allowed_tables(db_manager: DatabaseConnectionManager, connection_name: str) -> Optional[list[str]]:
     """Prompt user to enter allowed tables for table-specific access.
 
     For table-specific access levels, this function prompts the user to
@@ -618,11 +576,7 @@ def select_allowed_tables(
         return None
 
 
-
-def configure_rag_flow(
-    agent_manager: AgentManager,
-    agent_name: str
-) -> None:
+def configure_rag_flow(agent_manager: AgentManager, agent_name: str) -> None:
     """Interactive flow for configuring RAG capabilities on an agent.
 
     This function allows enabling/disabling RAG and configuring RAG parameters
@@ -690,10 +644,7 @@ def configure_rag_flow(
             print("\n\nRAG configuration cancelled.")
 
 
-def _enable_rag(
-    agent_manager: AgentManager,
-    agent_name: str
-) -> None:
+def _enable_rag(agent_manager: AgentManager, agent_name: str) -> None:
     """Enable RAG on an agent with configuration prompts.
 
     Args:
@@ -746,7 +697,7 @@ def _enable_rag(
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
             embedding_model=embedding_model,
-            knowledge_sources=[]
+            knowledge_sources=[],
         )
 
         # Update agent
@@ -808,12 +759,8 @@ def _modify_rag_parameters(
         chunk_size = int(chunk_size_input) if chunk_size_input else current_config.chunk_size
 
         # Prompt for chunk_overlap
-        chunk_overlap_input = input(
-            f"Chunk overlap [{current_config.chunk_overlap}]: "
-        ).strip()
-        chunk_overlap = (
-            int(chunk_overlap_input) if chunk_overlap_input else current_config.chunk_overlap
-        )
+        chunk_overlap_input = input(f"Chunk overlap [{current_config.chunk_overlap}]: ").strip()
+        chunk_overlap = int(chunk_overlap_input) if chunk_overlap_input else current_config.chunk_overlap
 
         # Create updated config
         updated_config = RAGConfig(
@@ -823,7 +770,7 @@ def _modify_rag_parameters(
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
             embedding_model=current_config.embedding_model,
-            knowledge_sources=current_config.knowledge_sources
+            knowledge_sources=current_config.knowledge_sources,
         )
 
         # Update agent
@@ -856,10 +803,7 @@ def _modify_rag_parameters(
         print("\n\nParameter modification cancelled.")
 
 
-def _disable_rag(
-    agent_manager: AgentManager,
-    agent_name: str
-) -> None:
+def _disable_rag(agent_manager: AgentManager, agent_name: str) -> None:
     """Disable RAG on an agent.
 
     Args:
@@ -894,7 +838,7 @@ def _disable_rag(
                 chunk_size=agent.rag_config.chunk_size,
                 chunk_overlap=agent.rag_config.chunk_overlap,
                 embedding_model=agent.rag_config.embedding_model,
-                knowledge_sources=agent.rag_config.knowledge_sources
+                knowledge_sources=agent.rag_config.knowledge_sources,
             )
 
             print("\nDisabling RAG...", end=" ", flush=True)

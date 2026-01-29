@@ -136,9 +136,7 @@ class TestAgentDeletionCompleteness:
                 history_file = history_dir / f"{agent.name}.json"
                 history_file.parent.mkdir(parents=True, exist_ok=True)
                 history_data = (
-                    '{"agent_name": "'
-                    + agent.name
-                    + '", "messages": [], "last_updated": "2025-01-13T10:00:00"}'
+                    '{"agent_name": "' + agent.name + '", "messages": [], "last_updated": "2025-01-13T10:00:00"}'
                 )
                 history_file.write_text(history_data)
 

@@ -115,7 +115,7 @@ class TestCLIMigrationCheck:
         cli = CLI(manager=mock_manager)
 
         # Mock the display_menu to exit immediately
-        with patch.object(cli, 'display_menu', side_effect=KeyboardInterrupt):
+        with patch.object(cli, "display_menu", side_effect=KeyboardInterrupt):
             try:
                 cli.run()
             except KeyboardInterrupt:
@@ -134,8 +134,8 @@ class TestCLIMigrationCheck:
         # Create a mock manager that returns migration results
         mock_manager = MagicMock(spec=AgentManager)
         mock_manager.migrate_inline_configs.return_value = {
-            'test-agent': 'test-agent-oracle',
-            'another-agent': 'another-agent-postgresql'
+            "test-agent": "test-agent-oracle",
+            "another-agent": "another-agent-postgresql",
         }
         mock_manager.history_store = MagicMock()
 
@@ -143,7 +143,7 @@ class TestCLIMigrationCheck:
         cli = CLI(manager=mock_manager)
 
         # Mock the display_menu to exit immediately
-        with patch.object(cli, 'display_menu', side_effect=KeyboardInterrupt):
+        with patch.object(cli, "display_menu", side_effect=KeyboardInterrupt):
             try:
                 cli.run()
             except KeyboardInterrupt:
@@ -175,7 +175,7 @@ class TestCLIMigrationCheck:
         cli = CLI(manager=mock_manager)
 
         # Mock the display_menu to exit immediately
-        with patch.object(cli, 'display_menu', side_effect=KeyboardInterrupt):
+        with patch.object(cli, "display_menu", side_effect=KeyboardInterrupt):
             try:
                 cli.run()
             except KeyboardInterrupt:
@@ -204,7 +204,7 @@ class TestCLIMigrationCheck:
         cli = CLI(manager=mock_manager)
 
         # Mock the display_menu to exit immediately
-        with patch.object(cli, 'display_menu', side_effect=KeyboardInterrupt):
+        with patch.object(cli, "display_menu", side_effect=KeyboardInterrupt):
             try:
                 cli.run()
             except KeyboardInterrupt:

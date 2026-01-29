@@ -30,36 +30,29 @@ from offline_chat.manager import AgentManager
 # ============================================================================
 
 # Valid connection names (kebab-case)
-valid_connection_names = st.text(
-    alphabet="abcdefghijklmnopqrstuvwxyz0123456789-",
-    min_size=1,
-    max_size=30
-).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s and s[0] not in '0123456789')
+valid_connection_names = st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=30).filter(
+    lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s and s[0] not in "0123456789"
+)
 
 # Valid agent names (kebab-case)
-valid_agent_names = st.text(
-    alphabet="abcdefghijklmnopqrstuvwxyz0123456789-",
-    min_size=1,
-    max_size=30
-).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s and s[0] not in '0123456789')
+valid_agent_names = st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=30).filter(
+    lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s and s[0] not in "0123456789"
+)
 
 # Access levels
-access_levels = st.sampled_from([
-    AccessLevel.READ_ONLY,
-    AccessLevel.READ_WRITE,
-    AccessLevel.TABLE_SPECIFIC_READ,
-    AccessLevel.TABLE_SPECIFIC_READ_WRITE,
-])
+access_levels = st.sampled_from(
+    [
+        AccessLevel.READ_ONLY,
+        AccessLevel.READ_WRITE,
+        AccessLevel.TABLE_SPECIFIC_READ,
+        AccessLevel.TABLE_SPECIFIC_READ_WRITE,
+    ]
+)
 
 # Table names
 table_names = st.text(
-    alphabet=st.characters(
-        whitelist_categories=("Ll", "Lu", "Nd"),
-        whitelist_characters="_"
-    ),
-    min_size=1,
-    max_size=20
-).filter(lambda s: s[0] not in ('_', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'))
+    alphabet=st.characters(whitelist_categories=("Ll", "Lu", "Nd"), whitelist_characters="_"), min_size=1, max_size=20
+).filter(lambda s: s[0] not in ("_", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"))
 
 # Lists of table names
 table_lists = st.lists(table_names, min_size=1, max_size=10, unique=True)
@@ -68,6 +61,7 @@ table_lists = st.lists(table_names, min_size=1, max_size=10, unique=True)
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
 
 def setup_test_environment():
     """Set up test environment with temporary directories and managers."""
@@ -81,10 +75,7 @@ def setup_test_environment():
     agents_dir.mkdir(parents=True, exist_ok=True)
     history_dir.mkdir(parents=True, exist_ok=True)
 
-    db_manager = DatabaseConnectionManager(
-        store_path=connections_file,
-        agents_dir=agents_dir
-    )
+    db_manager = DatabaseConnectionManager(store_path=connections_file, agents_dir=agents_dir)
     agent_manager = AgentManager(
         agents_dir=agents_dir,
         history_dir=history_dir,
@@ -103,11 +94,7 @@ def setup_test_environment():
 
 def create_test_connection(db_manager, name: str, temp_path: Path) -> bool:
     """Create a test SQLite connection."""
-    conn = DatabaseConnection(
-        name=name,
-        database_type="sqlite",
-        file_path=str(temp_path / f"{name}.db")
-    )
+    conn = DatabaseConnection(name=name, database_type="sqlite", file_path=str(temp_path / f"{name}.db"))
     result = db_manager.create_connection(conn)
     return is_ok(result)
 
@@ -136,6 +123,7 @@ def create_test_agent(agent_manager, name: str) -> bool:
 # Property 10: Connection Usage Tracking
 # ============================================================================
 
+
 @given(
     connection_name=valid_connection_names,
     agent_names=st.lists(valid_agent_names, min_size=1, max_size=5, unique=True),
@@ -143,9 +131,7 @@ def create_test_agent(agent_manager, name: str) -> bool:
 )
 @settings(deadline=1000, max_examples=50)
 @pytest.mark.property_test
-def test_property_10_connection_usage_tracking(
-    connection_name, agent_names, access_level
-):
+def test_property_10_connection_usage_tracking(connection_name, agent_names, access_level):
     """Property 10: Connection Usage Tracking
 
     **Validates: Requirements 3.4**
@@ -166,10 +152,11 @@ def test_property_10_connection_usage_tracking(
         assert create_test_agent(agent_manager, agent_name)
 
         # Prepare allowed_tables if needed
-        allowed_tables = ["test_table"] if access_level in (
-            AccessLevel.TABLE_SPECIFIC_READ,
-            AccessLevel.TABLE_SPECIFIC_READ_WRITE
-        ) else None
+        allowed_tables = (
+            ["test_table"]
+            if access_level in (AccessLevel.TABLE_SPECIFIC_READ, AccessLevel.TABLE_SPECIFIC_READ_WRITE)
+            else None
+        )
 
         # Assign the connection
         result = agent_manager.assign_connection(
@@ -184,12 +171,12 @@ def test_property_10_connection_usage_tracking(
     agents_using = db_manager.get_agents_using_connection(connection_name)
 
     # Verify all agents are identified
-    assert len(agents_using) == len(agent_names), \
-        f"Should identify {len(agent_names)} agents, got {len(agents_using)}"
+    assert len(agents_using) == len(agent_names), f"Should identify {len(agent_names)} agents, got {len(agents_using)}"
 
     # Verify the correct agents are identified
-    assert set(agents_using) == set(agent_names), \
+    assert set(agents_using) == set(agent_names), (
         f"Identified agents {set(agents_using)} should match expected {set(agent_names)}"
+    )
 
 
 @given(
@@ -200,9 +187,7 @@ def test_property_10_connection_usage_tracking(
 )
 @settings(deadline=1000, max_examples=50)
 @pytest.mark.property_test
-def test_property_10_connection_usage_tracking_partial(
-    connection_name, using_agents, non_using_agents, access_level
-):
+def test_property_10_connection_usage_tracking_partial(connection_name, using_agents, non_using_agents, access_level):
     """Property 10: Connection Usage Tracking (Partial Usage)
 
     **Validates: Requirements 3.4**
@@ -222,10 +207,11 @@ def test_property_10_connection_usage_tracking_partial(
     assert create_test_connection(db_manager, connection_name, env["tmp_dir"])
 
     # Prepare allowed_tables if needed
-    allowed_tables = ["test_table"] if access_level in (
-        AccessLevel.TABLE_SPECIFIC_READ,
-        AccessLevel.TABLE_SPECIFIC_READ_WRITE
-    ) else None
+    allowed_tables = (
+        ["test_table"]
+        if access_level in (AccessLevel.TABLE_SPECIFIC_READ, AccessLevel.TABLE_SPECIFIC_READ_WRITE)
+        else None
+    )
 
     # Create agents that use the connection
     for agent_name in using_agents:
@@ -247,16 +233,17 @@ def test_property_10_connection_usage_tracking_partial(
     agents_using = db_manager.get_agents_using_connection(connection_name)
 
     # Verify only the using agents are identified
-    assert len(agents_using) == len(using_agents), \
+    assert len(agents_using) == len(using_agents), (
         f"Should identify {len(using_agents)} agents, got {len(agents_using)}"
+    )
 
-    assert set(agents_using) == set(using_agents), \
+    assert set(agents_using) == set(using_agents), (
         "Identified agents should only include agents that use the connection"
+    )
 
     # Verify non-using agents are not included
     for agent_name in non_using_agents:
-        assert agent_name not in agents_using, \
-            f"Agent {agent_name} should not be identified as using the connection"
+        assert agent_name not in agents_using, f"Agent {agent_name} should not be identified as using the connection"
 
 
 @given(
@@ -283,8 +270,7 @@ def test_property_10_connection_usage_tracking_no_usage(connection_name):
     agents_using = db_manager.get_agents_using_connection(connection_name)
 
     # Verify no agents are identified
-    assert len(agents_using) == 0, \
-        f"Should identify 0 agents for unused connection, got {len(agents_using)}"
+    assert len(agents_using) == 0, f"Should identify 0 agents for unused connection, got {len(agents_using)}"
 
 
 @given(
@@ -294,9 +280,7 @@ def test_property_10_connection_usage_tracking_no_usage(connection_name):
 )
 @settings(deadline=1000, max_examples=50)
 @pytest.mark.property_test
-def test_property_10_connection_usage_tracking_after_removal(
-    connection_name, agent_name, access_level
-):
+def test_property_10_connection_usage_tracking_after_removal(connection_name, agent_name, access_level):
     """Property 10: Connection Usage Tracking (After Removal)
 
     **Validates: Requirements 3.4**
@@ -316,10 +300,11 @@ def test_property_10_connection_usage_tracking_after_removal(
     assert create_test_agent(agent_manager, agent_name)
 
     # Prepare allowed_tables if needed
-    allowed_tables = ["test_table"] if access_level in (
-        AccessLevel.TABLE_SPECIFIC_READ,
-        AccessLevel.TABLE_SPECIFIC_READ_WRITE
-    ) else None
+    allowed_tables = (
+        ["test_table"]
+        if access_level in (AccessLevel.TABLE_SPECIFIC_READ, AccessLevel.TABLE_SPECIFIC_READ_WRITE)
+        else None
+    )
 
     # Assign the connection
     result = agent_manager.assign_connection(
@@ -343,13 +328,13 @@ def test_property_10_connection_usage_tracking_after_removal(
 
     # Verify agent is no longer using the connection
     agents_using_after = db_manager.get_agents_using_connection(connection_name)
-    assert agent_name not in agents_using_after, \
-        "Agent should no longer be using the connection after removal"
+    assert agent_name not in agents_using_after, "Agent should no longer be using the connection after removal"
 
 
 # ============================================================================
 # Property 33: Access Level Display
 # ============================================================================
+
 
 @given(
     agent_name=valid_agent_names,
@@ -359,9 +344,7 @@ def test_property_10_connection_usage_tracking_after_removal(
 )
 @settings(deadline=1000, max_examples=50)
 @pytest.mark.property_test
-def test_property_33_access_level_display(
-    agent_name, connection_name, access_level, tables
-):
+def test_property_33_access_level_display(agent_name, connection_name, access_level, tables):
     """Property 33: Access Level Display
 
     **Validates: Requirements 12.10**
@@ -381,10 +364,9 @@ def test_property_33_access_level_display(
     assert create_test_agent(agent_manager, agent_name)
 
     # Prepare allowed_tables based on access level
-    allowed_tables = tables if access_level in (
-        AccessLevel.TABLE_SPECIFIC_READ,
-        AccessLevel.TABLE_SPECIFIC_READ_WRITE
-    ) else None
+    allowed_tables = (
+        tables if access_level in (AccessLevel.TABLE_SPECIFIC_READ, AccessLevel.TABLE_SPECIFIC_READ_WRITE) else None
+    )
 
     # Assign the connection with access level
     result = agent_manager.assign_connection(
@@ -401,8 +383,7 @@ def test_property_33_access_level_display(
         config_data = json.load(f)
 
     # Verify connection_assignments exists
-    assert "connection_assignments" in config_data, \
-        "Config should have connection_assignments field"
+    assert "connection_assignments" in config_data, "Config should have connection_assignments field"
 
     assignments = config_data["connection_assignments"]
     assert len(assignments) == 1, "Should have exactly one assignment"
@@ -410,25 +391,25 @@ def test_property_33_access_level_display(
     assignment = assignments[0]
 
     # Verify access level is displayed in the configuration
-    assert "access_level" in assignment, \
-        "Assignment should have access_level field"
+    assert "access_level" in assignment, "Assignment should have access_level field"
 
-    assert assignment["access_level"] == access_level.value, \
+    assert assignment["access_level"] == access_level.value, (
         f"Access level should be {access_level.value}, got {assignment['access_level']}"
+    )
 
     # Verify connection name is displayed
-    assert "connection_name" in assignment, \
-        "Assignment should have connection_name field"
+    assert "connection_name" in assignment, "Assignment should have connection_name field"
 
-    assert assignment["connection_name"] == connection_name, \
+    assert assignment["connection_name"] == connection_name, (
         f"Connection name should be {connection_name}, got {assignment['connection_name']}"
+    )
 
     # Verify allowed_tables is displayed for table-specific access
     if access_level in (AccessLevel.TABLE_SPECIFIC_READ, AccessLevel.TABLE_SPECIFIC_READ_WRITE):
-        assert "allowed_tables" in assignment, \
-            "Assignment should have allowed_tables field for table-specific access"
-        assert assignment["allowed_tables"] == tables, \
+        assert "allowed_tables" in assignment, "Assignment should have allowed_tables field for table-specific access"
+        assert assignment["allowed_tables"] == tables, (
             f"Allowed tables should be {tables}, got {assignment['allowed_tables']}"
+        )
 
 
 @given(
@@ -437,14 +418,12 @@ def test_property_33_access_level_display(
         st.tuples(valid_connection_names, access_levels),
         min_size=2,
         max_size=5,
-        unique_by=lambda x: x[0]  # Unique connection names
+        unique_by=lambda x: x[0],  # Unique connection names
     ),
 )
 @settings(deadline=1000, max_examples=50)
 @pytest.mark.property_test
-def test_property_33_access_level_display_multiple_connections(
-    agent_name, connections_and_levels
-):
+def test_property_33_access_level_display_multiple_connections(agent_name, connections_and_levels):
     """Property 33: Access Level Display (Multiple Connections)
 
     **Validates: Requirements 12.10**
@@ -466,10 +445,11 @@ def test_property_33_access_level_display_multiple_connections(
         assert create_test_connection(db_manager, conn_name, env["tmp_dir"])
 
         # Prepare allowed_tables if needed
-        allowed_tables = ["test_table"] if access_level in (
-            AccessLevel.TABLE_SPECIFIC_READ,
-            AccessLevel.TABLE_SPECIFIC_READ_WRITE
-        ) else None
+        allowed_tables = (
+            ["test_table"]
+            if access_level in (AccessLevel.TABLE_SPECIFIC_READ, AccessLevel.TABLE_SPECIFIC_READ_WRITE)
+            else None
+        )
 
         # Assign the connection
         result = agent_manager.assign_connection(
@@ -486,24 +466,20 @@ def test_property_33_access_level_display_multiple_connections(
         config_data = json.load(f)
 
     # Verify connection_assignments exists
-    assert "connection_assignments" in config_data, \
-        "Config should have connection_assignments field"
+    assert "connection_assignments" in config_data, "Config should have connection_assignments field"
 
     assignments = config_data["connection_assignments"]
-    assert len(assignments) == len(connections_and_levels), \
+    assert len(assignments) == len(connections_and_levels), (
         f"Should have {len(connections_and_levels)} assignments, got {len(assignments)}"
+    )
 
     # Create a mapping of connection name to access level from assignments
-    assignment_map = {
-        a["connection_name"]: a["access_level"]
-        for a in assignments
-    }
+    assignment_map = {a["connection_name"]: a["access_level"] for a in assignments}
 
     # Verify each connection has the correct access level displayed
     for conn_name, access_level in connections_and_levels:
-        assert conn_name in assignment_map, \
-            f"Connection {conn_name} should be in assignments"
+        assert conn_name in assignment_map, f"Connection {conn_name} should be in assignments"
 
-        assert assignment_map[conn_name] == access_level.value, \
-            f"Connection {conn_name} should have access level {access_level.value}, " \
-            f"got {assignment_map[conn_name]}"
+        assert assignment_map[conn_name] == access_level.value, (
+            f"Connection {conn_name} should have access level {access_level.value}, got {assignment_map[conn_name]}"
+        )

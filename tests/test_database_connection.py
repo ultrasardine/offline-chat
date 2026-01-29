@@ -21,7 +21,7 @@ class TestDatabaseConnectionBasics:
             port=1521,
             service_name="TESTDB",
             username="test_user",
-            password="test_pass"
+            password="test_pass",
         )
 
         assert conn.name == "test-oracle"
@@ -43,7 +43,7 @@ class TestDatabaseConnectionBasics:
             port=5432,
             database="testdb",
             username="test_user",
-            password="test_pass"
+            password="test_pass",
         )
 
         assert conn.name == "test-postgres"
@@ -59,7 +59,7 @@ class TestDatabaseConnectionBasics:
             port=3306,
             database="testdb",
             username="test_user",
-            password="test_pass"
+            password="test_pass",
         )
 
         assert conn.name == "test-mysql"
@@ -68,11 +68,7 @@ class TestDatabaseConnectionBasics:
 
     def test_create_sqlite_connection(self):
         """Test creating a SQLite connection."""
-        conn = DatabaseConnection(
-            name="test-sqlite",
-            database_type="sqlite",
-            file_path="/path/to/database.db"
-        )
+        conn = DatabaseConnection(name="test-sqlite", database_type="sqlite", file_path="/path/to/database.db")
 
         assert conn.name == "test-sqlite"
         assert conn.database_type == "sqlite"
@@ -90,7 +86,7 @@ class TestDatabaseConnectionBasics:
             database="testdb",
             username="test_user",
             password="test_pass",
-            additional_params={"ssl": True, "timeout": 30}
+            additional_params={"ssl": True, "timeout": 30},
         )
 
         assert conn.additional_params == {"ssl": True, "timeout": 30}
@@ -108,7 +104,7 @@ class TestDatabaseConnectionSerialization:
             port=1521,
             service_name="TESTDB",
             username="test_user",
-            password="test_pass"
+            password="test_pass",
         )
 
         data = conn.to_dict()
@@ -125,11 +121,7 @@ class TestDatabaseConnectionSerialization:
 
     def test_to_dict_sqlite(self):
         """Test converting SQLite connection to dictionary."""
-        conn = DatabaseConnection(
-            name="test-sqlite",
-            database_type="sqlite",
-            file_path="/path/to/db.db"
-        )
+        conn = DatabaseConnection(name="test-sqlite", database_type="sqlite", file_path="/path/to/db.db")
 
         data = conn.to_dict()
 
@@ -150,7 +142,7 @@ class TestDatabaseConnectionSerialization:
             "username": "test_user",
             "password": "test_pass",
             "created_at": "2025-01-13T10:00:00",
-            "updated_at": "2025-01-13T10:00:00"
+            "updated_at": "2025-01-13T10:00:00",
         }
 
         conn = DatabaseConnection.from_dict(data)
@@ -172,7 +164,7 @@ class TestDatabaseConnectionSerialization:
             "database_type": "sqlite",
             "file_path": "/path/to/db.db",
             "created_at": "2025-01-13T10:00:00",
-            "updated_at": "2025-01-13T10:00:00"
+            "updated_at": "2025-01-13T10:00:00",
         }
 
         conn = DatabaseConnection.from_dict(data)
@@ -193,7 +185,7 @@ class TestDatabaseConnectionSerialization:
             "password": "test_pass",
             "additional_params": {"ssl": True, "timeout": 30},
             "created_at": "2025-01-13T10:00:00",
-            "updated_at": "2025-01-13T10:00:00"
+            "updated_at": "2025-01-13T10:00:00",
         }
 
         conn = DatabaseConnection.from_dict(data)
@@ -202,11 +194,7 @@ class TestDatabaseConnectionSerialization:
 
     def test_from_dict_without_timestamps(self):
         """Test creating connection from dict without timestamp fields."""
-        data = {
-            "name": "test-conn",
-            "database_type": "sqlite",
-            "file_path": "/path/to/db.db"
-        }
+        data = {"name": "test-conn", "database_type": "sqlite", "file_path": "/path/to/db.db"}
 
         conn = DatabaseConnection.from_dict(data)
 
@@ -223,7 +211,7 @@ class TestDatabaseConnectionSerialization:
             database="testdb",
             username="test_user",
             password="test_pass",
-            additional_params={"ssl": True}
+            additional_params={"ssl": True},
         )
 
         data = original.to_dict()
@@ -251,7 +239,7 @@ class TestDatabaseConnectionMasking:
             port=5432,
             database="testdb",
             username="test_user",
-            password="secret_password"
+            password="secret_password",
         )
 
         masked = conn.mask_sensitive_fields()
@@ -262,11 +250,7 @@ class TestDatabaseConnectionMasking:
 
     def test_mask_no_password(self):
         """Test masking when password is None."""
-        conn = DatabaseConnection(
-            name="test-sqlite",
-            database_type="sqlite",
-            file_path="/path/to/db.db"
-        )
+        conn = DatabaseConnection(name="test-sqlite", database_type="sqlite", file_path="/path/to/db.db")
 
         masked = conn.mask_sensitive_fields()
 
@@ -283,12 +267,7 @@ class TestDatabaseConnectionMasking:
             database="testdb",
             username="test_user",
             password="test_pass",
-            additional_params={
-                "ssl": True,
-                "api_key": "secret_key",
-                "timeout": 30,
-                "auth_token": "secret_token"
-            }
+            additional_params={"ssl": True, "api_key": "secret_key", "timeout": 30, "auth_token": "secret_token"},
         )
 
         masked = conn.mask_sensitive_fields()
@@ -308,7 +287,7 @@ class TestDatabaseConnectionMasking:
             port=5432,
             database="testdb",
             username="test_user",
-            password="secret_password"
+            password="secret_password",
         )
 
         masked = conn.mask_sensitive_fields()
@@ -333,8 +312,8 @@ class TestDatabaseConnectionMasking:
                 "access_token": "secret2",
                 "secret_key": "secret3",
                 "api_credential": "secret4",
-                "normal_param": "visible"
-            }
+                "normal_param": "visible",
+            },
         )
 
         masked = conn.mask_sensitive_fields()
@@ -352,10 +331,7 @@ class TestDatabaseConnectionEdgeCases:
     def test_empty_additional_params(self):
         """Test connection with empty additional_params."""
         conn = DatabaseConnection(
-            name="test-conn",
-            database_type="sqlite",
-            file_path="/path/to/db.db",
-            additional_params={}
+            name="test-conn", database_type="sqlite", file_path="/path/to/db.db", additional_params={}
         )
 
         assert conn.additional_params == {}
@@ -364,11 +340,7 @@ class TestDatabaseConnectionEdgeCases:
 
     def test_none_additional_params_in_dict(self):
         """Test from_dict when additional_params is missing."""
-        data = {
-            "name": "test-conn",
-            "database_type": "sqlite",
-            "file_path": "/path/to/db.db"
-        }
+        data = {"name": "test-conn", "database_type": "sqlite", "file_path": "/path/to/db.db"}
 
         conn = DatabaseConnection.from_dict(data)
 
@@ -376,10 +348,7 @@ class TestDatabaseConnectionEdgeCases:
 
     def test_all_optional_fields_none(self):
         """Test connection with minimal required fields."""
-        conn = DatabaseConnection(
-            name="test-conn",
-            database_type="sqlite"
-        )
+        conn = DatabaseConnection(name="test-conn", database_type="sqlite")
 
         assert conn.host is None
         assert conn.port is None
@@ -390,22 +359,17 @@ class TestDatabaseConnectionEdgeCases:
         assert conn.file_path is None
 
 
-
 # ============================================================================
 # Property-Based Tests
 # ============================================================================
+
 
 # Custom Hypothesis strategies for generating valid connection data
 def valid_connection_name():
     """Generate valid kebab-case connection names."""
     return st.text(
-        alphabet=st.characters(
-            whitelist_categories=('Ll', 'Nd'),
-            whitelist_characters='-'
-        ),
-        min_size=1,
-        max_size=50
-    ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s)
+        alphabet=st.characters(whitelist_categories=("Ll", "Nd"), whitelist_characters="-"), min_size=1, max_size=50
+    ).filter(lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s)
 
 
 def oracle_connection_strategy():
@@ -413,7 +377,7 @@ def oracle_connection_strategy():
     return st.builds(
         DatabaseConnection,
         name=valid_connection_name(),
-        database_type=st.just('oracle'),
+        database_type=st.just("oracle"),
         host=st.text(min_size=1, max_size=100),
         port=st.integers(min_value=1, max_value=65535),
         service_name=st.text(min_size=1, max_size=50),
@@ -422,9 +386,8 @@ def oracle_connection_strategy():
         database=st.none(),
         file_path=st.none(),
         additional_params=st.dictionaries(
-            st.text(min_size=1, max_size=20),
-            st.one_of(st.text(), st.integers(), st.booleans())
-        )
+            st.text(min_size=1, max_size=20), st.one_of(st.text(), st.integers(), st.booleans())
+        ),
     )
 
 
@@ -433,7 +396,7 @@ def postgresql_connection_strategy():
     return st.builds(
         DatabaseConnection,
         name=valid_connection_name(),
-        database_type=st.just('postgresql'),
+        database_type=st.just("postgresql"),
         host=st.text(min_size=1, max_size=100),
         port=st.integers(min_value=1, max_value=65535),
         database=st.text(min_size=1, max_size=50),
@@ -442,9 +405,8 @@ def postgresql_connection_strategy():
         service_name=st.none(),
         file_path=st.none(),
         additional_params=st.dictionaries(
-            st.text(min_size=1, max_size=20),
-            st.one_of(st.text(), st.integers(), st.booleans())
-        )
+            st.text(min_size=1, max_size=20), st.one_of(st.text(), st.integers(), st.booleans())
+        ),
     )
 
 
@@ -453,7 +415,7 @@ def mysql_connection_strategy():
     return st.builds(
         DatabaseConnection,
         name=valid_connection_name(),
-        database_type=st.just('mysql'),
+        database_type=st.just("mysql"),
         host=st.text(min_size=1, max_size=100),
         port=st.integers(min_value=1, max_value=65535),
         database=st.text(min_size=1, max_size=50),
@@ -462,9 +424,8 @@ def mysql_connection_strategy():
         service_name=st.none(),
         file_path=st.none(),
         additional_params=st.dictionaries(
-            st.text(min_size=1, max_size=20),
-            st.one_of(st.text(), st.integers(), st.booleans())
-        )
+            st.text(min_size=1, max_size=20), st.one_of(st.text(), st.integers(), st.booleans())
+        ),
     )
 
 
@@ -473,7 +434,7 @@ def sqlite_connection_strategy():
     return st.builds(
         DatabaseConnection,
         name=valid_connection_name(),
-        database_type=st.just('sqlite'),
+        database_type=st.just("sqlite"),
         file_path=st.text(min_size=1, max_size=200),
         host=st.none(),
         port=st.none(),
@@ -482,9 +443,8 @@ def sqlite_connection_strategy():
         username=st.none(),
         password=st.none(),
         additional_params=st.dictionaries(
-            st.text(min_size=1, max_size=20),
-            st.one_of(st.text(), st.integers(), st.booleans())
-        )
+            st.text(min_size=1, max_size=20), st.one_of(st.text(), st.integers(), st.booleans())
+        ),
     )
 
 
@@ -494,7 +454,7 @@ def any_connection_strategy():
         oracle_connection_strategy(),
         postgresql_connection_strategy(),
         mysql_connection_strategy(),
-        sqlite_connection_strategy()
+        sqlite_connection_strategy(),
     )
 
 
@@ -520,10 +480,7 @@ class TestConnectionStoreStructureProperty:
         **Validates: Requirements 1.3**
         """
         # Simulate a connection store structure
-        store_data = {
-            "version": "1.0",
-            "connections": [conn.to_dict() for conn in connections]
-        }
+        store_data = {"version": "1.0", "connections": [conn.to_dict() for conn in connections]}
 
         # Verify the store can be serialized to JSON
         json_str = json.dumps(store_data)
@@ -593,20 +550,14 @@ class TestConnectionStoreStructureProperty:
         **Validates: Requirements 1.3**
         """
         # Serialize connections to store format
-        store_data = {
-            "version": "1.0",
-            "connections": [conn.to_dict() for conn in connections]
-        }
+        store_data = {"version": "1.0", "connections": [conn.to_dict() for conn in connections]}
 
         # Convert to JSON and back
         json_str = json.dumps(store_data)
         loaded_store = json.loads(json_str)
 
         # Deserialize connections
-        restored_connections = [
-            DatabaseConnection.from_dict(conn_data)
-            for conn_data in loaded_store["connections"]
-        ]
+        restored_connections = [DatabaseConnection.from_dict(conn_data) for conn_data in loaded_store["connections"]]
 
         # Verify all connections were restored correctly
         assert len(restored_connections) == len(connections)

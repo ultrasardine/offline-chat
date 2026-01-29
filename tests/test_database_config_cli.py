@@ -26,9 +26,7 @@ from offline_chat.database_config_cli import (
         st.text(
             min_size=1,
             max_size=50,
-            alphabet=st.characters(
-                whitelist_categories=("Lu", "Ll", "Nd"), whitelist_characters="_-"
-            ),
+            alphabet=st.characters(whitelist_categories=("Lu", "Ll", "Nd"), whitelist_characters="_-"),
         ),
         min_size=0,
         max_size=10,
@@ -161,9 +159,7 @@ def test_validate_sqlite_path_accepts_existing_files(filename):
     path=st.text(
         min_size=1,
         max_size=200,
-        alphabet=st.characters(
-            whitelist_categories=("Lu", "Ll", "Nd"), whitelist_characters="/_-."
-        ),
+        alphabet=st.characters(whitelist_categories=("Lu", "Ll", "Nd"), whitelist_characters="/_-."),
     )
 )
 @pytest.mark.property_test

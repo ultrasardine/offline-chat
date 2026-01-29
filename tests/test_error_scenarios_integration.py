@@ -71,9 +71,7 @@ def mock_database_tools():
                 "description": "Execute SQL query against database",
                 "parameters": {
                     "type": "object",
-                    "properties": {
-                        "query": {"type": "string", "description": "SQL query to execute"}
-                    },
+                    "properties": {"query": {"type": "string", "description": "SQL query to execute"}},
                     "required": ["query"],
                 },
             },
@@ -114,9 +112,7 @@ def test_connection_failure_handling(temp_agents_dir, temp_history_dir):
         manager = AgentManager(agents_dir=str(temp_agents_dir), history_dir=str(temp_history_dir))
 
         # Create database configuration with invalid path
-        invalid_config = create_database_mcp_config(
-            "sqlite", "invalid_db", path="/nonexistent/path/to/database.db"
-        )
+        invalid_config = create_database_mcp_config("sqlite", "invalid_db", path="/nonexistent/path/to/database.db")
 
         # Create agent with invalid database configuration
         agent = Agent(
@@ -216,8 +212,7 @@ def test_connection_failure_error_message(temp_agents_dir, temp_history_dir):
             mock_manager_instance = MockManager.return_value
 
             error_message = (
-                "Failed to connect to PostgreSQL database at "
-                "nonexistent.host.local:5432 - Connection refused"
+                "Failed to connect to PostgreSQL database at nonexistent.host.local:5432 - Connection refused"
             )
 
             # Simulate connection failure with descriptive error
@@ -244,9 +239,7 @@ def test_connection_failure_error_message(temp_agents_dir, temp_history_dir):
     asyncio.run(run_test())
 
 
-def test_invalid_query_handling(
-    temp_agents_dir, temp_history_dir, temp_sqlite_db, mock_database_tools
-):
+def test_invalid_query_handling(temp_agents_dir, temp_history_dir, temp_sqlite_db, mock_database_tools):
     """Test handling of invalid SQL queries.
 
     **Validates: Requirements 3.4**
@@ -317,9 +310,7 @@ def test_invalid_query_handling(
     asyncio.run(run_test())
 
 
-def test_invalid_query_with_missing_table(
-    temp_agents_dir, temp_history_dir, temp_sqlite_db, mock_database_tools
-):
+def test_invalid_query_with_missing_table(temp_agents_dir, temp_history_dir, temp_sqlite_db, mock_database_tools):
     """Test handling of queries referencing non-existent tables.
 
     **Validates: Requirements 3.4**
@@ -386,9 +377,7 @@ def test_invalid_query_with_missing_table(
     asyncio.run(run_test())
 
 
-def test_nonexistent_table_describe(
-    temp_agents_dir, temp_history_dir, temp_sqlite_db, mock_database_tools
-):
+def test_nonexistent_table_describe(temp_agents_dir, temp_history_dir, temp_sqlite_db, mock_database_tools):
     """Test describing a non-existent table returns an error.
 
     **Validates: Requirements 4.3**
@@ -441,9 +430,7 @@ def test_nonexistent_table_describe(
             await session.start_async("describe-error-agent")
 
             # Execute describe_table for non-existent table
-            result = await session._mcp_manager.call_tool(
-                "describe_table", {"table_name": "invalid_table"}
-            )
+            result = await session._mcp_manager.call_tool("describe_table", {"table_name": "invalid_table"})
 
             # Verify error message is returned
             assert "Error" in result or "error" in result
@@ -459,9 +446,7 @@ def test_nonexistent_table_describe(
     asyncio.run(run_test())
 
 
-def test_multiple_error_scenarios_in_session(
-    temp_agents_dir, temp_history_dir, temp_sqlite_db, mock_database_tools
-):
+def test_multiple_error_scenarios_in_session(temp_agents_dir, temp_history_dir, temp_sqlite_db, mock_database_tools):
     """Test handling multiple errors in the same session.
 
     **Validates: Requirements 2.3, 3.4, 4.3**
@@ -535,23 +520,17 @@ def test_multiple_error_scenarios_in_session(
             await session.start_async("multi-error-agent")
 
             # Execute query with syntax error
-            result1 = await session._mcp_manager.call_tool(
-                "query_database", {"query": "SELCT * FROM products"}
-            )
+            result1 = await session._mcp_manager.call_tool("query_database", {"query": "SELCT * FROM products"})
             assert "Error" in result1
             assert "syntax" in result1.lower()
 
             # Execute query with non-existent table
-            result2 = await session._mcp_manager.call_tool(
-                "query_database", {"query": "SELECT * FROM missing_table"}
-            )
+            result2 = await session._mcp_manager.call_tool("query_database", {"query": "SELECT * FROM missing_table"})
             assert "Error" in result2
             assert "table" in result2.lower()
 
             # Execute describe_table with non-existent table
-            result3 = await session._mcp_manager.call_tool(
-                "describe_table", {"table_name": "unknown_table"}
-            )
+            result3 = await session._mcp_manager.call_tool("describe_table", {"table_name": "unknown_table"})
             assert "Error" in result3
             assert "not found" in result3.lower()
 
@@ -581,9 +560,7 @@ def test_graceful_degradation_on_connection_failure(temp_agents_dir, temp_histor
         manager = AgentManager(agents_dir=str(temp_agents_dir), history_dir=str(temp_history_dir))
 
         # Create database configuration that will fail to connect
-        failing_config = create_database_mcp_config(
-            "sqlite", "failing_db", path="/invalid/path/database.db"
-        )
+        failing_config = create_database_mcp_config("sqlite", "failing_db", path="/invalid/path/database.db")
 
         # Create agent with failing database configuration
         agent = Agent(
@@ -608,9 +585,7 @@ def test_graceful_degradation_on_connection_failure(temp_agents_dir, temp_histor
             mock_manager_instance = MockManager.return_value
 
             # Simulate connection failure
-            mock_manager_instance.connect_all = AsyncMock(
-                side_effect=Exception("Database connection failed")
-            )
+            mock_manager_instance.connect_all = AsyncMock(side_effect=Exception("Database connection failed"))
             mock_manager_instance.disconnect_all = AsyncMock()
             mock_manager_instance.get_all_tools = MagicMock(return_value=[])
             mock_manager_instance.clients = {}

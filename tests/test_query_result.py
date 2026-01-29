@@ -41,9 +41,7 @@ class TestQueryResultBasic:
 
         Validates: Requirement 8.4
         """
-        result = QueryResult(
-            columns=["id", "name"], rows=[], row_count=0, truncated=False, execution_time_ms=10.0
-        )
+        result = QueryResult(columns=["id", "name"], rows=[], row_count=0, truncated=False, execution_time_ms=10.0)
 
         markdown = result.to_markdown_table()
         assert markdown == "No rows found"
@@ -188,9 +186,7 @@ class TestQueryResultBasic:
 
     def test_execution_time_in_output(self):
         """Test that execution time is included in output."""
-        result = QueryResult(
-            columns=["id"], rows=[[1]], row_count=1, truncated=False, execution_time_ms=123.456
-        )
+        result = QueryResult(columns=["id"], rows=[[1]], row_count=1, truncated=False, execution_time_ms=123.456)
 
         markdown = result.to_markdown_table()
         assert "123.5ms" in markdown
@@ -213,13 +209,9 @@ class TestQueryResultProperties:
         columns=st.lists(st.text(min_size=1, max_size=20), min_size=1, max_size=10),
         row_count=st.integers(min_value=0, max_value=1000),
         truncated=st.booleans(),
-        execution_time_ms=st.floats(
-            min_value=0.0, max_value=10000.0, allow_nan=False, allow_infinity=False
-        ),
+        execution_time_ms=st.floats(min_value=0.0, max_value=10000.0, allow_nan=False, allow_infinity=False),
     )
-    def test_property_29_table_formatting_with_headers(
-        self, columns, row_count, truncated, execution_time_ms
-    ):
+    def test_property_29_table_formatting_with_headers(self, columns, row_count, truncated, execution_time_ms):
         """Property 29: Table formatting with headers.
 
         For any query result with columns and rows, formatting should produce
@@ -255,9 +247,7 @@ class TestQueryResultProperties:
             min_size=1,
             max_size=5,
         ),
-        null_positions=st.lists(
-            st.integers(min_value=0, max_value=4), min_size=0, max_size=5, unique=True
-        ),
+        null_positions=st.lists(st.integers(min_value=0, max_value=4), min_size=0, max_size=5, unique=True),
     )
     def test_property_30_null_value_representation(self, columns, null_positions):
         """Property 30: NULL value representation.
@@ -278,9 +268,7 @@ class TestQueryResultProperties:
             else:
                 row.append(f"value_{i}")
 
-        result = QueryResult(
-            columns=columns, rows=[row], row_count=1, truncated=False, execution_time_ms=10.0
-        )
+        result = QueryResult(columns=columns, rows=[row], row_count=1, truncated=False, execution_time_ms=10.0)
 
         markdown = result.to_markdown_table()
         json_str = result.to_json()
@@ -317,9 +305,7 @@ class TestQueryResultProperties:
         columns = [f"col_{i}" for i in range(num_long_fields)]
         long_texts = ["X" * text_length for _ in range(num_long_fields)]
 
-        result = QueryResult(
-            columns=columns, rows=[long_texts], row_count=1, truncated=False, execution_time_ms=10.0
-        )
+        result = QueryResult(columns=columns, rows=[long_texts], row_count=1, truncated=False, execution_time_ms=10.0)
 
         markdown = result.to_markdown_table()
         json_str = result.to_json()
@@ -382,9 +368,7 @@ class TestQueryResultEdgeCases:
 
     def test_single_column_single_row(self):
         """Test minimal result with one column and one row."""
-        result = QueryResult(
-            columns=["value"], rows=[[42]], row_count=1, truncated=False, execution_time_ms=5.0
-        )
+        result = QueryResult(columns=["value"], rows=[[42]], row_count=1, truncated=False, execution_time_ms=5.0)
 
         markdown = result.to_markdown_table()
         assert "value" in markdown
@@ -395,9 +379,7 @@ class TestQueryResultEdgeCases:
         columns = [f"col_{i}" for i in range(20)]
         rows = [[i for i in range(20)]]
 
-        result = QueryResult(
-            columns=columns, rows=rows, row_count=1, truncated=False, execution_time_ms=50.0
-        )
+        result = QueryResult(columns=columns, rows=rows, row_count=1, truncated=False, execution_time_ms=50.0)
 
         markdown = result.to_markdown_table()
         for col in columns:

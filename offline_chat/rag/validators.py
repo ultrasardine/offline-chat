@@ -50,7 +50,7 @@ def is_valid_url(url: str) -> bool:
 
         # Check for invalid characters in domain (must be ASCII)
         # Domain should only contain alphanumeric, dots, hyphens, and colons (for ports)
-        domain_pattern = r'^[a-zA-Z0-9\.\-:]+$'
+        domain_pattern = r"^[a-zA-Z0-9\.\-:]+$"
         if not re.match(domain_pattern, parsed.netloc):
             return False
 

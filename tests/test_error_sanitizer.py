@@ -27,7 +27,7 @@ class TestSanitizeErrorMessage:
             port=5432,
             database="mydb",
             username="user",
-            password="secret123"
+            password="secret123",
         )
 
         error = "Connection failed: password 'secret123' is invalid"
@@ -53,7 +53,7 @@ class TestSanitizeErrorMessage:
             port=5432,
             database="mydb",
             username="user",
-            password="secret123"
+            password="secret123",
         )
 
         error = "Connection timeout after 30 seconds"
@@ -71,7 +71,7 @@ class TestSanitizeErrorMessage:
             port=5432,
             database="mydb",
             username="user",
-            password="secret123"
+            password="secret123",
         )
 
         error = "Error: secret123 failed, retry with secret123"
@@ -90,7 +90,7 @@ class TestSanitizeErrorMessage:
             service_name="ORCL",
             username="user",
             password="mainpass",
-            additional_params={"db_password": "extrapass"}
+            additional_params={"db_password": "extrapass"},
         )
 
         error = "Failed with extrapass and mainpass"
@@ -110,7 +110,7 @@ class TestSanitizeErrorMessage:
             database="mydb",
             username="user",
             password="pass123",
-            additional_params={"api_token": "token456"}
+            additional_params={"api_token": "token456"},
         )
 
         error = "Authentication failed with token456"
@@ -136,7 +136,7 @@ class TestSanitizeErrorMessage:
             port=5432,
             database="mydb",
             username="user",
-            password="ab"  # Too short
+            password="ab",  # Too short
         )
 
         error = "Connection failed with ab"
@@ -154,7 +154,7 @@ class TestSanitizeErrorMessage:
             port=5432,
             database="mydb",
             username="user",
-            password="****"  # Already masked
+            password="****",  # Already masked
         )
 
         error = "Connection failed with ****"
@@ -173,7 +173,7 @@ class TestSanitizeErrorMessage:
             database="mydb",
             username="user",
             password="secret",
-            additional_params={"api_key": "secret123"}  # Contains "secret"
+            additional_params={"api_key": "secret123"},  # Contains "secret"
         )
 
         error = "Failed with secret123 and secret"
@@ -186,12 +186,7 @@ class TestSanitizeErrorMessage:
 
     def test_sanitize_none_password(self):
         """Connection with None password should not cause errors."""
-        conn = DatabaseConnection(
-            name="test-db",
-            database_type="sqlite",
-            file_path="/path/to/db.sqlite",
-            password=None
-        )
+        conn = DatabaseConnection(name="test-db", database_type="sqlite", file_path="/path/to/db.sqlite", password=None)
 
         error = "Connection failed"
         sanitized = sanitize_error_message(error, conn)
@@ -208,7 +203,7 @@ class TestSanitizeErrorMessage:
             database="mydb",
             username="user",
             password="secret123",
-            additional_params={}
+            additional_params={},
         )
 
         error = "Connection failed with secret123"
@@ -278,11 +273,7 @@ class TestSanitizeDict:
 
     def test_sanitize_password_field(self):
         """Dictionary with password field should have it masked."""
-        data = {
-            "username": "user",
-            "password": "secret",
-            "host": "localhost"
-        }
+        data = {"username": "user", "password": "secret", "host": "localhost"}
 
         sanitized = sanitize_dict(data)
 
@@ -292,10 +283,7 @@ class TestSanitizeDict:
 
     def test_sanitize_token_field(self):
         """Dictionary with token field should have it masked."""
-        data = {
-            "api_token": "abc123",
-            "host": "localhost"
-        }
+        data = {"api_token": "abc123", "host": "localhost"}
 
         sanitized = sanitize_dict(data)
 
@@ -309,7 +297,7 @@ class TestSanitizeDict:
             "password": "secret",
             "api_key": "key123",
             "auth_token": "token456",
-            "host": "localhost"
+            "host": "localhost",
         }
 
         sanitized = sanitize_dict(data)
@@ -322,11 +310,7 @@ class TestSanitizeDict:
 
     def test_sanitize_none_values(self):
         """Dictionary with None values should remain None."""
-        data = {
-            "username": "user",
-            "password": None,
-            "host": "localhost"
-        }
+        data = {"username": "user", "password": None, "host": "localhost"}
 
         sanitized = sanitize_dict(data)
 
@@ -342,11 +326,7 @@ class TestSanitizeDict:
 
     def test_sanitize_case_insensitive(self):
         """Sensitive field detection should be case-insensitive."""
-        data = {
-            "PASSWORD": "secret",
-            "ApiKey": "key123",
-            "Auth_Token": "token456"
-        }
+        data = {"PASSWORD": "secret", "ApiKey": "key123", "Auth_Token": "token456"}
 
         sanitized = sanitize_dict(data)
 
@@ -356,11 +336,7 @@ class TestSanitizeDict:
 
     def test_sanitize_original_unchanged(self):
         """Original dictionary should not be modified."""
-        data = {
-            "username": "user",
-            "password": "secret",
-            "host": "localhost"
-        }
+        data = {"username": "user", "password": "secret", "host": "localhost"}
 
         original_password = data["password"]
         sanitized = sanitize_dict(data)
@@ -375,15 +351,18 @@ class TestSanitizeDict:
 
 # Property-based tests using Hypothesis
 
+
 @given(
     password=st.text(min_size=3, max_size=50).filter(lambda s: s != "****"),
-    error_template=st.sampled_from([
-        "Connection failed: {}",
-        "Authentication error with password {}",
-        "Invalid credentials: {}",
-        "Error: {} is not valid",
-        "Failed to connect using {}"
-    ])
+    error_template=st.sampled_from(
+        [
+            "Connection failed: {}",
+            "Authentication error with password {}",
+            "Invalid credentials: {}",
+            "Error: {} is not valid",
+            "Failed to connect using {}",
+        ]
+    ),
 )
 @settings(max_examples=100)
 def test_property_password_always_removed(password: str, error_template: str):
@@ -403,7 +382,7 @@ def test_property_password_always_removed(password: str, error_template: str):
         port=5432,
         database="mydb",
         username="user",
-        password=password
+        password=password,
     )
 
     error_message = error_template.format(password)
@@ -418,7 +397,7 @@ def test_property_password_always_removed(password: str, error_template: str):
 @given(
     password=st.text(min_size=3, max_size=50).filter(lambda s: s != "****"),
     prefix=st.text(min_size=0, max_size=20),
-    suffix=st.text(min_size=0, max_size=20)
+    suffix=st.text(min_size=0, max_size=20),
 )
 @settings(max_examples=100)
 def test_property_password_removed_with_context(password: str, prefix: str, suffix: str):
@@ -442,7 +421,7 @@ def test_property_password_removed_with_context(password: str, prefix: str, suff
         port=5432,
         database="mydb",
         username="user",
-        password=password
+        password=password,
     )
 
     error_message = f"{prefix}{password}{suffix}"
@@ -457,9 +436,7 @@ def test_property_password_removed_with_context(password: str, prefix: str, suff
         assert suffix in sanitized
 
 
-@given(
-    error_message=st.text(min_size=0, max_size=200)
-)
+@given(error_message=st.text(min_size=0, max_size=200))
 @settings(max_examples=100)
 def test_property_no_connection_unchanged(error_message: str):
     """
@@ -476,25 +453,22 @@ def test_property_no_connection_unchanged(error_message: str):
 
 
 @given(
-    username=st.text(min_size=1, max_size=50, alphabet=st.characters(
-        whitelist_categories=('Lu', 'Ll', 'Nd'), min_codepoint=ord('a'), max_codepoint=ord('z')
-    )),
+    username=st.text(
+        min_size=1,
+        max_size=50,
+        alphabet=st.characters(whitelist_categories=("Lu", "Ll", "Nd"), min_codepoint=ord("a"), max_codepoint=ord("z")),
+    ),
     password=st.text(
-        min_size=3, max_size=50,
-        alphabet=st.characters(blacklist_categories=('Zs', 'Zl', 'Zp', 'Cc'))
+        min_size=3, max_size=50, alphabet=st.characters(blacklist_categories=("Zs", "Zl", "Zp", "Cc"))
     ).filter(lambda s: s != "****" and "@" not in s and s.strip() == s),
-    host=st.text(min_size=1, max_size=50, alphabet=st.characters(
-        whitelist_categories=('Ll', 'Nd'), whitelist_characters='.-'
-    )),
+    host=st.text(
+        min_size=1, max_size=50, alphabet=st.characters(whitelist_categories=("Ll", "Nd"), whitelist_characters=".-")
+    ),
     port=st.integers(min_value=1, max_value=65535),
-    service=st.text(min_size=1, max_size=20, alphabet=st.characters(
-        whitelist_categories=('Lu', 'Ll', 'Nd')
-    ))
+    service=st.text(min_size=1, max_size=20, alphabet=st.characters(whitelist_categories=("Lu", "Ll", "Nd"))),
 )
 @settings(max_examples=50)
-def test_property_oracle_connection_string_sanitized(
-    username: str, password: str, host: str, port: int, service: str
-):
+def test_property_oracle_connection_string_sanitized(username: str, password: str, host: str, port: int, service: str):
     """
     Feature: database-connection-management
     Property 24: Log Credential Sanitization
@@ -525,8 +499,7 @@ def test_property_oracle_connection_string_sanitized(
 
 @given(
     data=st.dictionaries(
-        keys=st.text(min_size=1, max_size=20),
-        values=st.one_of(st.text(min_size=0, max_size=50), st.none())
+        keys=st.text(min_size=1, max_size=20), values=st.one_of(st.text(min_size=0, max_size=50), st.none())
     )
 )
 @settings(max_examples=100)
@@ -547,10 +520,16 @@ def test_property_sanitize_dict_preserves_structure(data: dict):
 
     # Non-sensitive values should be unchanged
     sensitive_patterns = [
-        "password", "passwd", "pwd",
-        "token", "secret", "key",
-        "credential", "auth",
-        "api_key", "apikey"
+        "password",
+        "passwd",
+        "pwd",
+        "token",
+        "secret",
+        "key",
+        "credential",
+        "auth",
+        "api_key",
+        "apikey",
     ]
 
     for key, value in data.items():

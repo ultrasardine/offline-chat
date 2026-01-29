@@ -22,8 +22,8 @@ def document_chunk_strategy():
         metadata=st.dictionaries(
             keys=st.text(min_size=1, max_size=20),
             values=st.one_of(st.none(), st.integers(), st.text(max_size=50)),
-            max_size=5
-        )
+            max_size=5,
+        ),
     )
 
 
@@ -33,7 +33,7 @@ def search_result_strategy():
         SearchResult,
         chunk=document_chunk_strategy(),
         similarity_score=st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False),
-        rank=st.integers(min_value=1, max_value=100)
+        rank=st.integers(min_value=1, max_value=100),
     )
 
 
@@ -44,7 +44,7 @@ class TestPromptProperties:
     @given(
         query=st.text(min_size=1, max_size=500),
         context_chunks=st.lists(document_chunk_strategy(), min_size=1, max_size=10),
-        system_prompt=st.text(min_size=1, max_size=200)
+        system_prompt=st.text(min_size=1, max_size=200),
     )
     def test_augmented_prompt_contains_context(
         self, query: str, context_chunks: list[DocumentChunk], system_prompt: str
@@ -62,14 +62,12 @@ class TestPromptProperties:
 
         # Verify that all chunk texts are present in the augmented prompt
         for chunk in context_chunks:
-            assert chunk.text in augmented_prompt, (
-                f"Chunk text '{chunk.text[:50]}...' not found in augmented prompt"
-            )
+            assert chunk.text in augmented_prompt, f"Chunk text '{chunk.text[:50]}...' not found in augmented prompt"
 
     @given(
         query=st.text(min_size=1, max_size=500),
         search_results=st.lists(search_result_strategy(), min_size=1, max_size=10),
-        system_prompt=st.text(min_size=1, max_size=200)
+        system_prompt=st.text(min_size=1, max_size=200),
     )
     def test_augmented_prompt_contains_context_from_search_results(
         self, query: str, search_results: list[SearchResult], system_prompt: str
@@ -88,14 +86,12 @@ class TestPromptProperties:
         # Verify that all chunk texts from search results are present in the augmented prompt
         for search_result in search_results:
             chunk_text = search_result.chunk.text
-            assert chunk_text in augmented_prompt, (
-                f"Chunk text '{chunk_text[:50]}...' not found in augmented prompt"
-            )
+            assert chunk_text in augmented_prompt, f"Chunk text '{chunk_text[:50]}...' not found in augmented prompt"
 
     @given(
         query=st.text(min_size=1, max_size=500),
         context_chunks=st.lists(document_chunk_strategy(), min_size=1, max_size=10),
-        system_prompt=st.text(min_size=1, max_size=200)
+        system_prompt=st.text(min_size=1, max_size=200),
     )
     def test_augmented_prompt_contains_source_attribution(
         self, query: str, context_chunks: list[DocumentChunk], system_prompt: str
@@ -132,7 +128,7 @@ class TestPromptProperties:
     @given(
         query=st.text(min_size=1, max_size=500),
         search_results=st.lists(search_result_strategy(), min_size=1, max_size=10),
-        system_prompt=st.text(min_size=1, max_size=200)
+        system_prompt=st.text(min_size=1, max_size=200),
     )
     def test_augmented_prompt_contains_source_attribution_from_search_results(
         self, query: str, search_results: list[SearchResult], system_prompt: str
@@ -170,7 +166,7 @@ class TestPromptProperties:
     @given(
         query=st.text(min_size=1, max_size=500),
         context_chunks=st.lists(document_chunk_strategy(), min_size=1, max_size=10),
-        system_prompt=st.text(min_size=1, max_size=200)
+        system_prompt=st.text(min_size=1, max_size=200),
     )
     def test_rag_prompt_instructions_completeness(
         self, query: str, context_chunks: list[DocumentChunk], system_prompt: str
@@ -202,9 +198,7 @@ class TestPromptProperties:
         )
 
         # (2) Requirement 5.4: Cite sources
-        assert "cite" in prompt_lower and "source" in prompt_lower, (
-            "Missing instruction to cite sources"
-        )
+        assert "cite" in prompt_lower and "source" in prompt_lower, "Missing instruction to cite sources"
 
         # (3) Requirement 12.3: Acknowledge uncertainty
         assert "uncertain" in prompt_lower or "don't have enough information" in prompt_lower, (
@@ -212,9 +206,11 @@ class TestPromptProperties:
         )
 
         # (4) Requirement 12.4: Never fabricate information
-        assert "not fabricate" in prompt_lower or "do not fabricate" in prompt_lower or "must not fabricate" in prompt_lower, (
-            "Missing instruction to never fabricate information"
-        )
+        assert (
+            "not fabricate" in prompt_lower
+            or "do not fabricate" in prompt_lower
+            or "must not fabricate" in prompt_lower
+        ), "Missing instruction to never fabricate information"
 
         # (5) Requirement 12.5: Quote or paraphrase from context
         assert "quote or paraphrase" in prompt_lower or "paraphrase" in prompt_lower, (

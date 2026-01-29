@@ -60,7 +60,7 @@ def temp_db_path(temp_rag_dir):
     for row in SAMPLE_DATABASE_ROWS:
         cursor.execute(
             "INSERT INTO employees (id, name, email, department) VALUES (?, ?, ?, ?)",
-            (row["id"], row["name"], row["email"], row["department"])
+            (row["id"], row["name"], row["email"], row["department"]),
         )
 
     conn.commit()
@@ -86,8 +86,8 @@ def rag_agent():
             chunk_size=512,
             chunk_overlap=50,
             embedding_model="all-MiniLM-L6-v2",
-            knowledge_sources=[]
-        )
+            knowledge_sources=[],
+        ),
     )
 
 
@@ -112,10 +112,7 @@ def document_processor():
 @pytest.fixture
 def context_retriever(vector_store, embedding_generator):
     """Create a context retriever for tests."""
-    return ContextRetriever(
-        vector_store=vector_store,
-        embedding_generator=embedding_generator
-    )
+    return ContextRetriever(vector_store=vector_store, embedding_generator=embedding_generator)
 
 
 @pytest.fixture
@@ -132,11 +129,7 @@ def mock_web_scraper():
     # Mock the scrape_url method to return sample content
     async def mock_scrape_url(url, max_retries=3, max_length=50000):
         return ScrapedContent(
-            url=url,
-            text=SAMPLE_WEB_CONTENT,
-            metadata={"fetch_timestamp": 1234567890},
-            success=True,
-            error_message=None
+            url=url, text=SAMPLE_WEB_CONTENT, metadata={"fetch_timestamp": 1234567890}, success=True, error_message=None
         )
 
     scraper.scrape_url = AsyncMock(side_effect=mock_scrape_url)
@@ -146,10 +139,7 @@ def mock_web_scraper():
 @pytest.fixture
 def database_integration(temp_db_path, document_processor):
     """Create a database integration for tests."""
-    return DatabaseIntegration(
-        db_path=temp_db_path,
-        document_processor=document_processor
-    )
+    return DatabaseIntegration(db_path=temp_db_path, document_processor=document_processor)
 
 
 @pytest.fixture
@@ -161,7 +151,7 @@ def rag_orchestrator(
     document_processor,
     prompt_augmenter,
     mock_web_scraper,
-    database_integration
+    database_integration,
 ):
     """Create a RAG orchestrator with all components."""
     return RAGOrchestrator(
@@ -172,7 +162,7 @@ def rag_orchestrator(
         document_processor=document_processor,
         prompt_augmenter=prompt_augmenter,
         web_scraper=mock_web_scraper,
-        database_integration=database_integration
+        database_integration=database_integration,
     )
 
 
@@ -182,11 +172,7 @@ class TestRAGOrchestratorIngestion:
     def test_ingest_web_source_success(self, rag_orchestrator):
         """Test successful ingestion of a web source."""
         # Create a web knowledge source
-        web_source = KnowledgeSource(
-            source_type="web",
-            identifier="https://example.com/python-guide",
-            status="pending"
-        )
+        web_source = KnowledgeSource(source_type="web", identifier="https://example.com/python-guide", status="pending")
 
         # Ingest the source
         results = rag_orchestrator.ingest_knowledge_sources([web_source])
@@ -206,11 +192,7 @@ class TestRAGOrchestratorIngestion:
     def test_ingest_database_source_success(self, rag_orchestrator):
         """Test successful ingestion of a database source."""
         # Create a database knowledge source
-        db_source = KnowledgeSource(
-            source_type="database",
-            identifier="employees",
-            status="pending"
-        )
+        db_source = KnowledgeSource(source_type="database", identifier="employees", status="pending")
 
         # Ingest the source
         results = rag_orchestrator.ingest_knowledge_sources([db_source])
@@ -229,16 +211,8 @@ class TestRAGOrchestratorIngestion:
     def test_ingest_multiple_sources(self, rag_orchestrator):
         """Test ingestion of multiple knowledge sources."""
         sources = [
-            KnowledgeSource(
-                source_type="web",
-                identifier="https://example.com/guide1",
-                status="pending"
-            ),
-            KnowledgeSource(
-                source_type="database",
-                identifier="employees",
-                status="pending"
-            ),
+            KnowledgeSource(source_type="web", identifier="https://example.com/guide1", status="pending"),
+            KnowledgeSource(source_type="database", identifier="employees", status="pending"),
         ]
 
         # Ingest all sources
@@ -251,11 +225,7 @@ class TestRAGOrchestratorIngestion:
 
     def test_ingest_invalid_database_table(self, rag_orchestrator):
         """Test ingestion fails gracefully for non-existent table."""
-        db_source = KnowledgeSource(
-            source_type="database",
-            identifier="nonexistent_table",
-            status="pending"
-        )
+        db_source = KnowledgeSource(source_type="database", identifier="nonexistent_table", status="pending")
 
         # Ingest the source
         results = rag_orchestrator.ingest_knowledge_sources([db_source])
@@ -273,25 +243,14 @@ class TestRAGOrchestratorIngestion:
 
     def test_ingest_web_source_scraping_failure(self, rag_orchestrator):
         """Test ingestion handles web scraping failures gracefully."""
+
         # Mock scraper to return failure
         async def mock_scrape_failure(url, max_retries=3, max_length=50000):
-            return ScrapedContent(
-                url=url,
-                text="",
-                metadata={},
-                success=False,
-                error_message="Network error"
-            )
+            return ScrapedContent(url=url, text="", metadata={}, success=False, error_message="Network error")
 
-        rag_orchestrator.web_scraper.scrape_url = AsyncMock(
-            side_effect=mock_scrape_failure
-        )
+        rag_orchestrator.web_scraper.scrape_url = AsyncMock(side_effect=mock_scrape_failure)
 
-        web_source = KnowledgeSource(
-            source_type="web",
-            identifier="https://example.com/failing",
-            status="pending"
-        )
+        web_source = KnowledgeSource(source_type="web", identifier="https://example.com/failing", status="pending")
 
         # Ingest the source
         results = rag_orchestrator.ingest_knowledge_sources([web_source])
@@ -301,8 +260,7 @@ class TestRAGOrchestratorIngestion:
         assert results[0].success is False
         assert results[0].error_message is not None
 
-    def test_ingest_without_rag_enabled(self, rag_agent, vector_store,
-                                       embedding_generator, context_retriever):
+    def test_ingest_without_rag_enabled(self, rag_agent, vector_store, embedding_generator, context_retriever):
         """Test ingestion fails when RAG is not enabled."""
         # Create agent without RAG enabled
         agent = Agent(
@@ -310,21 +268,17 @@ class TestRAGOrchestratorIngestion:
             display_name="No RAG Agent",
             base_model="llama3:latest",
             system_prompt="Test",
-            rag_config=None
+            rag_config=None,
         )
 
         orchestrator = RAGOrchestrator(
             agent_config=agent,
             vector_store=vector_store,
             embedding_generator=embedding_generator,
-            context_retriever=context_retriever
+            context_retriever=context_retriever,
         )
 
-        source = KnowledgeSource(
-            source_type="web",
-            identifier="https://example.com",
-            status="pending"
-        )
+        source = KnowledgeSource(source_type="web", identifier="https://example.com", status="pending")
 
         # Should raise ValueError
         with pytest.raises(ValueError, match="RAG is not enabled"):
@@ -338,16 +292,8 @@ class TestRAGOrchestratorQueryProcessing:
         """Test end-to-end query processing with context retrieval."""
         # First ingest some knowledge sources
         sources = [
-            KnowledgeSource(
-                source_type="web",
-                identifier="https://example.com/python",
-                status="pending"
-            ),
-            KnowledgeSource(
-                source_type="database",
-                identifier="employees",
-                status="pending"
-            ),
+            KnowledgeSource(source_type="web", identifier="https://example.com/python", status="pending"),
+            KnowledgeSource(source_type="database", identifier="employees", status="pending"),
         ]
         rag_orchestrator.ingest_knowledge_sources(sources)
 
@@ -369,13 +315,7 @@ class TestRAGOrchestratorQueryProcessing:
     def test_process_query_no_relevant_context(self, rag_orchestrator):
         """Test query processing when no relevant context is found."""
         # Ingest sources
-        sources = [
-            KnowledgeSource(
-                source_type="database",
-                identifier="employees",
-                status="pending"
-            )
-        ]
+        sources = [KnowledgeSource(source_type="database", identifier="employees", status="pending")]
         rag_orchestrator.ingest_knowledge_sources(sources)
 
         # Query about something completely unrelated
@@ -389,13 +329,7 @@ class TestRAGOrchestratorQueryProcessing:
     def test_get_augmented_prompt(self, rag_orchestrator):
         """Test augmented prompt generation."""
         # Ingest sources
-        sources = [
-            KnowledgeSource(
-                source_type="web",
-                identifier="https://example.com/python",
-                status="pending"
-            )
-        ]
+        sources = [KnowledgeSource(source_type="web", identifier="https://example.com/python", status="pending")]
         rag_orchestrator.ingest_knowledge_sources(sources)
 
         # Process query to get retrieval result
@@ -404,8 +338,7 @@ class TestRAGOrchestratorQueryProcessing:
 
         # Get augmented prompt
         augmented_prompt = rag_orchestrator.get_augmented_prompt(
-            query=query,
-            retrieval_result=response.retrieval_result
+            query=query, retrieval_result=response.retrieval_result
         )
 
         # Verify prompt contains key elements
@@ -413,9 +346,7 @@ class TestRAGOrchestratorQueryProcessing:
         assert "CONTEXT INFORMATION" in augmented_prompt or len(response.retrieval_result.chunks) == 0
         assert rag_orchestrator.agent_config.system_prompt in augmented_prompt
 
-    def test_process_query_without_rag_enabled(self, vector_store,
-                                               embedding_generator,
-                                               context_retriever):
+    def test_process_query_without_rag_enabled(self, vector_store, embedding_generator, context_retriever):
         """Test query processing fails when RAG is not enabled."""
         # Create agent without RAG
         agent = Agent(
@@ -423,14 +354,14 @@ class TestRAGOrchestratorQueryProcessing:
             display_name="No RAG Agent",
             base_model="llama3:latest",
             system_prompt="Test",
-            rag_config=None
+            rag_config=None,
         )
 
         orchestrator = RAGOrchestrator(
             agent_config=agent,
             vector_store=vector_store,
             embedding_generator=embedding_generator,
-            context_retriever=context_retriever
+            context_retriever=context_retriever,
         )
 
         # Should raise ValueError
@@ -446,16 +377,8 @@ class TestRAGOrchestratorQueryProcessing:
         """Test that source citations are correctly extracted."""
         # Ingest multiple sources
         sources = [
-            KnowledgeSource(
-                source_type="web",
-                identifier="https://example.com/python",
-                status="pending"
-            ),
-            KnowledgeSource(
-                source_type="database",
-                identifier="employees",
-                status="pending"
-            ),
+            KnowledgeSource(source_type="web", identifier="https://example.com/python", status="pending"),
+            KnowledgeSource(source_type="database", identifier="employees", status="pending"),
         ]
         rag_orchestrator.ingest_knowledge_sources(sources)
 
@@ -473,20 +396,14 @@ class TestRAGOrchestratorQueryProcessing:
     def test_process_query_with_ollama_generation(self, rag_orchestrator):
         """Test complete query processing pipeline with Ollama generation."""
         # Ingest knowledge sources
-        sources = [
-            KnowledgeSource(
-                source_type="web",
-                identifier="https://example.com/python",
-                status="pending"
-            )
-        ]
+        sources = [KnowledgeSource(source_type="web", identifier="https://example.com/python", status="pending")]
         rag_orchestrator.ingest_knowledge_sources(sources)
 
         # Process query with Ollama generation enabled
         query = "What is Python?"
 
         # Mock Ollama response
-        with patch('ollama.chat') as mock_chat:
+        with patch("ollama.chat") as mock_chat:
             mock_chat.return_value = {
                 "message": {
                     "content": "Python is a high-level programming language. [Source: https://example.com/python]"
@@ -518,13 +435,7 @@ class TestRAGOrchestratorQueryProcessing:
     def test_process_query_without_ollama_generation(self, rag_orchestrator):
         """Test query processing without Ollama generation (default behavior)."""
         # Ingest knowledge sources
-        sources = [
-            KnowledgeSource(
-                source_type="web",
-                identifier="https://example.com/python",
-                status="pending"
-            )
-        ]
+        sources = [KnowledgeSource(source_type="web", identifier="https://example.com/python", status="pending")]
         rag_orchestrator.ingest_knowledge_sources(sources)
 
         # Process query without generation (default)
@@ -541,22 +452,17 @@ class TestRAGOrchestratorQueryProcessing:
 class TestRAGOrchestratorErrorHandling:
     """Test error handling and resilience."""
 
-    def test_ingest_with_missing_web_scraper(self, rag_agent, vector_store,
-                                             embedding_generator, context_retriever):
+    def test_ingest_with_missing_web_scraper(self, rag_agent, vector_store, embedding_generator, context_retriever):
         """Test ingestion fails gracefully when web scraper is not configured."""
         orchestrator = RAGOrchestrator(
             agent_config=rag_agent,
             vector_store=vector_store,
             embedding_generator=embedding_generator,
             context_retriever=context_retriever,
-            web_scraper=None  # No web scraper
+            web_scraper=None,  # No web scraper
         )
 
-        web_source = KnowledgeSource(
-            source_type="web",
-            identifier="https://example.com",
-            status="pending"
-        )
+        web_source = KnowledgeSource(source_type="web", identifier="https://example.com", status="pending")
 
         results = orchestrator.ingest_knowledge_sources([web_source])
 
@@ -565,23 +471,19 @@ class TestRAGOrchestratorErrorHandling:
         assert results[0].success is False
         assert "not configured" in results[0].error_message.lower()
 
-    def test_ingest_with_missing_database_integration(self, rag_agent, vector_store,
-                                                      embedding_generator,
-                                                      context_retriever):
+    def test_ingest_with_missing_database_integration(
+        self, rag_agent, vector_store, embedding_generator, context_retriever
+    ):
         """Test ingestion fails gracefully when database integration is not configured."""
         orchestrator = RAGOrchestrator(
             agent_config=rag_agent,
             vector_store=vector_store,
             embedding_generator=embedding_generator,
             context_retriever=context_retriever,
-            database_integration=None  # No database integration
+            database_integration=None,  # No database integration
         )
 
-        db_source = KnowledgeSource(
-            source_type="database",
-            identifier="employees",
-            status="pending"
-        )
+        db_source = KnowledgeSource(source_type="database", identifier="employees", status="pending")
 
         results = orchestrator.ingest_knowledge_sources([db_source])
 
@@ -596,12 +498,12 @@ class TestRAGOrchestratorErrorHandling:
             KnowledgeSource(
                 source_type="database",
                 identifier="employees",  # Valid
-                status="pending"
+                status="pending",
             ),
             KnowledgeSource(
                 source_type="database",
                 identifier="nonexistent",  # Invalid
-                status="pending"
+                status="pending",
             ),
         ]
 
@@ -614,11 +516,7 @@ class TestRAGOrchestratorErrorHandling:
 
     def test_ingestion_status_tracking(self, rag_orchestrator):
         """Test that ingestion status is correctly tracked."""
-        source = KnowledgeSource(
-            source_type="database",
-            identifier="employees",
-            status="pending"
-        )
+        source = KnowledgeSource(source_type="database", identifier="employees", status="pending")
 
         # Before ingestion
         status = rag_orchestrator.get_ingestion_status(source.identifier)
@@ -634,25 +532,16 @@ class TestRAGOrchestratorErrorHandling:
     def test_ollama_generation_failure_handling(self, rag_orchestrator):
         """Test that Ollama generation failures are handled gracefully."""
         # Ingest knowledge sources
-        sources = [
-            KnowledgeSource(
-                source_type="web",
-                identifier="https://example.com/python",
-                status="pending"
-            )
-        ]
+        sources = [KnowledgeSource(source_type="web", identifier="https://example.com/python", status="pending")]
         rag_orchestrator.ingest_knowledge_sources(sources)
 
         # Mock Ollama to raise an exception
-        with patch('ollama.chat') as mock_chat:
+        with patch("ollama.chat") as mock_chat:
             mock_chat.side_effect = Exception("Ollama connection failed")
 
             # Should raise exception when generation is requested
             with pytest.raises(Exception, match="Ollama connection failed"):
-                rag_orchestrator.process_query(
-                    "What is Python?",
-                    generate_response=True
-                )
+                rag_orchestrator.process_query("What is Python?", generate_response=True)
 
     def test_empty_sources_list_error(self, rag_orchestrator):
         """Test that empty sources list raises appropriate error."""
@@ -665,7 +554,7 @@ class TestRAGOrchestratorErrorHandling:
         source = KnowledgeSource(
             source_type="unknown",  # Invalid type
             identifier="test",
-            status="pending"
+            status="pending",
         )
 
         results = rag_orchestrator.ingest_knowledge_sources([source])
@@ -698,16 +587,8 @@ class TestRAGOrchestratorEndToEnd:
         """
         # Step 1: Ingest multiple knowledge sources
         sources = [
-            KnowledgeSource(
-                source_type="web",
-                identifier="https://example.com/python-guide",
-                status="pending"
-            ),
-            KnowledgeSource(
-                source_type="database",
-                identifier="employees",
-                status="pending"
-            ),
+            KnowledgeSource(source_type="web", identifier="https://example.com/python-guide", status="pending"),
+            KnowledgeSource(source_type="database", identifier="employees", status="pending"),
         ]
 
         ingestion_results = rag_orchestrator.ingest_knowledge_sources(sources)
@@ -753,11 +634,7 @@ class TestRAGOrchestratorEndToEnd:
         This validates that sources can be updated and re-indexed.
         """
         # Initial ingestion
-        source = KnowledgeSource(
-            source_type="database",
-            identifier="employees",
-            status="pending"
-        )
+        source = KnowledgeSource(source_type="database", identifier="employees", status="pending")
 
         results1 = rag_orchestrator.ingest_knowledge_sources([source])
         assert results1[0].success is True
@@ -765,6 +642,7 @@ class TestRAGOrchestratorEndToEnd:
 
         # Re-ingest the same source
         import time
+
         time.sleep(0.1)  # Ensure timestamp difference
 
         results2 = rag_orchestrator.ingest_knowledge_sources([source])
@@ -781,11 +659,7 @@ class TestRAGOrchestratorEndToEnd:
         This validates fallback behavior when similarity threshold is not met.
         """
         # Ingest a specific knowledge source
-        source = KnowledgeSource(
-            source_type="database",
-            identifier="employees",
-            status="pending"
-        )
+        source = KnowledgeSource(source_type="database", identifier="employees", status="pending")
         rag_orchestrator.ingest_knowledge_sources([source])
 
         # Query about something completely unrelated
@@ -800,8 +674,7 @@ class TestRAGOrchestratorEndToEnd:
 
         # Get augmented prompt to verify it handles no context gracefully
         augmented_prompt = rag_orchestrator.get_augmented_prompt(
-            query=query,
-            retrieval_result=response.retrieval_result
+            query=query, retrieval_result=response.retrieval_result
         )
         assert augmented_prompt is not None
         assert query in augmented_prompt
@@ -814,11 +687,7 @@ class TestRAGOrchestratorEndToEnd:
         when requesting more results than available.
         """
         # Ingest a source
-        source = KnowledgeSource(
-            source_type="database",
-            identifier="employees",
-            status="pending"
-        )
+        source = KnowledgeSource(source_type="database", identifier="employees", status="pending")
         results = rag_orchestrator.ingest_knowledge_sources([source])
         chunks_available = results[0].chunks_processed
 
@@ -839,11 +708,7 @@ class TestRAGOrchestratorEndToEnd:
         This validates that the min_similarity parameter filters results correctly.
         """
         # Ingest a source
-        source = KnowledgeSource(
-            source_type="database",
-            identifier="employees",
-            status="pending"
-        )
+        source = KnowledgeSource(source_type="database", identifier="employees", status="pending")
         rag_orchestrator.ingest_knowledge_sources([source])
 
         # Set very high similarity threshold
@@ -867,6 +732,7 @@ class TestRAGOrchestratorEndToEnd:
         """
         # Add more data to the database
         import sqlite3
+
         conn = sqlite3.connect(temp_db_path)
         cursor = conn.cursor()
 
@@ -874,17 +740,13 @@ class TestRAGOrchestratorEndToEnd:
         for i in range(4, 54):
             cursor.execute(
                 "INSERT INTO employees (id, name, email, department) VALUES (?, ?, ?, ?)",
-                (i, f"Employee {i}", f"emp{i}@example.com", f"Department {i % 5}")
+                (i, f"Employee {i}", f"emp{i}@example.com", f"Department {i % 5}"),
             )
         conn.commit()
         conn.close()
 
         # Ingest the larger dataset
-        source = KnowledgeSource(
-            source_type="database",
-            identifier="employees",
-            status="pending"
-        )
+        source = KnowledgeSource(source_type="database", identifier="employees", status="pending")
         results = rag_orchestrator.ingest_knowledge_sources([source])
         assert results[0].success is True
         assert results[0].chunks_processed >= 50
@@ -905,11 +767,7 @@ class TestRAGOrchestratorEndToEnd:
         the workflow (even if not currently used in retrieval).
         """
         # Ingest sources
-        source = KnowledgeSource(
-            source_type="web",
-            identifier="https://example.com/python",
-            status="pending"
-        )
+        source = KnowledgeSource(source_type="web", identifier="https://example.com/python", status="pending")
         rag_orchestrator.ingest_knowledge_sources([source])
 
         # Create mock conversation history
@@ -920,10 +778,7 @@ class TestRAGOrchestratorEndToEnd:
 
         # Process query with conversation history
         query = "What is Python?"
-        response = rag_orchestrator.process_query(
-            query=query,
-            conversation_history=conversation_history
-        )
+        response = rag_orchestrator.process_query(query=query, conversation_history=conversation_history)
 
         # Should process successfully
         assert response is not None
@@ -938,16 +793,8 @@ class TestRAGOrchestratorEndToEnd:
         """
         # Ingest sources
         sources = [
-            KnowledgeSource(
-                source_type="web",
-                identifier="https://example.com/python",
-                status="pending"
-            ),
-            KnowledgeSource(
-                source_type="database",
-                identifier="employees",
-                status="pending"
-            ),
+            KnowledgeSource(source_type="web", identifier="https://example.com/python", status="pending"),
+            KnowledgeSource(source_type="database", identifier="employees", status="pending"),
         ]
         rag_orchestrator.ingest_knowledge_sources(sources)
 

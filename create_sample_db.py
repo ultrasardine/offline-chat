@@ -132,25 +132,20 @@ def create_database(db_path: str = "sample_company.db"):
     print("Inserting customers...")
     for customer in CUSTOMERS:
         cursor.execute(
-            "INSERT INTO customers (company_name, contact_name, email, phone, address) VALUES (?, ?, ?, ?, ?)",
-            customer
+            "INSERT INTO customers (company_name, contact_name, email, phone, address) VALUES (?, ?, ?, ?, ?)", customer
         )
 
     # Insert products
     print("Inserting products...")
     for product in PRODUCTS:
         cursor.execute(
-            "INSERT INTO products (product_name, category, unit_price, stock_quantity) VALUES (?, ?, ?, ?)",
-            product
+            "INSERT INTO products (product_name, category, unit_price, stock_quantity) VALUES (?, ?, ?, ?)", product
         )
 
     # Insert sales reps
     print("Inserting sales representatives...")
     for rep in SALES_REPS:
-        cursor.execute(
-            "INSERT INTO sales_reps (rep_name, email, phone, hire_date) VALUES (?, ?, ?, ?)",
-            rep
-        )
+        cursor.execute("INSERT INTO sales_reps (rep_name, email, phone, hire_date) VALUES (?, ?, ?, ?)", rep)
 
     # Generate orders (last 6 months)
     print("Generating orders...")
@@ -166,7 +161,7 @@ def create_database(db_path: str = "sample_company.db"):
 
         cursor.execute(
             "INSERT INTO orders (customer_id, rep_id, order_date, status, total_amount) VALUES (?, ?, ?, ?, ?)",
-            (customer_id, rep_id, order_date.strftime("%Y-%m-%d"), status, 0)
+            (customer_id, rep_id, order_date.strftime("%Y-%m-%d"), status, 0),
         )
         order_id = cursor.lastrowid
         order_count += 1
@@ -187,7 +182,7 @@ def create_database(db_path: str = "sample_company.db"):
 
             cursor.execute(
                 "INSERT INTO order_items (order_id, product_id, quantity, unit_price, subtotal) VALUES (?, ?, ?, ?, ?)",
-                (order_id, product_id, quantity, unit_price, subtotal)
+                (order_id, product_id, quantity, unit_price, subtotal),
             )
 
         # Update order total
@@ -196,9 +191,9 @@ def create_database(db_path: str = "sample_company.db"):
     conn.commit()
 
     # Print summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("Database created successfully!")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"Location: {db_path}")
     print("\nTables created:")
     print(f"  - customers: {len(CUSTOMERS)} records")
@@ -211,9 +206,9 @@ def create_database(db_path: str = "sample_company.db"):
     print(f"  - order_items: {item_count} records")
 
     # Show some sample queries
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("Sample queries you can try:")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     print("\n1. Total sales by month:")
     cursor.execute("""
@@ -260,9 +255,9 @@ def create_database(db_path: str = "sample_company.db"):
     for row in cursor.fetchall():
         print(f"   {row[0]}: {row[1]} units, ${row[2]:,.2f}")
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("Ready to use with your agent!")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     conn.close()
 

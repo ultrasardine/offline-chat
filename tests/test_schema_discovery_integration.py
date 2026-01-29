@@ -156,9 +156,7 @@ def mock_oracle_schema_tools():
     ]
 
 
-def test_list_tables_sqlite(
-    temp_agents_dir, temp_history_dir, temp_sqlite_db_with_schema, mock_schema_tools
-):
+def test_list_tables_sqlite(temp_agents_dir, temp_history_dir, temp_sqlite_db_with_schema, mock_schema_tools):
     """Test listing tables in SQLite database.
 
     **Validates: Requirements 4.1**
@@ -173,9 +171,7 @@ def test_list_tables_sqlite(
         manager = AgentManager(agents_dir=str(temp_agents_dir), history_dir=str(temp_history_dir))
 
         # Create SQLite database configuration
-        sqlite_config = create_database_mcp_config(
-            "sqlite", "test_db", path=temp_sqlite_db_with_schema
-        )
+        sqlite_config = create_database_mcp_config("sqlite", "test_db", path=temp_sqlite_db_with_schema)
 
         # Create agent with SQLite database
         agent = Agent(
@@ -251,9 +247,7 @@ def test_list_connections_oracle(temp_agents_dir, temp_history_dir, mock_oracle_
         manager = AgentManager(agents_dir=str(temp_agents_dir), history_dir=str(temp_history_dir))
 
         # Create Oracle database configuration
-        oracle_config = create_database_mcp_config(
-            "oracle", "prod_db", connection_name="PROD_ANALYTICS"
-        )
+        oracle_config = create_database_mcp_config("oracle", "prod_db", connection_name="PROD_ANALYTICS")
 
         # Create agent with Oracle database
         agent = Agent(
@@ -314,9 +308,7 @@ def test_list_connections_oracle(temp_agents_dir, temp_history_dir, mock_oracle_
     asyncio.run(run_test())
 
 
-def test_describe_table(
-    temp_agents_dir, temp_history_dir, temp_sqlite_db_with_schema, mock_schema_tools
-):
+def test_describe_table(temp_agents_dir, temp_history_dir, temp_sqlite_db_with_schema, mock_schema_tools):
     """Test describing a specific table.
 
     **Validates: Requirements 4.2**
@@ -331,9 +323,7 @@ def test_describe_table(
         manager = AgentManager(agents_dir=str(temp_agents_dir), history_dir=str(temp_history_dir))
 
         # Create SQLite database configuration
-        sqlite_config = create_database_mcp_config(
-            "sqlite", "test_db", path=temp_sqlite_db_with_schema
-        )
+        sqlite_config = create_database_mcp_config("sqlite", "test_db", path=temp_sqlite_db_with_schema)
 
         # Create agent with SQLite database
         agent = Agent(
@@ -385,9 +375,7 @@ Constraints:
             assert "describe_table" in tool_names
 
             # Execute describe_table through tool
-            result = await session._mcp_manager.call_tool(
-                "describe_table", {"table_name": "products"}
-            )
+            result = await session._mcp_manager.call_tool("describe_table", {"table_name": "products"})
 
             # Verify result contains schema information
             assert "products" in result
@@ -408,9 +396,7 @@ Constraints:
     asyncio.run(run_test())
 
 
-def test_get_schema(
-    temp_agents_dir, temp_history_dir, temp_sqlite_db_with_schema, mock_schema_tools
-):
+def test_get_schema(temp_agents_dir, temp_history_dir, temp_sqlite_db_with_schema, mock_schema_tools):
     """Test getting complete database schema.
 
     **Validates: Requirements 4.6**
@@ -425,9 +411,7 @@ def test_get_schema(
         manager = AgentManager(agents_dir=str(temp_agents_dir), history_dir=str(temp_history_dir))
 
         # Create SQLite database configuration
-        sqlite_config = create_database_mcp_config(
-            "sqlite", "test_db", path=temp_sqlite_db_with_schema
-        )
+        sqlite_config = create_database_mcp_config("sqlite", "test_db", path=temp_sqlite_db_with_schema)
 
         # Create agent with SQLite database
         agent = Agent(
@@ -541,9 +525,7 @@ def test_oracle_system_table_filtering(temp_agents_dir, temp_history_dir, mock_o
         manager = AgentManager(agents_dir=str(temp_agents_dir), history_dir=str(temp_history_dir))
 
         # Create Oracle database configuration
-        oracle_config = create_database_mcp_config(
-            "oracle", "prod_db", connection_name="PROD_ANALYTICS"
-        )
+        oracle_config = create_database_mcp_config("oracle", "prod_db", connection_name="PROD_ANALYTICS")
 
         # Create agent with Oracle database
         agent = Agent(
@@ -593,9 +575,7 @@ Note: System tables (SYS, SYSTEM, DBTOOLS$*) are excluded from schema queries.""
             await session.start_async("oracle-schema-analyst")
 
             # Execute describe_table through tool
-            result = await session._mcp_manager.call_tool(
-                "describe_table", {"table_name": "EMPLOYEES"}
-            )
+            result = await session._mcp_manager.call_tool("describe_table", {"table_name": "EMPLOYEES"})
 
             # Verify result indicates system table filtering
             assert "USER_TABLES" in result or "ALL_TABLES" in result
@@ -616,9 +596,7 @@ Note: System tables (SYS, SYSTEM, DBTOOLS$*) are excluded from schema queries.""
     asyncio.run(run_test())
 
 
-def test_describe_nonexistent_table(
-    temp_agents_dir, temp_history_dir, temp_sqlite_db_with_schema, mock_schema_tools
-):
+def test_describe_nonexistent_table(temp_agents_dir, temp_history_dir, temp_sqlite_db_with_schema, mock_schema_tools):
     """Test describing a non-existent table returns an error.
 
     **Validates: Requirements 4.3** (from requirement 4 acceptance criteria)
@@ -632,9 +610,7 @@ def test_describe_nonexistent_table(
         manager = AgentManager(agents_dir=str(temp_agents_dir), history_dir=str(temp_history_dir))
 
         # Create SQLite database configuration
-        sqlite_config = create_database_mcp_config(
-            "sqlite", "test_db", path=temp_sqlite_db_with_schema
-        )
+        sqlite_config = create_database_mcp_config("sqlite", "test_db", path=temp_sqlite_db_with_schema)
 
         # Create agent with SQLite database
         agent = Agent(
@@ -671,9 +647,7 @@ def test_describe_nonexistent_table(
             await session.start_async("schema-analyst")
 
             # Execute describe_table for non-existent table
-            result = await session._mcp_manager.call_tool(
-                "describe_table", {"table_name": "nonexistent_table"}
-            )
+            result = await session._mcp_manager.call_tool("describe_table", {"table_name": "nonexistent_table"})
 
             # Verify error message
             assert "Error" in result or "error" in result
@@ -703,12 +677,8 @@ def test_schema_tools_available_for_multiple_databases(
         manager = AgentManager(agents_dir=str(temp_agents_dir), history_dir=str(temp_history_dir))
 
         # Create two SQLite database configurations
-        sqlite_config1 = create_database_mcp_config(
-            "sqlite", "products_db", path=temp_sqlite_db_with_schema
-        )
-        sqlite_config2 = create_database_mcp_config(
-            "sqlite", "analytics_db", path=temp_sqlite_db_with_schema
-        )
+        sqlite_config1 = create_database_mcp_config("sqlite", "products_db", path=temp_sqlite_db_with_schema)
+        sqlite_config2 = create_database_mcp_config("sqlite", "analytics_db", path=temp_sqlite_db_with_schema)
 
         # Create agent with multiple databases
         agent = Agent(

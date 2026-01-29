@@ -2,7 +2,6 @@
 Unit tests for RAG validators.
 """
 
-
 from offline_chat.rag.validators import is_valid_url, validate_knowledge_source_url
 
 

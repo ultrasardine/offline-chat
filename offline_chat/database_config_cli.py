@@ -138,8 +138,7 @@ def configure_database_access(
 
             # Filter out already selected connections
             available_connections = [
-                conn for conn in existing_connections
-                if not any(c.name == conn.name for c in configs)
+                conn for conn in existing_connections if not any(c.name == conn.name for c in configs)
             ]
 
             if not available_connections:
@@ -244,11 +243,7 @@ def _connection_to_mcp_config(conn: "DatabaseConnection") -> MCPServerConfig:
         MCPServerConfig configured for the database connection.
     """
     if conn.database_type == "sqlite":
-        return create_database_mcp_config(
-            "sqlite",
-            conn.name,
-            path=conn.file_path
-        )
+        return create_database_mcp_config("sqlite", conn.name, path=conn.file_path)
     elif conn.database_type == "oracle":
         # Oracle connections always use full connection details in DatabaseConnection
         return create_database_mcp_config(
@@ -258,7 +253,7 @@ def _connection_to_mcp_config(conn: "DatabaseConnection") -> MCPServerConfig:
             port=conn.port,
             service_name=conn.service_name,
             username=conn.username,
-            password=conn.password
+            password=conn.password,
         )
     elif conn.database_type == "postgresql":
         return create_database_mcp_config(
@@ -268,7 +263,7 @@ def _connection_to_mcp_config(conn: "DatabaseConnection") -> MCPServerConfig:
             port=conn.port,
             database=conn.database,
             username=conn.username,
-            password=conn.password
+            password=conn.password,
         )
     elif conn.database_type == "mysql":
         return create_database_mcp_config(
@@ -278,11 +273,10 @@ def _connection_to_mcp_config(conn: "DatabaseConnection") -> MCPServerConfig:
             port=conn.port,
             database=conn.database,
             username=conn.username,
-            password=conn.password
+            password=conn.password,
         )
     else:
         raise ValueError(f"Unsupported database type: {conn.database_type}")
-
 
 
 def select_database_type() -> Optional[str]:
@@ -373,9 +367,7 @@ def configure_oracle(db_name: str) -> Optional[MCPServerConfig]:
 
         password = getpass("Password: ")
 
-        return create_database_mcp_config(
-            "oracle", db_name, tns_name=tns_name, username=username, password=password
-        )
+        return create_database_mcp_config("oracle", db_name, tns_name=tns_name, username=username, password=password)
     else:
         host = input("Host [localhost]: ").strip() or "localhost"
         port_input = input("Port [1521]: ").strip()

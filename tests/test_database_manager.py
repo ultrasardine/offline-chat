@@ -60,11 +60,11 @@ class TestDatabaseConnectionManagerInitialization:
                         "database_type": "sqlite",
                         "file_path": "/path/to/db.db",
                         "created_at": "2025-01-13T10:00:00",
-                        "updated_at": "2025-01-13T10:00:00"
+                        "updated_at": "2025-01-13T10:00:00",
                     }
-                ]
+                ],
             }
-            with open(store_path, 'w') as f:
+            with open(store_path, "w") as f:
                 json.dump(existing_data, f)
 
             # Initialize manager
@@ -72,7 +72,7 @@ class TestDatabaseConnectionManagerInitialization:
 
             # Store should still exist with original data
             assert store_path.exists()
-            with open(store_path, 'r') as f:
+            with open(store_path, "r") as f:
                 data = json.load(f)
             assert len(data["connections"]) == 1
             assert data["connections"][0]["name"] == "existing-conn"
@@ -92,7 +92,7 @@ class TestDatabaseConnectionManagerInitialization:
             DatabaseConnectionManager(store_path)
 
             # Load and verify structure
-            with open(store_path, 'r') as f:
+            with open(store_path, "r") as f:
                 data = json.load(f)
 
             assert "version" in data
@@ -109,14 +109,14 @@ class TestDatabaseConnectionManagerInitialization:
             DatabaseConnectionManager(store_path)
 
             # Check file permissions (Unix-like systems only)
-            if os.name != 'nt':  # Skip on Windows
+            if os.name != "nt":  # Skip on Windows
                 stat_info = os.stat(store_path)
                 permissions = stat_info.st_mode & 0o777
                 assert permissions == 0o600, f"Expected 0o600, got {oct(permissions)}"
 
     def test_verify_permissions_warns_on_permissive_permissions(self, capsys):
         """Test that _verify_permissions warns when permissions are too permissive."""
-        if os.name == 'nt':  # Skip on Windows
+        if os.name == "nt":  # Skip on Windows
             pytest.skip("Permission checks not applicable on Windows")
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -139,7 +139,7 @@ class TestDatabaseConnectionManagerInitialization:
 
     def test_verify_permissions_no_warning_on_secure_permissions(self, capsys):
         """Test that _verify_permissions doesn't warn when permissions are secure."""
-        if os.name == 'nt':  # Skip on Windows
+        if os.name == "nt":  # Skip on Windows
             pytest.skip("Permission checks not applicable on Windows")
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -157,7 +157,7 @@ class TestDatabaseConnectionManagerInitialization:
 
     def test_verify_permissions_on_load(self, capsys):
         """Test that permissions are verified when loading the store."""
-        if os.name == 'nt':  # Skip on Windows
+        if os.name == "nt":  # Skip on Windows
             pytest.skip("Permission checks not applicable on Windows")
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -207,11 +207,11 @@ class TestDatabaseConnectionManagerLoadSave:
                         "database_type": "sqlite",
                         "file_path": "/path/to/db.db",
                         "created_at": "2025-01-13T10:00:00",
-                        "updated_at": "2025-01-13T10:00:00"
+                        "updated_at": "2025-01-13T10:00:00",
                     }
-                ]
+                ],
             }
-            with open(store_path, 'w') as f:
+            with open(store_path, "w") as f:
                 json.dump(test_data, f)
 
             manager = DatabaseConnectionManager(store_path)
@@ -241,14 +241,14 @@ class TestDatabaseConnectionManagerLoadSave:
                         "username": "user",
                         "password": "pass",
                         "created_at": "2025-01-13T10:00:00",
-                        "updated_at": "2025-01-13T10:00:00"
+                        "updated_at": "2025-01-13T10:00:00",
                     }
-                ]
+                ],
             }
             manager._save_store(new_data)
 
             # Verify data was saved
-            with open(store_path, 'r') as f:
+            with open(store_path, "r") as f:
                 saved_data = json.load(f)
 
             assert saved_data["version"] == "1.0"
@@ -267,7 +267,7 @@ class TestDatabaseConnectionManagerLoadSave:
             manager._save_store(data)
 
             # Check permissions (Unix-like systems only)
-            if os.name != 'nt':
+            if os.name != "nt":
                 stat_info = os.stat(store_path)
                 permissions = stat_info.st_mode & 0o777
                 assert permissions == 0o600
@@ -278,7 +278,7 @@ class TestDatabaseConnectionManagerLoadSave:
             store_path = Path(tmpdir) / "connections.json"
 
             # Create invalid JSON file
-            with open(store_path, 'w') as f:
+            with open(store_path, "w") as f:
                 f.write("{ invalid json }")
 
             manager = DatabaseConnectionManager(store_path)
@@ -325,9 +325,9 @@ class TestDatabaseConnectionManagerEdgeCases:
                         "database_type": "sqlite",
                         "file_path": "/path/to/db.db",
                         "created_at": "2025-01-13T10:00:00",
-                        "updated_at": "2025-01-13T10:00:00"
+                        "updated_at": "2025-01-13T10:00:00",
                     }
-                ]
+                ],
             }
             manager1._save_store(data)
 
@@ -369,9 +369,9 @@ class TestDatabaseConnectionManagerEdgeCases:
                         "username": "用户",  # Chinese characters
                         "password": "пароль",  # Cyrillic characters
                         "created_at": "2025-01-13T10:00:00",
-                        "updated_at": "2025-01-13T10:00:00"
+                        "updated_at": "2025-01-13T10:00:00",
                     }
-                ]
+                ],
             }
             manager._save_store(data)
 
@@ -379,7 +379,6 @@ class TestDatabaseConnectionManagerEdgeCases:
             loaded_data = manager._load_store()
             assert loaded_data["connections"][0]["username"] == "用户"
             assert loaded_data["connections"][0]["password"] == "пароль"
-
 
 
 class TestStoreInitializationProperty:
@@ -393,10 +392,10 @@ class TestStoreInitializationProperty:
 
     @given(
         store_dir=st.text(
-            alphabet=st.characters(whitelist_categories=('Ll', 'Lu', 'Nd'), whitelist_characters='_-'),
+            alphabet=st.characters(whitelist_categories=("Ll", "Lu", "Nd"), whitelist_characters="_-"),
             min_size=1,
-            max_size=50
-        ).filter(lambda s: s[0] not in '-_' and s[-1] not in '-_')
+            max_size=50,
+        ).filter(lambda s: s[0] not in "-_" and s[-1] not in "-_")
     )
     @settings(max_examples=100)
     def test_store_initialization_creates_valid_structure(self, store_dir):
@@ -418,7 +417,7 @@ class TestStoreInitializationProperty:
             assert store_path.exists(), "Store file should be created"
 
             # Load and verify structure
-            with open(store_path, 'r') as f:
+            with open(store_path, "r") as f:
                 data = json.load(f)
 
             # Verify required top-level fields
@@ -435,13 +434,13 @@ class TestStoreInitializationProperty:
         nested_depth=st.integers(min_value=1, max_value=5),
         dir_names=st.lists(
             st.text(
-                alphabet=st.characters(whitelist_categories=('Ll', 'Nd'), whitelist_characters='_-'),
+                alphabet=st.characters(whitelist_categories=("Ll", "Nd"), whitelist_characters="_-"),
                 min_size=1,
-                max_size=20
-            ).filter(lambda s: s[0] not in '-_' and s[-1] not in '-_'),
+                max_size=20,
+            ).filter(lambda s: s[0] not in "-_" and s[-1] not in "-_"),
             min_size=1,
-            max_size=5
-        )
+            max_size=5,
+        ),
     )
     @settings(max_examples=100)
     def test_store_initialization_creates_nested_directories(self, nested_depth, dir_names):
@@ -471,7 +470,7 @@ class TestStoreInitializationProperty:
             assert store_path.exists(), "Store file should be created"
 
             # Verify store structure
-            with open(store_path, 'r') as f:
+            with open(store_path, "r") as f:
                 data = json.load(f)
 
             assert "version" in data
@@ -481,10 +480,10 @@ class TestStoreInitializationProperty:
 
     @given(
         store_filename=st.text(
-            alphabet=st.characters(whitelist_categories=('Ll', 'Nd'), whitelist_characters='_-.'),
+            alphabet=st.characters(whitelist_categories=("Ll", "Nd"), whitelist_characters="_-."),
             min_size=1,
-            max_size=50
-        ).filter(lambda s: s[0] not in '-_.' and s[-1] not in '-_.' and '..' not in s)
+            max_size=50,
+        ).filter(lambda s: s[0] not in "-_." and s[-1] not in "-_." and ".." not in s)
     )
     @settings(max_examples=100)
     def test_store_initialization_with_various_filenames(self, store_filename):
@@ -497,8 +496,8 @@ class TestStoreInitializationProperty:
         **Validates: Requirements 1.2, 1.3**
         """
         # Ensure filename has .json extension
-        if not store_filename.endswith('.json'):
-            store_filename += '.json'
+        if not store_filename.endswith(".json"):
+            store_filename += ".json"
 
         with tempfile.TemporaryDirectory() as tmpdir:
             store_path = Path(tmpdir) / store_filename
@@ -509,15 +508,13 @@ class TestStoreInitializationProperty:
             # Verify store exists and has correct structure
             assert store_path.exists()
 
-            with open(store_path, 'r') as f:
+            with open(store_path, "r") as f:
                 data = json.load(f)
 
             assert data["version"] == "1.0"
             assert data["connections"] == []
 
-    @given(
-        num_initializations=st.integers(min_value=1, max_value=5)
-    )
+    @given(num_initializations=st.integers(min_value=1, max_value=5))
     @settings(max_examples=50)
     def test_store_initialization_is_idempotent(self, num_initializations):
         """
@@ -536,7 +533,7 @@ class TestStoreInitializationProperty:
                 DatabaseConnectionManager(store_path)
 
                 # Verify store structure after each initialization
-                with open(store_path, 'r') as f:
+                with open(store_path, "r") as f:
                     data = json.load(f)
 
                 assert "version" in data
@@ -552,12 +549,12 @@ class TestStoreInitializationProperty:
     @given(
         store_path_components=st.lists(
             st.text(
-                alphabet=st.characters(whitelist_categories=('Ll', 'Nd'), whitelist_characters='_-'),
+                alphabet=st.characters(whitelist_categories=("Ll", "Nd"), whitelist_characters="_-"),
                 min_size=1,
-                max_size=30
-            ).filter(lambda s: s[0] not in '-_' and s[-1] not in '-_'),
+                max_size=30,
+            ).filter(lambda s: s[0] not in "-_" and s[-1] not in "-_"),
             min_size=1,
-            max_size=3
+            max_size=3,
         )
     )
     @settings(max_examples=100, deadline=500)
@@ -581,7 +578,7 @@ class TestStoreInitializationProperty:
             DatabaseConnectionManager(store_path)
 
             # Verify JSON is valid by parsing it
-            with open(store_path, 'r') as f:
+            with open(store_path, "r") as f:
                 data = json.load(f)  # Should not raise JSONDecodeError
 
             # Verify it's a dictionary (not array or primitive)
@@ -591,8 +588,6 @@ class TestStoreInitializationProperty:
             assert "version" in data
             assert "connections" in data
             assert isinstance(data["connections"], list)
-
-
 
 
 class TestCreateConnection:
@@ -612,13 +607,14 @@ class TestCreateConnection:
                 port=1521,
                 service_name="TESTDB",
                 username="testuser",
-                password="testpass"
+                password="testpass",
             )
 
             result = manager.create_connection(conn)
 
             # Verify success
             from offline_chat.database.result import is_ok, unwrap
+
             assert is_ok(result), f"Expected Ok, got Err: {result}"
             created_conn = unwrap(result)
             assert created_conn.name == "test-oracle"
@@ -636,14 +632,11 @@ class TestCreateConnection:
             manager = DatabaseConnectionManager(store_path)
 
             # Create first connection
-            conn1 = DatabaseConnection(
-                name="duplicate-name",
-                database_type="sqlite",
-                file_path="/path/to/db.db"
-            )
+            conn1 = DatabaseConnection(name="duplicate-name", database_type="sqlite", file_path="/path/to/db.db")
             result1 = manager.create_connection(conn1)
 
             from offline_chat.database.result import is_ok
+
             assert is_ok(result1)
 
             # Try to create second connection with same name
@@ -654,12 +647,13 @@ class TestCreateConnection:
                 port=5432,
                 database="testdb",
                 username="user",
-                password="pass"
+                password="pass",
             )
             result2 = manager.create_connection(conn2)
 
             # Verify failure
             from offline_chat.database.result import is_err, unwrap_err
+
             assert is_err(result2)
             error_msg = unwrap_err(result2)
             assert "already exists" in error_msg
@@ -675,15 +669,12 @@ class TestCreateConnection:
             store_path = Path(tmpdir) / "connections.json"
             manager = DatabaseConnectionManager(store_path)
 
-            conn = DatabaseConnection(
-                name="InvalidName",
-                database_type="sqlite",
-                file_path="/path/to/db.db"
-            )
+            conn = DatabaseConnection(name="InvalidName", database_type="sqlite", file_path="/path/to/db.db")
 
             result = manager.create_connection(conn)
 
             from offline_chat.database.result import is_err, unwrap_err
+
             assert is_err(result)
             error_msg = unwrap_err(result)
             assert "kebab-case" in error_msg
@@ -694,15 +685,12 @@ class TestCreateConnection:
             store_path = Path(tmpdir) / "connections.json"
             manager = DatabaseConnectionManager(store_path)
 
-            conn = DatabaseConnection(
-                name="invalid name",
-                database_type="sqlite",
-                file_path="/path/to/db.db"
-            )
+            conn = DatabaseConnection(name="invalid name", database_type="sqlite", file_path="/path/to/db.db")
 
             result = manager.create_connection(conn)
 
             from offline_chat.database.result import is_err, unwrap_err
+
             assert is_err(result)
             error_msg = unwrap_err(result)
             assert "kebab-case" in error_msg
@@ -713,15 +701,12 @@ class TestCreateConnection:
             store_path = Path(tmpdir) / "connections.json"
             manager = DatabaseConnectionManager(store_path)
 
-            conn = DatabaseConnection(
-                name="-invalid",
-                database_type="sqlite",
-                file_path="/path/to/db.db"
-            )
+            conn = DatabaseConnection(name="-invalid", database_type="sqlite", file_path="/path/to/db.db")
 
             result = manager.create_connection(conn)
 
             from offline_chat.database.result import is_err, unwrap_err
+
             assert is_err(result)
             error_msg = unwrap_err(result)
             assert "kebab-case" in error_msg
@@ -732,15 +717,12 @@ class TestCreateConnection:
             store_path = Path(tmpdir) / "connections.json"
             manager = DatabaseConnectionManager(store_path)
 
-            conn = DatabaseConnection(
-                name="invalid-",
-                database_type="sqlite",
-                file_path="/path/to/db.db"
-            )
+            conn = DatabaseConnection(name="invalid-", database_type="sqlite", file_path="/path/to/db.db")
 
             result = manager.create_connection(conn)
 
             from offline_chat.database.result import is_err, unwrap_err
+
             assert is_err(result)
             error_msg = unwrap_err(result)
             assert "kebab-case" in error_msg
@@ -751,15 +733,12 @@ class TestCreateConnection:
             store_path = Path(tmpdir) / "connections.json"
             manager = DatabaseConnectionManager(store_path)
 
-            conn = DatabaseConnection(
-                name="",
-                database_type="sqlite",
-                file_path="/path/to/db.db"
-            )
+            conn = DatabaseConnection(name="", database_type="sqlite", file_path="/path/to/db.db")
 
             result = manager.create_connection(conn)
 
             from offline_chat.database.result import is_err, unwrap_err
+
             assert is_err(result)
             error_msg = unwrap_err(result)
             assert "kebab-case" in error_msg
@@ -774,12 +753,13 @@ class TestCreateConnection:
                 name="test-conn",
                 database_type="mongodb",  # Not supported
                 host="localhost",
-                port=27017
+                port=27017,
             )
 
             result = manager.create_connection(conn)
 
             from offline_chat.database.result import is_err, unwrap_err
+
             assert is_err(result)
             error_msg = unwrap_err(result)
             assert "Invalid database type" in error_msg
@@ -805,7 +785,7 @@ class TestCreateConnection:
                 port=1521,
                 service_name="TESTDB",
                 username="user",
-                password="pass"
+                password="pass",
             )
             assert is_ok(manager.create_connection(oracle_conn))
 
@@ -817,7 +797,7 @@ class TestCreateConnection:
                 port=5432,
                 database="testdb",
                 username="user",
-                password="pass"
+                password="pass",
             )
             assert is_ok(manager.create_connection(postgres_conn))
 
@@ -829,16 +809,12 @@ class TestCreateConnection:
                 port=3306,
                 database="testdb",
                 username="user",
-                password="pass"
+                password="pass",
             )
             assert is_ok(manager.create_connection(mysql_conn))
 
             # SQLite
-            sqlite_conn = DatabaseConnection(
-                name="test-sqlite",
-                database_type="sqlite",
-                file_path="/path/to/db.db"
-            )
+            sqlite_conn = DatabaseConnection(name="test-sqlite", database_type="sqlite", file_path="/path/to/db.db")
             assert is_ok(manager.create_connection(sqlite_conn))
 
             # Verify all connections were saved
@@ -862,15 +838,11 @@ class TestCreateConnection:
                 "a",
                 "a1",
                 "1a",
-                "123"
+                "123",
             ]
 
             for name in valid_names:
-                conn = DatabaseConnection(
-                    name=name,
-                    database_type="sqlite",
-                    file_path=f"/path/to/{name}.db"
-                )
+                conn = DatabaseConnection(name=name, database_type="sqlite", file_path=f"/path/to/{name}.db")
                 result = manager.create_connection(conn)
                 assert is_ok(result), f"Expected '{name}' to be valid, but got error: {result}"
 
@@ -892,12 +864,13 @@ class TestCreateConnection:
                 database="proddb",
                 username="admin",
                 password="secret123",
-                additional_params={"ssl": True, "timeout": 30}
+                additional_params={"ssl": True, "timeout": 30},
             )
 
             result = manager.create_connection(conn)
 
             from offline_chat.database.result import is_ok
+
             assert is_ok(result)
 
             # Load and verify all fields
@@ -937,7 +910,7 @@ class TestKebabCaseValidation:
                 "1a",
                 "123",
                 "kebab-case-name",
-                "my-connection-1"
+                "my-connection-1",
             ]
 
             for name in valid_names:
@@ -962,17 +935,17 @@ class TestKebabCaseValidation:
                 "ALLCAPS",
                 "camelCase",
                 "PascalCase",
-                "snake_case"
+                "snake_case",
             ]
 
             for name in invalid_names:
                 assert not manager._is_valid_kebab_case(name), f"'{name}' should be invalid"
 
 
-
 # ============================================================================
 # Property-Based Tests for Connection Creation
 # ============================================================================
+
 
 class TestConnectionCreationProperties:
     """Property-based tests for connection creation.
@@ -984,12 +957,10 @@ class TestConnectionCreationProperties:
     """
 
     @given(
-        name=st.text(
-            alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-            min_size=1,
-            max_size=50
-        ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s),
-        db_type=st.sampled_from(['oracle', 'postgresql', 'mysql', 'sqlite'])
+        name=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=50).filter(
+            lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s
+        ),
+        db_type=st.sampled_from(["oracle", "postgresql", "mysql", "sqlite"]),
     )
     @settings(max_examples=100, deadline=None)
     def test_property_1_connection_name_uniqueness(self, name, db_type):
@@ -1007,13 +978,9 @@ class TestConnectionCreationProperties:
             manager = DatabaseConnectionManager(store_path)
 
             # Create first connection
-            if db_type == 'sqlite':
-                conn1 = DatabaseConnection(
-                    name=name,
-                    database_type=db_type,
-                    file_path="/path/to/db.db"
-                )
-            elif db_type == 'oracle':
+            if db_type == "sqlite":
+                conn1 = DatabaseConnection(name=name, database_type=db_type, file_path="/path/to/db.db")
+            elif db_type == "oracle":
                 conn1 = DatabaseConnection(
                     name=name,
                     database_type=db_type,
@@ -1021,17 +988,17 @@ class TestConnectionCreationProperties:
                     port=1521,
                     service_name="TESTDB",
                     username="user",
-                    password="pass"
+                    password="pass",
                 )
             else:  # postgresql or mysql
                 conn1 = DatabaseConnection(
                     name=name,
                     database_type=db_type,
                     host="localhost",
-                    port=5432 if db_type == 'postgresql' else 3306,
+                    port=5432 if db_type == "postgresql" else 3306,
                     database="testdb",
                     username="user",
-                    password="pass"
+                    password="pass",
                 )
 
             result1 = manager.create_connection(conn1)
@@ -1042,13 +1009,9 @@ class TestConnectionCreationProperties:
             assert is_ok(result1), f"First connection creation should succeed: {result1}"
 
             # Try to create second connection with same name but different type
-            different_db_type = 'sqlite' if db_type != 'sqlite' else 'postgresql'
-            if different_db_type == 'sqlite':
-                conn2 = DatabaseConnection(
-                    name=name,
-                    database_type=different_db_type,
-                    file_path="/different/path.db"
-                )
+            different_db_type = "sqlite" if db_type != "sqlite" else "postgresql"
+            if different_db_type == "sqlite":
+                conn2 = DatabaseConnection(name=name, database_type=different_db_type, file_path="/different/path.db")
             else:
                 conn2 = DatabaseConnection(
                     name=name,
@@ -1057,7 +1020,7 @@ class TestConnectionCreationProperties:
                     port=5432,
                     database="differentdb",
                     username="different_user",
-                    password="different_pass"
+                    password="different_pass",
                 )
 
             result2 = manager.create_connection(conn2)
@@ -1078,29 +1041,29 @@ class TestConnectionCreationProperties:
             # Names with uppercase letters
             st.text(min_size=1, max_size=50).filter(lambda s: any(c.isupper() for c in s)),
             # Names with spaces
-            st.text(min_size=1, max_size=50).filter(lambda s: ' ' in s),
+            st.text(min_size=1, max_size=50).filter(lambda s: " " in s),
             # Names with underscores
-            st.text(min_size=1, max_size=50).filter(lambda s: '_' in s),
+            st.text(min_size=1, max_size=50).filter(lambda s: "_" in s),
             # Names with special characters
             st.text(
-                alphabet=st.characters(blacklist_categories=('Ll', 'Nd'), blacklist_characters='-'),
+                alphabet=st.characters(blacklist_categories=("Ll", "Nd"), blacklist_characters="-"),
                 min_size=1,
-                max_size=50
+                max_size=50,
             ),
             # Names starting with hyphen
             st.text(
-                alphabet=st.characters(whitelist_categories=('Ll', 'Nd'), whitelist_characters='-'),
+                alphabet=st.characters(whitelist_categories=("Ll", "Nd"), whitelist_characters="-"),
                 min_size=2,
-                max_size=50
-            ).map(lambda s: '-' + s),
+                max_size=50,
+            ).map(lambda s: "-" + s),
             # Names ending with hyphen
             st.text(
-                alphabet=st.characters(whitelist_categories=('Ll', 'Nd'), whitelist_characters='-'),
+                alphabet=st.characters(whitelist_categories=("Ll", "Nd"), whitelist_characters="-"),
                 min_size=2,
-                max_size=50
-            ).map(lambda s: s + '-'),
+                max_size=50,
+            ).map(lambda s: s + "-"),
             # Empty names
-            st.just('')
+            st.just(""),
         )
     )
     @settings(max_examples=100, deadline=None)
@@ -1117,11 +1080,7 @@ class TestConnectionCreationProperties:
             store_path = Path(tmpdir) / "connections.json"
             manager = DatabaseConnectionManager(store_path)
 
-            conn = DatabaseConnection(
-                name=name,
-                database_type="sqlite",
-                file_path="/path/to/db.db"
-            )
+            conn = DatabaseConnection(name=name, database_type="sqlite", file_path="/path/to/db.db")
 
             result = manager.create_connection(conn)
 
@@ -1137,11 +1096,9 @@ class TestConnectionCreationProperties:
             assert len(store_data["connections"]) == 0, "Invalid connection should not be saved"
 
     @given(
-        name=st.text(
-            alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-            min_size=1,
-            max_size=50
-        ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s)
+        name=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=50).filter(
+            lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s
+        )
     )
     @settings(max_examples=100, deadline=None)
     def test_property_2_connection_name_format_validation_valid(self, name):
@@ -1157,11 +1114,7 @@ class TestConnectionCreationProperties:
             store_path = Path(tmpdir) / "connections.json"
             manager = DatabaseConnectionManager(store_path)
 
-            conn = DatabaseConnection(
-                name=name,
-                database_type="sqlite",
-                file_path="/path/to/db.db"
-            )
+            conn = DatabaseConnection(name=name, database_type="sqlite", file_path="/path/to/db.db")
 
             result = manager.create_connection(conn)
 
@@ -1175,9 +1128,7 @@ class TestConnectionCreationProperties:
             assert len(store_data["connections"]) == 1
             assert store_data["connections"][0]["name"] == name
 
-    @given(
-        db_type=st.sampled_from(['oracle', 'postgresql', 'mysql', 'sqlite'])
-    )
+    @given(db_type=st.sampled_from(["oracle", "postgresql", "mysql", "sqlite"]))
     @settings(max_examples=100, deadline=None)
     def test_property_3_database_type_validation_valid(self, db_type):
         """
@@ -1193,13 +1144,9 @@ class TestConnectionCreationProperties:
             manager = DatabaseConnectionManager(store_path)
 
             # Create connection with valid database type
-            if db_type == 'sqlite':
-                conn = DatabaseConnection(
-                    name="test-conn",
-                    database_type=db_type,
-                    file_path="/path/to/db.db"
-                )
-            elif db_type == 'oracle':
+            if db_type == "sqlite":
+                conn = DatabaseConnection(name="test-conn", database_type=db_type, file_path="/path/to/db.db")
+            elif db_type == "oracle":
                 conn = DatabaseConnection(
                     name="test-conn",
                     database_type=db_type,
@@ -1207,17 +1154,17 @@ class TestConnectionCreationProperties:
                     port=1521,
                     service_name="TESTDB",
                     username="user",
-                    password="pass"
+                    password="pass",
                 )
             else:  # postgresql or mysql
                 conn = DatabaseConnection(
                     name="test-conn",
                     database_type=db_type,
                     host="localhost",
-                    port=5432 if db_type == 'postgresql' else 3306,
+                    port=5432 if db_type == "postgresql" else 3306,
                     database="testdb",
                     username="user",
-                    password="pass"
+                    password="pass",
                 )
 
             result = manager.create_connection(conn)
@@ -1233,9 +1180,7 @@ class TestConnectionCreationProperties:
             assert store_data["connections"][0]["database_type"] == db_type
 
     @given(
-        db_type=st.text(min_size=1, max_size=50).filter(
-            lambda s: s not in ['oracle', 'postgresql', 'mysql', 'sqlite']
-        )
+        db_type=st.text(min_size=1, max_size=50).filter(lambda s: s not in ["oracle", "postgresql", "mysql", "sqlite"])
     )
     @settings(max_examples=100, deadline=None)
     def test_property_3_database_type_validation_invalid(self, db_type):
@@ -1251,12 +1196,7 @@ class TestConnectionCreationProperties:
             store_path = Path(tmpdir) / "connections.json"
             manager = DatabaseConnectionManager(store_path)
 
-            conn = DatabaseConnection(
-                name="test-conn",
-                database_type=db_type,
-                host="localhost",
-                port=5432
-            )
+            conn = DatabaseConnection(name="test-conn", database_type=db_type, host="localhost", port=5432)
 
             result = manager.create_connection(conn)
 
@@ -1265,7 +1205,9 @@ class TestConnectionCreationProperties:
             # Should fail with invalid database type error
             assert is_err(result), f"Invalid database type '{db_type}' should be rejected"
             error_msg = unwrap_err(result)
-            assert "invalid database type" in error_msg.lower(), f"Error should mention 'invalid database type': {error_msg}"
+            assert "invalid database type" in error_msg.lower(), (
+                f"Error should mention 'invalid database type': {error_msg}"
+            )
             assert db_type in error_msg, f"Error should mention the invalid type '{db_type}': {error_msg}"
 
             # Error should list supported types
@@ -1283,71 +1225,63 @@ class TestConnectionCreationProperties:
             # Valid Oracle connection
             st.builds(
                 DatabaseConnection,
-                name=st.text(
-                    alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-                    min_size=1,
-                    max_size=50
-                ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s),
-                database_type=st.just('oracle'),
+                name=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=50).filter(
+                    lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s
+                ),
+                database_type=st.just("oracle"),
                 host=st.text(min_size=1, max_size=100).filter(lambda s: s.strip()),
                 port=st.integers(min_value=1, max_value=65535),
                 service_name=st.text(min_size=1, max_size=50).filter(lambda s: s.strip()),
                 username=st.text(min_size=1, max_size=50).filter(lambda s: s.strip()),
                 password=st.text(min_size=1, max_size=100).filter(lambda s: s.strip()),
                 database=st.none(),
-                file_path=st.none()
+                file_path=st.none(),
             ),
             # Valid PostgreSQL connection
             st.builds(
                 DatabaseConnection,
-                name=st.text(
-                    alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-                    min_size=1,
-                    max_size=50
-                ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s),
-                database_type=st.just('postgresql'),
+                name=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=50).filter(
+                    lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s
+                ),
+                database_type=st.just("postgresql"),
                 host=st.text(min_size=1, max_size=100).filter(lambda s: s.strip()),
                 port=st.integers(min_value=1, max_value=65535),
                 database=st.text(min_size=1, max_size=50).filter(lambda s: s.strip()),
                 username=st.text(min_size=1, max_size=50).filter(lambda s: s.strip()),
                 password=st.text(min_size=1, max_size=100).filter(lambda s: s.strip()),
                 service_name=st.none(),
-                file_path=st.none()
+                file_path=st.none(),
             ),
             # Valid MySQL connection
             st.builds(
                 DatabaseConnection,
-                name=st.text(
-                    alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-                    min_size=1,
-                    max_size=50
-                ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s),
-                database_type=st.just('mysql'),
+                name=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=50).filter(
+                    lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s
+                ),
+                database_type=st.just("mysql"),
                 host=st.text(min_size=1, max_size=100).filter(lambda s: s.strip()),
                 port=st.integers(min_value=1, max_value=65535),
                 database=st.text(min_size=1, max_size=50).filter(lambda s: s.strip()),
                 username=st.text(min_size=1, max_size=50).filter(lambda s: s.strip()),
                 password=st.text(min_size=1, max_size=100).filter(lambda s: s.strip()),
                 service_name=st.none(),
-                file_path=st.none()
+                file_path=st.none(),
             ),
             # Valid SQLite connection
             st.builds(
                 DatabaseConnection,
-                name=st.text(
-                    alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-                    min_size=1,
-                    max_size=50
-                ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s),
-                database_type=st.just('sqlite'),
+                name=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=50).filter(
+                    lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s
+                ),
+                database_type=st.just("sqlite"),
                 file_path=st.text(min_size=1, max_size=200).filter(lambda s: s.strip()),
                 host=st.none(),
                 port=st.none(),
                 database=st.none(),
                 service_name=st.none(),
                 username=st.none(),
-                password=st.none()
-            )
+                password=st.none(),
+            ),
         )
     )
     @settings(max_examples=100, deadline=None)
@@ -1380,19 +1314,19 @@ class TestConnectionCreationProperties:
             assert saved_conn["database_type"] == connection.database_type
 
             # Verify type-specific fields were saved
-            if connection.database_type == 'oracle':
+            if connection.database_type == "oracle":
                 assert saved_conn["host"] == connection.host
                 assert saved_conn["port"] == connection.port
                 assert saved_conn["service_name"] == connection.service_name
                 assert saved_conn["username"] == connection.username
                 assert saved_conn["password"] == connection.password
-            elif connection.database_type in ['postgresql', 'mysql']:
+            elif connection.database_type in ["postgresql", "mysql"]:
                 assert saved_conn["host"] == connection.host
                 assert saved_conn["port"] == connection.port
                 assert saved_conn["database"] == connection.database
                 assert saved_conn["username"] == connection.username
                 assert saved_conn["password"] == connection.password
-            elif connection.database_type == 'sqlite':
+            elif connection.database_type == "sqlite":
                 assert saved_conn["file_path"] == connection.file_path
 
             # Verify connection is retrievable by deserializing
@@ -1404,20 +1338,12 @@ class TestConnectionCreationProperties:
         name=st.one_of(
             # Invalid format names
             st.text(min_size=1, max_size=50).filter(lambda s: any(c.isupper() for c in s)),
-            st.text(min_size=1, max_size=50).filter(lambda s: ' ' in s),
-            st.just(''),
-            st.text(
-                alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-                min_size=2,
-                max_size=50
-            ).map(lambda s: '-' + s),
-            st.text(
-                alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-                min_size=2,
-                max_size=50
-            ).map(lambda s: s + '-')
+            st.text(min_size=1, max_size=50).filter(lambda s: " " in s),
+            st.just(""),
+            st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=2, max_size=50).map(lambda s: "-" + s),
+            st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=2, max_size=50).map(lambda s: s + "-"),
         ),
-        db_type=st.sampled_from(['oracle', 'postgresql', 'mysql', 'sqlite'])
+        db_type=st.sampled_from(["oracle", "postgresql", "mysql", "sqlite"]),
     )
     @settings(max_examples=100, deadline=None)
     def test_property_5_connection_persistence_on_failure_invalid_name(self, name, db_type):
@@ -1434,13 +1360,9 @@ class TestConnectionCreationProperties:
             manager = DatabaseConnectionManager(store_path)
 
             # Create connection with invalid name
-            if db_type == 'sqlite':
-                conn = DatabaseConnection(
-                    name=name,
-                    database_type=db_type,
-                    file_path="/path/to/db.db"
-                )
-            elif db_type == 'oracle':
+            if db_type == "sqlite":
+                conn = DatabaseConnection(name=name, database_type=db_type, file_path="/path/to/db.db")
+            elif db_type == "oracle":
                 conn = DatabaseConnection(
                     name=name,
                     database_type=db_type,
@@ -1448,17 +1370,17 @@ class TestConnectionCreationProperties:
                     port=1521,
                     service_name="TESTDB",
                     username="user",
-                    password="pass"
+                    password="pass",
                 )
             else:  # postgresql or mysql
                 conn = DatabaseConnection(
                     name=name,
                     database_type=db_type,
                     host="localhost",
-                    port=5432 if db_type == 'postgresql' else 3306,
+                    port=5432 if db_type == "postgresql" else 3306,
                     database="testdb",
                     username="user",
-                    password="pass"
+                    password="pass",
                 )
 
             result = manager.create_connection(conn)
@@ -1473,14 +1395,10 @@ class TestConnectionCreationProperties:
             assert len(store_data["connections"]) == 0, "Failed connection should not be saved to store"
 
     @given(
-        name=st.text(
-            alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-            min_size=1,
-            max_size=50
-        ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s),
-        db_type=st.text(min_size=1, max_size=50).filter(
-            lambda s: s not in ['oracle', 'postgresql', 'mysql', 'sqlite']
-        )
+        name=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=50).filter(
+            lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s
+        ),
+        db_type=st.text(min_size=1, max_size=50).filter(lambda s: s not in ["oracle", "postgresql", "mysql", "sqlite"]),
     )
     @settings(max_examples=100, deadline=None)
     def test_property_5_connection_persistence_on_failure_invalid_type(self, name, db_type):
@@ -1496,12 +1414,7 @@ class TestConnectionCreationProperties:
             store_path = Path(tmpdir) / "connections.json"
             manager = DatabaseConnectionManager(store_path)
 
-            conn = DatabaseConnection(
-                name=name,
-                database_type=db_type,
-                host="localhost",
-                port=5432
-            )
+            conn = DatabaseConnection(name=name, database_type=db_type, host="localhost", port=5432)
 
             result = manager.create_connection(conn)
 
@@ -1515,12 +1428,10 @@ class TestConnectionCreationProperties:
             assert len(store_data["connections"]) == 0, "Failed connection should not be saved to store"
 
     @given(
-        name=st.text(
-            alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-            min_size=1,
-            max_size=50
-        ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s),
-        db_type=st.sampled_from(['oracle', 'postgresql', 'mysql', 'sqlite'])
+        name=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=50).filter(
+            lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s
+        ),
+        db_type=st.sampled_from(["oracle", "postgresql", "mysql", "sqlite"]),
     )
     @settings(max_examples=100, deadline=None)
     def test_property_5_update_persistence_on_success(self, name, db_type):
@@ -1537,16 +1448,12 @@ class TestConnectionCreationProperties:
             manager = DatabaseConnectionManager(store_path)
 
             # Create original connection
-            if db_type == 'sqlite':
-                original_conn = DatabaseConnection(
-                    name=name,
-                    database_type=db_type,
-                    file_path="/original/path.db"
-                )
+            if db_type == "sqlite":
+                original_conn = DatabaseConnection(name=name, database_type=db_type, file_path="/original/path.db")
                 updates = {"file_path": "/updated/path.db"}
                 expected_field = "file_path"
                 expected_value = "/updated/path.db"
-            elif db_type == 'oracle':
+            elif db_type == "oracle":
                 original_conn = DatabaseConnection(
                     name=name,
                     database_type=db_type,
@@ -1554,16 +1461,12 @@ class TestConnectionCreationProperties:
                     port=1521,
                     service_name="ORIGDB",
                     username="origuser",
-                    password="origpass"
+                    password="origpass",
                 )
-                updates = {
-                    "host": "updated-host",
-                    "port": 1522,
-                    "service_name": "UPDATEDDB"
-                }
+                updates = {"host": "updated-host", "port": 1522, "service_name": "UPDATEDDB"}
                 expected_field = "host"
                 expected_value = "updated-host"
-            elif db_type == 'postgresql':
+            elif db_type == "postgresql":
                 original_conn = DatabaseConnection(
                     name=name,
                     database_type=db_type,
@@ -1571,13 +1474,9 @@ class TestConnectionCreationProperties:
                     port=5432,
                     database="origdb",
                     username="origuser",
-                    password="origpass"
+                    password="origpass",
                 )
-                updates = {
-                    "host": "updated-host",
-                    "port": 5433,
-                    "database": "updateddb"
-                }
+                updates = {"host": "updated-host", "port": 5433, "database": "updateddb"}
                 expected_field = "host"
                 expected_value = "updated-host"
             else:  # mysql
@@ -1588,13 +1487,9 @@ class TestConnectionCreationProperties:
                     port=3306,
                     database="origdb",
                     username="origuser",
-                    password="origpass"
+                    password="origpass",
                 )
-                updates = {
-                    "host": "updated-host",
-                    "port": 3307,
-                    "database": "updateddb"
-                }
+                updates = {"host": "updated-host", "port": 3307, "database": "updateddb"}
                 expected_field = "host"
                 expected_value = "updated-host"
 
@@ -1620,24 +1515,24 @@ class TestConnectionCreationProperties:
             assert saved_conn["database_type"] == db_type, "Database type should be unchanged"
 
             # Verify the updated field was persisted
-            assert saved_conn[expected_field] == expected_value, \
+            assert saved_conn[expected_field] == expected_value, (
                 f"Updated field '{expected_field}' should be persisted with value '{expected_value}'"
+            )
 
             # Verify connection is retrievable with updated values
             get_result = manager.get_connection(name)
             assert is_ok(get_result), "Updated connection should be retrievable"
 
             retrieved_conn = unwrap(get_result)
-            assert getattr(retrieved_conn, expected_field) == expected_value, \
+            assert getattr(retrieved_conn, expected_field) == expected_value, (
                 f"Retrieved connection should have updated {expected_field}"
+            )
 
     @given(
-        name=st.text(
-            alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-            min_size=1,
-            max_size=50
-        ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s),
-        db_type=st.sampled_from(['oracle', 'postgresql', 'mysql'])
+        name=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=50).filter(
+            lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s
+        ),
+        db_type=st.sampled_from(["oracle", "postgresql", "mysql"]),
     )
     @settings(max_examples=100, deadline=None)
     def test_property_5_update_persistence_on_failure(self, name, db_type):
@@ -1654,7 +1549,7 @@ class TestConnectionCreationProperties:
             manager = DatabaseConnectionManager(store_path)
 
             # Create original connection with valid parameters
-            if db_type == 'oracle':
+            if db_type == "oracle":
                 original_conn = DatabaseConnection(
                     name=name,
                     database_type=db_type,
@@ -1662,13 +1557,13 @@ class TestConnectionCreationProperties:
                     port=1521,
                     service_name="ORIGDB",
                     username="origuser",
-                    password="origpass"
+                    password="origpass",
                 )
                 # Update with invalid port (out of range)
                 invalid_updates = {"port": 99999}
                 original_value = 1521
                 check_field = "port"
-            elif db_type == 'postgresql':
+            elif db_type == "postgresql":
                 original_conn = DatabaseConnection(
                     name=name,
                     database_type=db_type,
@@ -1676,7 +1571,7 @@ class TestConnectionCreationProperties:
                     port=5432,
                     database="origdb",
                     username="origuser",
-                    password="origpass"
+                    password="origpass",
                 )
                 # Update with invalid port (out of range)
                 invalid_updates = {"port": -1}
@@ -1690,7 +1585,7 @@ class TestConnectionCreationProperties:
                     port=3306,
                     database="origdb",
                     username="origuser",
-                    password="origpass"
+                    password="origpass",
                 )
                 # Update with invalid port (out of range)
                 invalid_updates = {"port": 0}
@@ -1716,24 +1611,24 @@ class TestConnectionCreationProperties:
 
             saved_conn = store_data["connections"][0]
             assert saved_conn["name"] == name, "Connection name should be unchanged"
-            assert saved_conn[check_field] == original_value, \
+            assert saved_conn[check_field] == original_value, (
                 f"Original field '{check_field}' should be preserved with value '{original_value}'"
+            )
 
             # Verify connection is retrievable with original values
             get_result = manager.get_connection(name)
             assert is_ok(get_result), "Original connection should still be retrievable"
 
             retrieved_conn = unwrap(get_result)
-            assert getattr(retrieved_conn, check_field) == original_value, \
+            assert getattr(retrieved_conn, check_field) == original_value, (
                 f"Retrieved connection should have original {check_field} value"
+            )
 
     @given(
-        name=st.text(
-            alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-            min_size=1,
-            max_size=50
-        ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s),
-        db_type=st.sampled_from(['oracle', 'postgresql', 'mysql', 'sqlite'])
+        name=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=50).filter(
+            lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s
+        ),
+        db_type=st.sampled_from(["oracle", "postgresql", "mysql", "sqlite"]),
     )
     @settings(max_examples=100, deadline=None)
     def test_property_5_update_persistence_missing_required_field(self, name, db_type):
@@ -1750,17 +1645,13 @@ class TestConnectionCreationProperties:
             manager = DatabaseConnectionManager(store_path)
 
             # Create original connection with all required fields
-            if db_type == 'sqlite':
-                original_conn = DatabaseConnection(
-                    name=name,
-                    database_type=db_type,
-                    file_path="/original/path.db"
-                )
+            if db_type == "sqlite":
+                original_conn = DatabaseConnection(name=name, database_type=db_type, file_path="/original/path.db")
                 # Try to update with empty file_path (required field)
                 invalid_updates = {"file_path": ""}
                 original_value = "/original/path.db"
                 check_field = "file_path"
-            elif db_type == 'oracle':
+            elif db_type == "oracle":
                 original_conn = DatabaseConnection(
                     name=name,
                     database_type=db_type,
@@ -1768,13 +1659,13 @@ class TestConnectionCreationProperties:
                     port=1521,
                     service_name="ORIGDB",
                     username="origuser",
-                    password="origpass"
+                    password="origpass",
                 )
                 # Try to update with empty service_name (required field)
                 invalid_updates = {"service_name": ""}
                 original_value = "ORIGDB"
                 check_field = "service_name"
-            elif db_type == 'postgresql':
+            elif db_type == "postgresql":
                 original_conn = DatabaseConnection(
                     name=name,
                     database_type=db_type,
@@ -1782,7 +1673,7 @@ class TestConnectionCreationProperties:
                     port=5432,
                     database="origdb",
                     username="origuser",
-                    password="origpass"
+                    password="origpass",
                 )
                 # Try to update with empty database (required field)
                 invalid_updates = {"database": ""}
@@ -1796,7 +1687,7 @@ class TestConnectionCreationProperties:
                     port=3306,
                     database="origdb",
                     username="origuser",
-                    password="origpass"
+                    password="origpass",
                 )
                 # Try to update with empty username (required field)
                 invalid_updates = {"username": ""}
@@ -1822,17 +1713,18 @@ class TestConnectionCreationProperties:
 
             saved_conn = store_data["connections"][0]
             assert saved_conn["name"] == name, "Connection name should be unchanged"
-            assert saved_conn[check_field] == original_value, \
+            assert saved_conn[check_field] == original_value, (
                 f"Original field '{check_field}' should be preserved with value '{original_value}'"
+            )
 
             # Verify connection is retrievable with original values
             get_result = manager.get_connection(name)
             assert is_ok(get_result), "Original connection should still be retrievable"
 
             retrieved_conn = unwrap(get_result)
-            assert getattr(retrieved_conn, check_field) == original_value, \
+            assert getattr(retrieved_conn, check_field) == original_value, (
                 f"Retrieved connection should have original {check_field} value"
-
+            )
 
 
 class TestListConnections:
@@ -1856,11 +1748,7 @@ class TestListConnections:
             manager = DatabaseConnectionManager(store_path)
 
             # Create a connection
-            conn = DatabaseConnection(
-                name="test-sqlite",
-                database_type="sqlite",
-                file_path="/path/to/db.db"
-            )
+            conn = DatabaseConnection(name="test-sqlite", database_type="sqlite", file_path="/path/to/db.db")
             manager.create_connection(conn)
 
             # List connections
@@ -1885,7 +1773,7 @@ class TestListConnections:
                 port=1521,
                 service_name="PRODDB",
                 username="user1",
-                password="pass1"
+                password="pass1",
             )
             conn2 = DatabaseConnection(
                 name="postgres-dev",
@@ -1894,7 +1782,7 @@ class TestListConnections:
                 port=5432,
                 database="devdb",
                 username="user2",
-                password="pass2"
+                password="pass2",
             )
             conn3 = DatabaseConnection(
                 name="mysql-test",
@@ -1903,7 +1791,7 @@ class TestListConnections:
                 port=3306,
                 database="testdb",
                 username="user3",
-                password="pass3"
+                password="pass3",
             )
 
             manager.create_connection(conn1)
@@ -1940,11 +1828,7 @@ class TestListConnections:
             manager = DatabaseConnectionManager(store_path)
 
             # Create a connection
-            conn = DatabaseConnection(
-                name="test-conn",
-                database_type="sqlite",
-                file_path="/path/to/db.db"
-            )
+            conn = DatabaseConnection(name="test-conn", database_type="sqlite", file_path="/path/to/db.db")
             manager.create_connection(conn)
 
             # List connections
@@ -1959,7 +1843,7 @@ class TestListConnections:
             store_path = Path(tmpdir) / "connections.json"
 
             # Create corrupted JSON file
-            with open(store_path, 'w') as f:
+            with open(store_path, "w") as f:
                 f.write("{ invalid json }")
 
             manager = DatabaseConnectionManager.__new__(DatabaseConnectionManager)
@@ -1996,21 +1880,19 @@ class TestListConnections:
             manager = DatabaseConnectionManager(store_path)
 
             # Create a valid connection
-            conn = DatabaseConnection(
-                name="valid-conn",
-                database_type="sqlite",
-                file_path="/path/to/db.db"
-            )
+            conn = DatabaseConnection(name="valid-conn", database_type="sqlite", file_path="/path/to/db.db")
             manager.create_connection(conn)
 
             # Manually add a connection with invalid field types
             # This will pass JSON validation but fail during from_dict()
             store_data = manager._load_store()
-            store_data["connections"].append({
-                "name": "invalid-conn",
-                "database_type": "sqlite",
-                "created_at": "not-a-valid-datetime",  # Invalid datetime format
-            })
+            store_data["connections"].append(
+                {
+                    "name": "invalid-conn",
+                    "database_type": "sqlite",
+                    "created_at": "not-a-valid-datetime",  # Invalid datetime format
+                }
+            )
             manager._save_store(store_data)
 
             # List connections - should skip invalid entry during iteration
@@ -2037,7 +1919,7 @@ class TestGetConnection:
                 port=1521,
                 service_name="TESTDB",
                 username="testuser",
-                password="testpass"
+                password="testpass",
             )
             manager.create_connection(conn)
 
@@ -2045,6 +1927,7 @@ class TestGetConnection:
             result = manager.get_connection("test-oracle")
 
             from offline_chat.database.result import is_ok, unwrap
+
             assert is_ok(result)
 
             retrieved_conn = unwrap(result)
@@ -2066,6 +1949,7 @@ class TestGetConnection:
             result = manager.get_connection("nonexistent-conn")
 
             from offline_chat.database.result import is_err, unwrap_err
+
             assert is_err(result)
 
             error_msg = unwrap_err(result)
@@ -2079,11 +1963,7 @@ class TestGetConnection:
             manager = DatabaseConnectionManager(store_path)
 
             # Create multiple connections
-            conn1 = DatabaseConnection(
-                name="conn-1",
-                database_type="sqlite",
-                file_path="/path/to/db1.db"
-            )
+            conn1 = DatabaseConnection(name="conn-1", database_type="sqlite", file_path="/path/to/db1.db")
             conn2 = DatabaseConnection(
                 name="conn-2",
                 database_type="postgresql",
@@ -2091,7 +1971,7 @@ class TestGetConnection:
                 port=5432,
                 database="db2",
                 username="user2",
-                password="pass2"
+                password="pass2",
             )
             conn3 = DatabaseConnection(
                 name="conn-3",
@@ -2100,7 +1980,7 @@ class TestGetConnection:
                 port=3306,
                 database="db3",
                 username="user3",
-                password="pass3"
+                password="pass3",
             )
 
             manager.create_connection(conn1)
@@ -2111,6 +1991,7 @@ class TestGetConnection:
             result = manager.get_connection("conn-2")
 
             from offline_chat.database.result import is_ok, unwrap
+
             assert is_ok(result)
 
             retrieved_conn = unwrap(result)
@@ -2125,17 +2006,14 @@ class TestGetConnection:
             manager = DatabaseConnectionManager(store_path)
 
             # Create a connection
-            conn = DatabaseConnection(
-                name="test-conn",
-                database_type="sqlite",
-                file_path="/path/to/db.db"
-            )
+            conn = DatabaseConnection(name="test-conn", database_type="sqlite", file_path="/path/to/db.db")
             manager.create_connection(conn)
 
             # Get the connection
             result = manager.get_connection("test-conn")
 
             from offline_chat.database.result import is_ok, unwrap
+
             assert is_ok(result)
 
             retrieved_conn = unwrap(result)
@@ -2147,7 +2025,7 @@ class TestGetConnection:
             store_path = Path(tmpdir) / "connections.json"
 
             # Create corrupted JSON file
-            with open(store_path, 'w') as f:
+            with open(store_path, "w") as f:
                 f.write("{ invalid json }")
 
             manager = DatabaseConnectionManager.__new__(DatabaseConnectionManager)
@@ -2157,6 +2035,7 @@ class TestGetConnection:
             result = manager.get_connection("any-conn")
 
             from offline_chat.database.result import is_err, unwrap_err
+
             assert is_err(result)
 
             error_msg = unwrap_err(result)
@@ -2174,6 +2053,7 @@ class TestGetConnection:
             result = manager.get_connection("any-conn")
 
             from offline_chat.database.result import is_err, unwrap_err
+
             assert is_err(result)
 
             error_msg = unwrap_err(result)
@@ -2192,17 +2072,20 @@ class TestGetConnection:
             # Manually add a connection with invalid field types
             # This will pass JSON validation but fail during from_dict()
             store_data = manager._load_store()
-            store_data["connections"].append({
-                "name": "invalid-conn",
-                "database_type": "sqlite",
-                "created_at": "not-a-valid-datetime",  # Invalid datetime format
-            })
+            store_data["connections"].append(
+                {
+                    "name": "invalid-conn",
+                    "database_type": "sqlite",
+                    "created_at": "not-a-valid-datetime",  # Invalid datetime format
+                }
+            )
             manager._save_store(store_data)
 
             # Try to get the invalid connection
             result = manager.get_connection("invalid-conn")
 
             from offline_chat.database.result import is_err, unwrap_err
+
             assert is_err(result)
 
             error_msg = unwrap_err(result)
@@ -2216,17 +2099,14 @@ class TestGetConnection:
             manager = DatabaseConnectionManager(store_path)
 
             # Create a connection with lowercase name
-            conn = DatabaseConnection(
-                name="test-conn",
-                database_type="sqlite",
-                file_path="/path/to/db.db"
-            )
+            conn = DatabaseConnection(name="test-conn", database_type="sqlite", file_path="/path/to/db.db")
             manager.create_connection(conn)
 
             # Try to get with different case (should fail since names must be kebab-case)
             result = manager.get_connection("Test-Conn")
 
             from offline_chat.database.result import is_err
+
             assert is_err(result)
 
     def test_get_connection_empty_store(self):
@@ -2239,11 +2119,11 @@ class TestGetConnection:
             result = manager.get_connection("any-conn")
 
             from offline_chat.database.result import is_err, unwrap_err
+
             assert is_err(result)
 
             error_msg = unwrap_err(result)
             assert "not found" in error_msg
-
 
 
 class TestListConnectionsProperty:
@@ -2255,9 +2135,7 @@ class TestListConnectionsProperty:
     **Validates: Requirements 3.1**
     """
 
-    @given(
-        num_connections=st.integers(min_value=0, max_value=20)
-    )
+    @given(num_connections=st.integers(min_value=0, max_value=20))
     @settings(max_examples=100, deadline=None)
     def test_list_returns_all_connections_no_duplicates(self, num_connections):
         """
@@ -2283,9 +2161,7 @@ class TestListConnectionsProperty:
                 if db_type_index == 0:
                     # SQLite connection
                     conn = DatabaseConnection(
-                        name=f"conn-sqlite-{i}",
-                        database_type="sqlite",
-                        file_path=f"/path/to/db{i}.db"
+                        name=f"conn-sqlite-{i}", database_type="sqlite", file_path=f"/path/to/db{i}.db"
                     )
                 elif db_type_index == 1:
                     # PostgreSQL connection
@@ -2296,7 +2172,7 @@ class TestListConnectionsProperty:
                         port=5432 + i,
                         database=f"db{i}",
                         username=f"user{i}",
-                        password=f"pass{i}"
+                        password=f"pass{i}",
                     )
                 elif db_type_index == 2:
                     # MySQL connection
@@ -2307,7 +2183,7 @@ class TestListConnectionsProperty:
                         port=3306 + i,
                         database=f"db{i}",
                         username=f"user{i}",
-                        password=f"pass{i}"
+                        password=f"pass{i}",
                     )
                 else:
                     # Oracle connection
@@ -2318,11 +2194,12 @@ class TestListConnectionsProperty:
                         port=1521 + i,
                         service_name=f"SERVICE{i}",
                         username=f"user{i}",
-                        password=f"pass{i}"
+                        password=f"pass{i}",
                     )
 
                 result = manager.create_connection(conn)
                 from offline_chat.database.result import is_ok
+
                 assert is_ok(result), f"Failed to create connection {conn.name}"
                 created_names.add(conn.name)
 
@@ -2333,40 +2210,37 @@ class TestListConnectionsProperty:
             listed_names = [conn.name for conn in listed_connections]
 
             # Property 1: All created connections should be in the list
-            assert len(listed_names) == num_connections, \
+            assert len(listed_names) == num_connections, (
                 f"Expected {num_connections} connections, got {len(listed_names)}"
+            )
 
             # Property 2: No duplicates in the list
-            assert len(listed_names) == len(set(listed_names)), \
-                f"Duplicate connections found in list: {listed_names}"
+            assert len(listed_names) == len(set(listed_names)), f"Duplicate connections found in list: {listed_names}"
 
             # Property 3: All created names should be present
-            assert set(listed_names) == created_names, \
+            assert set(listed_names) == created_names, (
                 f"Listed names {set(listed_names)} != created names {created_names}"
+            )
 
             # Property 4: All returned objects should be DatabaseConnection instances
             for conn in listed_connections:
-                assert isinstance(conn, DatabaseConnection), \
-                    f"Expected DatabaseConnection, got {type(conn)}"
+                assert isinstance(conn, DatabaseConnection), f"Expected DatabaseConnection, got {type(conn)}"
 
     @given(
         connection_configs=st.lists(
             st.tuples(
                 # name
                 st.text(
-                    alphabet=st.characters(
-                        whitelist_categories=('Ll', 'Nd'),
-                        whitelist_characters='-'
-                    ),
+                    alphabet=st.characters(whitelist_categories=("Ll", "Nd"), whitelist_characters="-"),
                     min_size=1,
-                    max_size=30
-                ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s),
+                    max_size=30,
+                ).filter(lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s),
                 # database_type
-                st.sampled_from(['oracle', 'postgresql', 'mysql', 'sqlite'])
+                st.sampled_from(["oracle", "postgresql", "mysql", "sqlite"]),
             ),
             min_size=0,
             max_size=15,
-            unique_by=lambda x: x[0]  # Ensure unique names
+            unique_by=lambda x: x[0],  # Ensure unique names
         )
     )
     @settings(max_examples=100, deadline=None)
@@ -2387,13 +2261,9 @@ class TestListConnectionsProperty:
 
             # Create connections based on generated configs
             for name, db_type in connection_configs:
-                if db_type == 'sqlite':
-                    conn = DatabaseConnection(
-                        name=name,
-                        database_type=db_type,
-                        file_path=f"/path/to/{name}.db"
-                    )
-                elif db_type == 'oracle':
+                if db_type == "sqlite":
+                    conn = DatabaseConnection(name=name, database_type=db_type, file_path=f"/path/to/{name}.db")
+                elif db_type == "oracle":
                     conn = DatabaseConnection(
                         name=name,
                         database_type=db_type,
@@ -2401,9 +2271,9 @@ class TestListConnectionsProperty:
                         port=1521,
                         service_name="TESTDB",
                         username="user",
-                        password="pass"
+                        password="pass",
                     )
-                elif db_type == 'postgresql':
+                elif db_type == "postgresql":
                     conn = DatabaseConnection(
                         name=name,
                         database_type=db_type,
@@ -2411,7 +2281,7 @@ class TestListConnectionsProperty:
                         port=5432,
                         database="testdb",
                         username="user",
-                        password="pass"
+                        password="pass",
                     )
                 else:  # mysql
                     conn = DatabaseConnection(
@@ -2421,11 +2291,12 @@ class TestListConnectionsProperty:
                         port=3306,
                         database="testdb",
                         username="user",
-                        password="pass"
+                        password="pass",
                     )
 
                 result = manager.create_connection(conn)
                 from offline_chat.database.result import is_ok
+
                 if is_ok(result):
                     created_connections.append(conn)
 
@@ -2433,38 +2304,35 @@ class TestListConnectionsProperty:
             listed_connections = manager.list_connections()
 
             # Verify count matches
-            assert len(listed_connections) == len(created_connections), \
+            assert len(listed_connections) == len(created_connections), (
                 f"Expected {len(created_connections)} connections, got {len(listed_connections)}"
+            )
 
             # Verify all names are present
             created_names = {conn.name for conn in created_connections}
             listed_names = {conn.name for conn in listed_connections}
-            assert listed_names == created_names, \
-                f"Listed names {listed_names} != created names {created_names}"
+            assert listed_names == created_names, f"Listed names {listed_names} != created names {created_names}"
 
             # Verify no duplicates
             listed_name_list = [conn.name for conn in listed_connections]
-            assert len(listed_name_list) == len(set(listed_name_list)), \
-                "Duplicate connections found in list"
+            assert len(listed_name_list) == len(set(listed_name_list)), "Duplicate connections found in list"
 
             # Verify database types are preserved
             for created_conn in created_connections:
                 matching_listed = [c for c in listed_connections if c.name == created_conn.name]
-                assert len(matching_listed) == 1, \
-                    f"Expected exactly one match for {created_conn.name}"
-                assert matching_listed[0].database_type == created_conn.database_type, \
+                assert len(matching_listed) == 1, f"Expected exactly one match for {created_conn.name}"
+                assert matching_listed[0].database_type == created_conn.database_type, (
                     f"Database type mismatch for {created_conn.name}"
+                )
 
     @given(
         num_sqlite=st.integers(min_value=0, max_value=10),
         num_postgres=st.integers(min_value=0, max_value=10),
         num_mysql=st.integers(min_value=0, max_value=10),
-        num_oracle=st.integers(min_value=0, max_value=10)
+        num_oracle=st.integers(min_value=0, max_value=10),
     )
     @settings(max_examples=100, deadline=None)
-    def test_list_returns_all_connections_mixed_types(
-        self, num_sqlite, num_postgres, num_mysql, num_oracle
-    ):
+    def test_list_returns_all_connections_mixed_types(self, num_sqlite, num_postgres, num_mysql, num_oracle):
         """
         Property 8: List Returns All Connections
 
@@ -2478,22 +2346,13 @@ class TestListConnectionsProperty:
             manager = DatabaseConnectionManager(store_path)
 
             total_expected = num_sqlite + num_postgres + num_mysql + num_oracle
-            created_by_type = {
-                'sqlite': [],
-                'postgresql': [],
-                'mysql': [],
-                'oracle': []
-            }
+            created_by_type = {"sqlite": [], "postgresql": [], "mysql": [], "oracle": []}
 
             # Create SQLite connections
             for i in range(num_sqlite):
-                conn = DatabaseConnection(
-                    name=f"sqlite-{i}",
-                    database_type="sqlite",
-                    file_path=f"/path/to/db{i}.db"
-                )
+                conn = DatabaseConnection(name=f"sqlite-{i}", database_type="sqlite", file_path=f"/path/to/db{i}.db")
                 manager.create_connection(conn)
-                created_by_type['sqlite'].append(conn.name)
+                created_by_type["sqlite"].append(conn.name)
 
             # Create PostgreSQL connections
             for i in range(num_postgres):
@@ -2504,10 +2363,10 @@ class TestListConnectionsProperty:
                     port=5432,
                     database=f"db{i}",
                     username="user",
-                    password="pass"
+                    password="pass",
                 )
                 manager.create_connection(conn)
-                created_by_type['postgresql'].append(conn.name)
+                created_by_type["postgresql"].append(conn.name)
 
             # Create MySQL connections
             for i in range(num_mysql):
@@ -2518,10 +2377,10 @@ class TestListConnectionsProperty:
                     port=3306,
                     database=f"db{i}",
                     username="user",
-                    password="pass"
+                    password="pass",
                 )
                 manager.create_connection(conn)
-                created_by_type['mysql'].append(conn.name)
+                created_by_type["mysql"].append(conn.name)
 
             # Create Oracle connections
             for i in range(num_oracle):
@@ -2532,44 +2391,36 @@ class TestListConnectionsProperty:
                     port=1521,
                     service_name=f"SERVICE{i}",
                     username="user",
-                    password="pass"
+                    password="pass",
                 )
                 manager.create_connection(conn)
-                created_by_type['oracle'].append(conn.name)
+                created_by_type["oracle"].append(conn.name)
 
             # List all connections
             listed_connections = manager.list_connections()
 
             # Verify total count
-            assert len(listed_connections) == total_expected, \
+            assert len(listed_connections) == total_expected, (
                 f"Expected {total_expected} connections, got {len(listed_connections)}"
+            )
 
             # Verify count by type
-            listed_by_type = {
-                'sqlite': [],
-                'postgresql': [],
-                'mysql': [],
-                'oracle': []
-            }
+            listed_by_type = {"sqlite": [], "postgresql": [], "mysql": [], "oracle": []}
             for conn in listed_connections:
                 listed_by_type[conn.database_type].append(conn.name)
 
-            for db_type in ['sqlite', 'postgresql', 'mysql', 'oracle']:
-                assert len(listed_by_type[db_type]) == len(created_by_type[db_type]), \
-                    f"Type {db_type}: expected {len(created_by_type[db_type])}, " \
-                    f"got {len(listed_by_type[db_type])}"
+            for db_type in ["sqlite", "postgresql", "mysql", "oracle"]:
+                assert len(listed_by_type[db_type]) == len(created_by_type[db_type]), (
+                    f"Type {db_type}: expected {len(created_by_type[db_type])}, got {len(listed_by_type[db_type])}"
+                )
 
-                assert set(listed_by_type[db_type]) == set(created_by_type[db_type]), \
-                    f"Type {db_type}: names mismatch"
+                assert set(listed_by_type[db_type]) == set(created_by_type[db_type]), f"Type {db_type}: names mismatch"
 
             # Verify no duplicates across all connections
             all_listed_names = [conn.name for conn in listed_connections]
-            assert len(all_listed_names) == len(set(all_listed_names)), \
-                "Duplicate connections found in list"
+            assert len(all_listed_names) == len(set(all_listed_names)), "Duplicate connections found in list"
 
-    @given(
-        num_connections=st.integers(min_value=1, max_value=10)
-    )
+    @given(num_connections=st.integers(min_value=1, max_value=10))
     @settings(max_examples=100, deadline=None)
     def test_list_preserves_connection_attributes(self, num_connections):
         """
@@ -2595,10 +2446,11 @@ class TestListConnectionsProperty:
                     port=5432 + i,
                     database=f"database{i}",
                     username=f"user{i}",
-                    password=f"password{i}"
+                    password=f"password{i}",
                 )
                 result = manager.create_connection(conn)
                 from offline_chat.database.result import is_ok
+
                 assert is_ok(result)
                 created_connections.append(conn)
 
@@ -2640,7 +2492,6 @@ class TestListConnectionsProperty:
             assert len(connections) == 0
 
 
-
 class TestUpdateConnection:
     """Test update_connection() method."""
 
@@ -2658,22 +2509,20 @@ class TestUpdateConnection:
                 port=5432,
                 database="testdb",
                 username="user",
-                password="pass"
+                password="pass",
             )
             result = manager.create_connection(conn)
             from offline_chat.database.result import is_ok
+
             assert is_ok(result)
 
             # Update the connection
-            updates = {
-                "host": "newhost.example.com",
-                "port": 5433,
-                "password": "newpass"
-            }
+            updates = {"host": "newhost.example.com", "port": 5433, "password": "newpass"}
             result = manager.update_connection("test-conn", updates)
 
             # Verify success
             from offline_chat.database.result import unwrap
+
             assert is_ok(result)
             updated_conn = unwrap(result)
             assert updated_conn.name == "test-conn"
@@ -2704,6 +2553,7 @@ class TestUpdateConnection:
 
             # Verify failure
             from offline_chat.database.result import is_err, unwrap_err
+
             assert is_err(result)
             error_msg = unwrap_err(result)
             assert "not found" in error_msg.lower()
@@ -2716,13 +2566,10 @@ class TestUpdateConnection:
             manager = DatabaseConnectionManager(store_path)
 
             # Create connection
-            conn = DatabaseConnection(
-                name="original-name",
-                database_type="sqlite",
-                file_path="/path/to/db.db"
-            )
+            conn = DatabaseConnection(name="original-name", database_type="sqlite", file_path="/path/to/db.db")
             result = manager.create_connection(conn)
             from offline_chat.database.result import is_ok
+
             assert is_ok(result)
 
             # Try to change name
@@ -2731,6 +2578,7 @@ class TestUpdateConnection:
 
             # Verify rejection
             from offline_chat.database.result import is_err, unwrap_err
+
             assert is_err(result)
             error_msg = unwrap_err(result)
             assert "cannot change" in error_msg.lower()
@@ -2754,10 +2602,11 @@ class TestUpdateConnection:
                 port=5432,
                 database="testdb",
                 username="user",
-                password="pass"
+                password="pass",
             )
             result = manager.create_connection(conn)
             from offline_chat.database.result import is_ok, unwrap
+
             assert is_ok(result)
 
             # Try to update with invalid database type
@@ -2766,6 +2615,7 @@ class TestUpdateConnection:
 
             # Verify failure
             from offline_chat.database.result import is_err
+
             assert is_err(result)
 
             # Verify original connection is preserved
@@ -2790,10 +2640,11 @@ class TestUpdateConnection:
                 port=3306,
                 database="olddb",
                 username="olduser",
-                password="oldpass"
+                password="oldpass",
             )
             result = manager.create_connection(conn)
             from offline_chat.database.result import is_ok, unwrap
+
             assert is_ok(result)
 
             # Update multiple fields
@@ -2802,7 +2653,7 @@ class TestUpdateConnection:
                 "port": 3307,
                 "database": "newdb",
                 "username": "newuser",
-                "password": "newpass"
+                "password": "newpass",
             }
             result = manager.update_connection("multi-update", updates)
 
@@ -2824,13 +2675,10 @@ class TestUpdateConnection:
             manager = DatabaseConnectionManager(store_path)
 
             # Create connection
-            conn = DatabaseConnection(
-                name="test-conn",
-                database_type="sqlite",
-                file_path="/path/to/db.db"
-            )
+            conn = DatabaseConnection(name="test-conn", database_type="sqlite", file_path="/path/to/db.db")
             result = manager.create_connection(conn)
             from offline_chat.database.result import is_ok, unwrap
+
             assert is_ok(result)
 
             # Update with empty dict
@@ -2857,10 +2705,11 @@ class TestUpdateConnection:
                 port=5432,
                 database="testdb",
                 username="user",
-                password="pass"
+                password="pass",
             )
             result = manager.create_connection(conn)
             from offline_chat.database.result import is_ok
+
             assert is_ok(result)
 
             # Try to update to invalid database type
@@ -2869,6 +2718,7 @@ class TestUpdateConnection:
 
             # Verify failure
             from offline_chat.database.result import is_err, unwrap_err
+
             assert is_err(result)
             error_msg = unwrap_err(result)
             assert "invalid database type" in error_msg.lower()
@@ -2881,13 +2731,10 @@ class TestUpdateConnection:
             manager = DatabaseConnectionManager(store_path)
 
             # Create connection
-            conn = DatabaseConnection(
-                name="test-conn",
-                database_type="sqlite",
-                file_path="/path/to/db.db"
-            )
+            conn = DatabaseConnection(name="test-conn", database_type="sqlite", file_path="/path/to/db.db")
             result = manager.create_connection(conn)
             from offline_chat.database.result import is_ok, unwrap
+
             assert is_ok(result)
 
             # Get original timestamp
@@ -2897,6 +2744,7 @@ class TestUpdateConnection:
 
             # Wait a moment to ensure timestamp difference
             import time
+
             time.sleep(0.01)
 
             # Update connection
@@ -2926,20 +2774,15 @@ class TestUpdateConnection:
                 database="testdb",
                 username="user",
                 password="pass",
-                additional_params={"ssl": True}
+                additional_params={"ssl": True},
             )
             result = manager.create_connection(conn)
             from offline_chat.database.result import is_ok, unwrap
+
             assert is_ok(result)
 
             # Update additional_params
-            updates = {
-                "additional_params": {
-                    "ssl": True,
-                    "timeout": 30,
-                    "pool_size": 10
-                }
-            }
+            updates = {"additional_params": {"ssl": True, "timeout": 30, "pool_size": 10}}
             result = manager.update_connection("test-conn", updates)
 
             # Verify update
@@ -2963,10 +2806,11 @@ class TestUpdateConnection:
                 port=1521,
                 service_name="TESTDB",
                 username="user",
-                password="pass"
+                password="pass",
             )
             result = manager.create_connection(conn)
             from offline_chat.database.result import is_ok, unwrap
+
             assert is_ok(result)
 
             # Update to PostgreSQL-style (change database_type and add database field)
@@ -2974,7 +2818,7 @@ class TestUpdateConnection:
                 "database_type": "postgresql",
                 "port": 5432,
                 "database": "testdb",
-                "service_name": None  # Clear Oracle-specific field
+                "service_name": None,  # Clear Oracle-specific field
             }
             result = manager.update_connection("test-conn", updates)
 
@@ -2987,10 +2831,10 @@ class TestUpdateConnection:
             assert updated_conn.service_name is None
 
 
-
 # ============================================================================
 # Property-Based Tests for Connection Updates
 # ============================================================================
+
 
 class TestConnectionUpdateProperties:
     """Property-based tests for connection updates.
@@ -3002,17 +2846,13 @@ class TestConnectionUpdateProperties:
     """
 
     @given(
-        original_name=st.text(
-            alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-            min_size=1,
-            max_size=50
-        ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s),
-        new_name=st.text(
-            alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-            min_size=1,
-            max_size=50
-        ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s),
-        db_type=st.sampled_from(['oracle', 'postgresql', 'mysql', 'sqlite'])
+        original_name=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=50).filter(
+            lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s
+        ),
+        new_name=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=50).filter(
+            lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s
+        ),
+        db_type=st.sampled_from(["oracle", "postgresql", "mysql", "sqlite"]),
     )
     @settings(max_examples=100, deadline=None)
     def test_property_11_update_name_immutability(self, original_name, new_name, db_type):
@@ -3033,13 +2873,9 @@ class TestConnectionUpdateProperties:
             manager = DatabaseConnectionManager(store_path)
 
             # Create original connection
-            if db_type == 'sqlite':
-                conn = DatabaseConnection(
-                    name=original_name,
-                    database_type=db_type,
-                    file_path="/path/to/db.db"
-                )
-            elif db_type == 'oracle':
+            if db_type == "sqlite":
+                conn = DatabaseConnection(name=original_name, database_type=db_type, file_path="/path/to/db.db")
+            elif db_type == "oracle":
                 conn = DatabaseConnection(
                     name=original_name,
                     database_type=db_type,
@@ -3047,17 +2883,17 @@ class TestConnectionUpdateProperties:
                     port=1521,
                     service_name="TESTDB",
                     username="user",
-                    password="pass"
+                    password="pass",
                 )
             else:  # postgresql or mysql
                 conn = DatabaseConnection(
                     name=original_name,
                     database_type=db_type,
                     host="localhost",
-                    port=5432 if db_type == 'postgresql' else 3306,
+                    port=5432 if db_type == "postgresql" else 3306,
                     database="testdb",
                     username="user",
-                    password="pass"
+                    password="pass",
                 )
 
             result = manager.create_connection(conn)
@@ -3074,27 +2910,25 @@ class TestConnectionUpdateProperties:
             # Update should fail
             assert is_err(result), f"Name change should be rejected for '{original_name}' -> '{new_name}'"
             error_msg = unwrap_err(result)
-            assert "cannot change" in error_msg.lower() or "name" in error_msg.lower(), \
+            assert "cannot change" in error_msg.lower() or "name" in error_msg.lower(), (
                 f"Error should mention name change restriction: {error_msg}"
+            )
 
             # Verify original connection still exists with original name
             store_data = manager._load_store()
             assert len(store_data["connections"]) == 1, "Should still have exactly one connection"
-            assert store_data["connections"][0]["name"] == original_name, \
-                "Connection name should remain unchanged"
+            assert store_data["connections"][0]["name"] == original_name, "Connection name should remain unchanged"
 
             # Verify new name was NOT created
             result = manager.get_connection(new_name)
             assert is_err(result), f"New name '{new_name}' should not exist"
 
     @given(
-        name=st.text(
-            alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-            min_size=1,
-            max_size=50
-        ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s),
-        db_type=st.sampled_from(['oracle', 'postgresql', 'mysql', 'sqlite']),
-        update_field=st.sampled_from(['host', 'port', 'database', 'username', 'password', 'file_path'])
+        name=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=50).filter(
+            lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s
+        ),
+        db_type=st.sampled_from(["oracle", "postgresql", "mysql", "sqlite"]),
+        update_field=st.sampled_from(["host", "port", "database", "username", "password", "file_path"]),
     )
     @settings(max_examples=100, deadline=None)
     def test_property_11_update_other_fields_allowed(self, name, db_type, update_field):
@@ -3111,17 +2945,13 @@ class TestConnectionUpdateProperties:
             manager = DatabaseConnectionManager(store_path)
 
             # Create original connection
-            if db_type == 'sqlite':
-                conn = DatabaseConnection(
-                    name=name,
-                    database_type=db_type,
-                    file_path="/path/to/db.db"
-                )
+            if db_type == "sqlite":
+                conn = DatabaseConnection(name=name, database_type=db_type, file_path="/path/to/db.db")
                 # Only file_path is relevant for sqlite
-                if update_field not in ['file_path']:
+                if update_field not in ["file_path"]:
                     return  # Skip irrelevant fields
                 updates = {"file_path": "/new/path/to/db.db"}
-            elif db_type == 'oracle':
+            elif db_type == "oracle":
                 conn = DatabaseConnection(
                     name=name,
                     database_type=db_type,
@@ -3129,19 +2959,19 @@ class TestConnectionUpdateProperties:
                     port=1521,
                     service_name="TESTDB",
                     username="user",
-                    password="pass"
+                    password="pass",
                 )
                 # Skip fields not relevant to oracle
-                if update_field in ['database', 'file_path']:
+                if update_field in ["database", "file_path"]:
                     return
                 # Create appropriate update
-                if update_field == 'host':
+                if update_field == "host":
                     updates = {"host": "newhost.example.com"}
-                elif update_field == 'port':
+                elif update_field == "port":
                     updates = {"port": 1522}
-                elif update_field == 'username':
+                elif update_field == "username":
                     updates = {"username": "newuser"}
-                elif update_field == 'password':
+                elif update_field == "password":
                     updates = {"password": "newpass"}
                 else:
                     return
@@ -3150,24 +2980,24 @@ class TestConnectionUpdateProperties:
                     name=name,
                     database_type=db_type,
                     host="localhost",
-                    port=5432 if db_type == 'postgresql' else 3306,
+                    port=5432 if db_type == "postgresql" else 3306,
                     database="testdb",
                     username="user",
-                    password="pass"
+                    password="pass",
                 )
                 # Skip fields not relevant to postgresql/mysql
-                if update_field == 'file_path':
+                if update_field == "file_path":
                     return
                 # Create appropriate update
-                if update_field == 'host':
+                if update_field == "host":
                     updates = {"host": "newhost.example.com"}
-                elif update_field == 'port':
-                    updates = {"port": 5433 if db_type == 'postgresql' else 3307}
-                elif update_field == 'database':
+                elif update_field == "port":
+                    updates = {"port": 5433 if db_type == "postgresql" else 3307}
+                elif update_field == "database":
                     updates = {"database": "newdb"}
-                elif update_field == 'username':
+                elif update_field == "username":
                     updates = {"username": "newuser"}
-                elif update_field == 'password':
+                elif update_field == "password":
                     updates = {"password": "newpass"}
                 else:
                     return
@@ -3191,23 +3021,18 @@ class TestConnectionUpdateProperties:
 
             # Verify the specific field was updated
             for field, value in updates.items():
-                assert getattr(updated_conn, field) == value, \
-                    f"Field '{field}' should be updated to '{value}'"
+                assert getattr(updated_conn, field) == value, f"Field '{field}' should be updated to '{value}'"
 
     @given(
-        name=st.text(
-            alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-            min_size=1,
-            max_size=50
-        ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s),
-        original_db_type=st.sampled_from(['oracle', 'postgresql', 'mysql', 'sqlite']),
+        name=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=50).filter(
+            lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s
+        ),
+        original_db_type=st.sampled_from(["oracle", "postgresql", "mysql", "sqlite"]),
         new_host=st.text(min_size=1, max_size=100).filter(lambda s: s.strip()),
-        new_port=st.integers(min_value=1, max_value=65535)
+        new_port=st.integers(min_value=1, max_value=65535),
     )
     @settings(max_examples=100, deadline=None)
-    def test_property_12_update_persistence_on_success(
-        self, name, original_db_type, new_host, new_port
-    ):
+    def test_property_12_update_persistence_on_success(self, name, original_db_type, new_host, new_port):
         """
         Property 12: Update Persistence Based on Validation (Success Case)
 
@@ -3217,7 +3042,7 @@ class TestConnectionUpdateProperties:
         **Validates: Requirements 4.2, 4.3, 4.4, 4.5**
         """
         # Skip sqlite since it doesn't have host/port
-        if original_db_type == 'sqlite':
+        if original_db_type == "sqlite":
             return
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -3225,7 +3050,7 @@ class TestConnectionUpdateProperties:
             manager = DatabaseConnectionManager(store_path)
 
             # Create original connection
-            if original_db_type == 'oracle':
+            if original_db_type == "oracle":
                 conn = DatabaseConnection(
                     name=name,
                     database_type=original_db_type,
@@ -3233,17 +3058,17 @@ class TestConnectionUpdateProperties:
                     port=1521,
                     service_name="TESTDB",
                     username="user",
-                    password="pass"
+                    password="pass",
                 )
             else:  # postgresql or mysql
                 conn = DatabaseConnection(
                     name=name,
                     database_type=original_db_type,
                     host="original-host",
-                    port=5432 if original_db_type == 'postgresql' else 3306,
+                    port=5432 if original_db_type == "postgresql" else 3306,
                     database="testdb",
                     username="user",
-                    password="pass"
+                    password="pass",
                 )
 
             result = manager.create_connection(conn)
@@ -3254,10 +3079,7 @@ class TestConnectionUpdateProperties:
             assert is_ok(result), f"Connection creation should succeed: {result}"
 
             # Update with valid values
-            updates = {
-                "host": new_host,
-                "port": new_port
-            }
+            updates = {"host": new_host, "port": new_port}
             result = manager.update_connection(name, updates)
 
             # Update should succeed (validation passes)
@@ -3268,10 +3090,8 @@ class TestConnectionUpdateProperties:
             assert len(store_data["connections"]) == 1
             saved_conn = store_data["connections"][0]
             assert saved_conn["name"] == name
-            assert saved_conn["host"] == new_host, \
-                f"Host should be updated to '{new_host}' in store"
-            assert saved_conn["port"] == new_port, \
-                f"Port should be updated to {new_port} in store"
+            assert saved_conn["host"] == new_host, f"Host should be updated to '{new_host}' in store"
+            assert saved_conn["port"] == new_port, f"Port should be updated to {new_port} in store"
 
             # Verify connection is retrievable with updated values
             result = manager.get_connection(name)
@@ -3281,20 +3101,16 @@ class TestConnectionUpdateProperties:
             assert retrieved_conn.port == new_port
 
     @given(
-        name=st.text(
-            alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-            min_size=1,
-            max_size=50
-        ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s),
-        original_db_type=st.sampled_from(['oracle', 'postgresql', 'mysql']),
+        name=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=50).filter(
+            lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s
+        ),
+        original_db_type=st.sampled_from(["oracle", "postgresql", "mysql"]),
         invalid_db_type=st.text(min_size=1, max_size=50).filter(
-            lambda s: s not in ['oracle', 'postgresql', 'mysql', 'sqlite']
-        )
+            lambda s: s not in ["oracle", "postgresql", "mysql", "sqlite"]
+        ),
     )
     @settings(max_examples=100, deadline=None)
-    def test_property_12_update_persistence_on_failure(
-        self, name, original_db_type, invalid_db_type
-    ):
+    def test_property_12_update_persistence_on_failure(self, name, original_db_type, invalid_db_type):
         """
         Property 12: Update Persistence Based on Validation (Failure Case)
 
@@ -3308,7 +3124,7 @@ class TestConnectionUpdateProperties:
             manager = DatabaseConnectionManager(store_path)
 
             # Create original connection
-            if original_db_type == 'oracle':
+            if original_db_type == "oracle":
                 conn = DatabaseConnection(
                     name=name,
                     database_type=original_db_type,
@@ -3316,17 +3132,17 @@ class TestConnectionUpdateProperties:
                     port=1521,
                     service_name="TESTDB",
                     username="original-user",
-                    password="original-pass"
+                    password="original-pass",
                 )
             else:  # postgresql or mysql
                 conn = DatabaseConnection(
                     name=name,
                     database_type=original_db_type,
                     host="original-host",
-                    port=5432 if original_db_type == 'postgresql' else 3306,
+                    port=5432 if original_db_type == "postgresql" else 3306,
                     database="testdb",
                     username="original-user",
-                    password="original-pass"
+                    password="original-pass",
                 )
 
             result = manager.create_connection(conn)
@@ -3343,11 +3159,7 @@ class TestConnectionUpdateProperties:
             original_password = conn.password
 
             # Attempt update with invalid database type (should fail validation)
-            updates = {
-                "database_type": invalid_db_type,
-                "host": "new-host",
-                "username": "new-user"
-            }
+            updates = {"database_type": invalid_db_type, "host": "new-host", "username": "new-user"}
             result = manager.update_connection(name, updates)
 
             # Update should fail (validation fails)
@@ -3358,16 +3170,11 @@ class TestConnectionUpdateProperties:
             assert len(store_data["connections"]) == 1
             saved_conn = store_data["connections"][0]
             assert saved_conn["name"] == name
-            assert saved_conn["database_type"] == original_db_type, \
-                "Database type should remain unchanged"
-            assert saved_conn["host"] == original_host, \
-                "Host should remain unchanged after failed update"
-            assert saved_conn["port"] == original_port, \
-                "Port should remain unchanged after failed update"
-            assert saved_conn["username"] == original_username, \
-                "Username should remain unchanged after failed update"
-            assert saved_conn["password"] == original_password, \
-                "Password should remain unchanged after failed update"
+            assert saved_conn["database_type"] == original_db_type, "Database type should remain unchanged"
+            assert saved_conn["host"] == original_host, "Host should remain unchanged after failed update"
+            assert saved_conn["port"] == original_port, "Port should remain unchanged after failed update"
+            assert saved_conn["username"] == original_username, "Username should remain unchanged after failed update"
+            assert saved_conn["password"] == original_password, "Password should remain unchanged after failed update"
 
             # Verify connection is retrievable with original values
             result = manager.get_connection(name)
@@ -3380,19 +3187,15 @@ class TestConnectionUpdateProperties:
             assert retrieved_conn.password == original_password
 
     @given(
-        name=st.text(
-            alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-            min_size=1,
-            max_size=50
-        ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s),
-        db_type=st.sampled_from(['sqlite']),
+        name=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=50).filter(
+            lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s
+        ),
+        db_type=st.sampled_from(["sqlite"]),
         original_path=st.text(min_size=1, max_size=200).filter(lambda s: s.strip()),
-        new_path=st.text(min_size=1, max_size=200).filter(lambda s: s.strip())
+        new_path=st.text(min_size=1, max_size=200).filter(lambda s: s.strip()),
     )
     @settings(max_examples=100, deadline=None)
-    def test_property_12_update_persistence_sqlite(
-        self, name, db_type, original_path, new_path
-    ):
+    def test_property_12_update_persistence_sqlite(self, name, db_type, original_path, new_path):
         """
         Property 12: Update Persistence Based on Validation (SQLite)
 
@@ -3406,11 +3209,7 @@ class TestConnectionUpdateProperties:
             manager = DatabaseConnectionManager(store_path)
 
             # Create original SQLite connection
-            conn = DatabaseConnection(
-                name=name,
-                database_type=db_type,
-                file_path=original_path
-            )
+            conn = DatabaseConnection(name=name, database_type=db_type, file_path=original_path)
 
             result = manager.create_connection(conn)
 
@@ -3431,8 +3230,7 @@ class TestConnectionUpdateProperties:
             assert len(store_data["connections"]) == 1
             saved_conn = store_data["connections"][0]
             assert saved_conn["name"] == name
-            assert saved_conn["file_path"] == new_path, \
-                f"File path should be updated to '{new_path}' in store"
+            assert saved_conn["file_path"] == new_path, f"File path should be updated to '{new_path}' in store"
 
             # Verify connection is retrievable with updated value
             result = manager.get_connection(name)
@@ -3441,18 +3239,14 @@ class TestConnectionUpdateProperties:
             assert retrieved_conn.file_path == new_path
 
     @given(
-        name=st.text(
-            alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-            min_size=1,
-            max_size=50
-        ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s),
-        db_type=st.sampled_from(['oracle', 'postgresql', 'mysql', 'sqlite']),
-        num_updates=st.integers(min_value=1, max_value=5)
+        name=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=50).filter(
+            lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s
+        ),
+        db_type=st.sampled_from(["oracle", "postgresql", "mysql", "sqlite"]),
+        num_updates=st.integers(min_value=1, max_value=5),
     )
     @settings(max_examples=100, deadline=None)
-    def test_property_12_multiple_updates_persistence(
-        self, name, db_type, num_updates
-    ):
+    def test_property_12_multiple_updates_persistence(self, name, db_type, num_updates):
         """
         Property 12: Update Persistence Based on Validation (Multiple Updates)
 
@@ -3466,13 +3260,9 @@ class TestConnectionUpdateProperties:
             manager = DatabaseConnectionManager(store_path)
 
             # Create original connection
-            if db_type == 'sqlite':
-                conn = DatabaseConnection(
-                    name=name,
-                    database_type=db_type,
-                    file_path="/path/0.db"
-                )
-            elif db_type == 'oracle':
+            if db_type == "sqlite":
+                conn = DatabaseConnection(name=name, database_type=db_type, file_path="/path/0.db")
+            elif db_type == "oracle":
                 conn = DatabaseConnection(
                     name=name,
                     database_type=db_type,
@@ -3480,17 +3270,17 @@ class TestConnectionUpdateProperties:
                     port=1521,
                     service_name="DB0",
                     username="user-0",
-                    password="pass-0"
+                    password="pass-0",
                 )
             else:  # postgresql or mysql
                 conn = DatabaseConnection(
                     name=name,
                     database_type=db_type,
                     host="host-0",
-                    port=5432 if db_type == 'postgresql' else 3306,
+                    port=5432 if db_type == "postgresql" else 3306,
                     database="db-0",
                     username="user-0",
-                    password="pass-0"
+                    password="pass-0",
                 )
 
             result = manager.create_connection(conn)
@@ -3502,11 +3292,11 @@ class TestConnectionUpdateProperties:
 
             # Perform multiple updates
             for i in range(1, num_updates + 1):
-                if db_type == 'sqlite':
+                if db_type == "sqlite":
                     updates = {"file_path": f"/path/{i}.db"}
                     expected_value = f"/path/{i}.db"
                     field_to_check = "file_path"
-                elif db_type == 'oracle':
+                elif db_type == "oracle":
                     updates = {"service_name": f"DB{i}"}
                     expected_value = f"DB{i}"
                     field_to_check = "service_name"
@@ -3524,21 +3314,21 @@ class TestConnectionUpdateProperties:
                 store_data = manager._load_store()
                 assert len(store_data["connections"]) == 1
                 saved_conn = store_data["connections"][0]
-                assert saved_conn[field_to_check] == expected_value, \
+                assert saved_conn[field_to_check] == expected_value, (
                     f"After update {i}, {field_to_check} should be '{expected_value}'"
+                )
 
             # Final verification: retrieve connection and check final state
             result = manager.get_connection(name)
             assert is_ok(result)
             final_conn = unwrap(result)
 
-            if db_type == 'sqlite':
+            if db_type == "sqlite":
                 assert final_conn.file_path == f"/path/{num_updates}.db"
-            elif db_type == 'oracle':
+            elif db_type == "oracle":
                 assert final_conn.service_name == f"DB{num_updates}"
             else:
                 assert final_conn.database == f"db-{num_updates}"
-
 
 
 # ============================================================================
@@ -3556,11 +3346,7 @@ class TestDeleteConnection:
             manager = DatabaseConnectionManager(store_path)
 
             # Create a connection
-            conn = DatabaseConnection(
-                name="test-conn",
-                database_type="sqlite",
-                file_path="/path/to/db.db"
-            )
+            conn = DatabaseConnection(name="test-conn", database_type="sqlite", file_path="/path/to/db.db")
 
             from offline_chat.database.result import is_ok
 
@@ -3606,11 +3392,7 @@ class TestDeleteConnection:
             manager = DatabaseConnectionManager(store_path)
 
             # Create a connection
-            conn = DatabaseConnection(
-                name="in-use-conn",
-                database_type="sqlite",
-                file_path="/path/to/db.db"
-            )
+            conn = DatabaseConnection(name="in-use-conn", database_type="sqlite", file_path="/path/to/db.db")
 
             from offline_chat.database.result import is_err, is_ok, unwrap_err
 
@@ -3649,21 +3431,9 @@ class TestDeleteConnection:
             from offline_chat.database.result import is_ok
 
             # Create multiple connections
-            conn1 = DatabaseConnection(
-                name="conn-1",
-                database_type="sqlite",
-                file_path="/path/to/db1.db"
-            )
-            conn2 = DatabaseConnection(
-                name="conn-2",
-                database_type="sqlite",
-                file_path="/path/to/db2.db"
-            )
-            conn3 = DatabaseConnection(
-                name="conn-3",
-                database_type="sqlite",
-                file_path="/path/to/db3.db"
-            )
+            conn1 = DatabaseConnection(name="conn-1", database_type="sqlite", file_path="/path/to/db1.db")
+            conn2 = DatabaseConnection(name="conn-2", database_type="sqlite", file_path="/path/to/db2.db")
+            conn3 = DatabaseConnection(name="conn-3", database_type="sqlite", file_path="/path/to/db3.db")
 
             assert is_ok(manager.create_connection(conn1))
             assert is_ok(manager.create_connection(conn2))
@@ -3693,11 +3463,7 @@ class TestDeleteConnection:
             manager = DatabaseConnectionManager(store_path)
 
             # Create a connection
-            conn = DatabaseConnection(
-                name="test-conn",
-                database_type="sqlite",
-                file_path="/path/to/db.db"
-            )
+            conn = DatabaseConnection(name="test-conn", database_type="sqlite", file_path="/path/to/db.db")
 
             from offline_chat.database.result import is_err, is_ok, unwrap_err
 
@@ -3725,11 +3491,7 @@ class TestGetAgentsUsingConnection:
             manager = DatabaseConnectionManager(store_path)
 
             # Create a connection
-            conn = DatabaseConnection(
-                name="test-conn",
-                database_type="sqlite",
-                file_path="/path/to/db.db"
-            )
+            conn = DatabaseConnection(name="test-conn", database_type="sqlite", file_path="/path/to/db.db")
 
             from offline_chat.database.result import is_ok
 
@@ -3755,10 +3517,10 @@ class TestGetAgentsUsingConnection:
             assert len(agents) == 0
 
 
-
 # ============================================================================
 # Property-Based Tests for Deletion Referential Integrity
 # ============================================================================
+
 
 class TestDeletionReferentialIntegrityProperty:
     """Property-based tests for deletion referential integrity.
@@ -3774,82 +3536,72 @@ class TestDeletionReferentialIntegrityProperty:
             # Valid Oracle connection
             st.builds(
                 DatabaseConnection,
-                name=st.text(
-                    alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-                    min_size=1,
-                    max_size=50
-                ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s),
-                database_type=st.just('oracle'),
+                name=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=50).filter(
+                    lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s
+                ),
+                database_type=st.just("oracle"),
                 host=st.text(min_size=1, max_size=100).filter(lambda s: s.strip()),
                 port=st.integers(min_value=1, max_value=65535),
                 service_name=st.text(min_size=1, max_size=50).filter(lambda s: s.strip()),
                 username=st.text(min_size=1, max_size=50).filter(lambda s: s.strip()),
                 password=st.text(min_size=1, max_size=100).filter(lambda s: s.strip()),
                 database=st.none(),
-                file_path=st.none()
+                file_path=st.none(),
             ),
             # Valid PostgreSQL connection
             st.builds(
                 DatabaseConnection,
-                name=st.text(
-                    alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-                    min_size=1,
-                    max_size=50
-                ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s),
-                database_type=st.just('postgresql'),
+                name=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=50).filter(
+                    lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s
+                ),
+                database_type=st.just("postgresql"),
                 host=st.text(min_size=1, max_size=100).filter(lambda s: s.strip()),
                 port=st.integers(min_value=1, max_value=65535),
                 database=st.text(min_size=1, max_size=50).filter(lambda s: s.strip()),
                 username=st.text(min_size=1, max_size=50).filter(lambda s: s.strip()),
                 password=st.text(min_size=1, max_size=100).filter(lambda s: s.strip()),
                 service_name=st.none(),
-                file_path=st.none()
+                file_path=st.none(),
             ),
             # Valid MySQL connection
             st.builds(
                 DatabaseConnection,
-                name=st.text(
-                    alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-                    min_size=1,
-                    max_size=50
-                ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s),
-                database_type=st.just('mysql'),
+                name=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=50).filter(
+                    lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s
+                ),
+                database_type=st.just("mysql"),
                 host=st.text(min_size=1, max_size=100).filter(lambda s: s.strip()),
                 port=st.integers(min_value=1, max_value=65535),
                 database=st.text(min_size=1, max_size=50).filter(lambda s: s.strip()),
                 username=st.text(min_size=1, max_size=50).filter(lambda s: s.strip()),
                 password=st.text(min_size=1, max_size=100).filter(lambda s: s.strip()),
                 service_name=st.none(),
-                file_path=st.none()
+                file_path=st.none(),
             ),
             # Valid SQLite connection
             st.builds(
                 DatabaseConnection,
-                name=st.text(
-                    alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-                    min_size=1,
-                    max_size=50
-                ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s),
-                database_type=st.just('sqlite'),
+                name=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=50).filter(
+                    lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s
+                ),
+                database_type=st.just("sqlite"),
                 file_path=st.text(min_size=1, max_size=200).filter(lambda s: s.strip()),
                 host=st.none(),
                 port=st.none(),
                 database=st.none(),
                 service_name=st.none(),
                 username=st.none(),
-                password=st.none()
-            )
+                password=st.none(),
+            ),
         ),
         agent_names=st.lists(
-            st.text(
-                alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-                min_size=1,
-                max_size=30
-            ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s),
+            st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=30).filter(
+                lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s
+            ),
             min_size=0,
             max_size=5,
-            unique=True
-        )
+            unique=True,
+        ),
     )
     @settings(max_examples=100, deadline=None)
     def test_property_13_deletion_referential_integrity(self, connection, agent_names):
@@ -3880,80 +3632,81 @@ class TestDeletionReferentialIntegrityProperty:
             assert store_data["connections"][0]["name"] == connection.name
 
             # Mock get_agents_using_connection to return the agent_names list
-            with patch.object(manager, 'get_agents_using_connection', return_value=agent_names):
+            with patch.object(manager, "get_agents_using_connection", return_value=agent_names):
                 # Attempt to delete the connection
                 delete_result = manager.delete_connection(connection.name)
 
                 if len(agent_names) > 0:
                     # Case 1: Connection is referenced by one or more agents
                     # Deletion should fail
-                    assert is_err(delete_result), \
+                    assert is_err(delete_result), (
                         f"Deletion should fail when connection is used by {len(agent_names)} agent(s)"
+                    )
 
                     error_msg = unwrap_err(delete_result)
 
                     # Error message should indicate the connection cannot be deleted
-                    assert "cannot delete" in error_msg.lower(), \
-                        f"Error should mention 'cannot delete': {error_msg}"
+                    assert "cannot delete" in error_msg.lower(), f"Error should mention 'cannot delete': {error_msg}"
 
                     # Error message should mention the connection name
-                    assert connection.name in error_msg, \
+                    assert connection.name in error_msg, (
                         f"Error should mention connection name '{connection.name}': {error_msg}"
+                    )
 
                     # Error message should list the agents using the connection
-                    assert "used by" in error_msg.lower() or "using" in error_msg.lower(), \
+                    assert "used by" in error_msg.lower() or "using" in error_msg.lower(), (
                         f"Error should mention agents using the connection: {error_msg}"
+                    )
 
                     # All agent names should appear in the error message
                     for agent_name in agent_names:
-                        assert agent_name in error_msg, \
-                            f"Error should list agent '{agent_name}': {error_msg}"
+                        assert agent_name in error_msg, f"Error should list agent '{agent_name}': {error_msg}"
 
                     # Verify connection was NOT deleted from store
                     store_data_after = manager._load_store()
-                    assert len(store_data_after["connections"]) == 1, \
+                    assert len(store_data_after["connections"]) == 1, (
                         "Connection should still exist in store after failed deletion"
-                    assert store_data_after["connections"][0]["name"] == connection.name, \
+                    )
+                    assert store_data_after["connections"][0]["name"] == connection.name, (
                         "Original connection should remain unchanged"
+                    )
 
                 else:
                     # Case 2: Connection is not referenced by any agents
                     # Deletion should succeed
-                    assert is_ok(delete_result), \
+                    assert is_ok(delete_result), (
                         f"Deletion should succeed when connection is not used by any agents: {delete_result}"
+                    )
 
                     # Verify connection was removed from store
                     store_data_after = manager._load_store()
-                    assert len(store_data_after["connections"]) == 0, \
+                    assert len(store_data_after["connections"]) == 0, (
                         "Connection should be removed from store after successful deletion"
+                    )
 
                     # Verify the connection no longer exists
                     get_result = manager.get_connection(connection.name)
-                    assert is_err(get_result), \
-                        "Getting deleted connection should fail"
+                    assert is_err(get_result), "Getting deleted connection should fail"
 
                     get_error = unwrap_err(get_result)
-                    assert "not found" in get_error.lower(), \
-                        f"Error should indicate connection not found: {get_error}"
+                    assert "not found" in get_error.lower(), f"Error should indicate connection not found: {get_error}"
 
     @given(
         connection=st.builds(
             DatabaseConnection,
-            name=st.text(
-                alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-                min_size=1,
-                max_size=50
-            ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s),
-            database_type=st.just('sqlite'),
+            name=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=50).filter(
+                lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s
+            ),
+            database_type=st.just("sqlite"),
             file_path=st.text(min_size=1, max_size=200).filter(lambda s: s.strip()),
             host=st.none(),
             port=st.none(),
             database=st.none(),
             service_name=st.none(),
             username=st.none(),
-            password=st.none()
+            password=st.none(),
         ),
-        num_agents=st.integers(min_value=1, max_value=10)
+        num_agents=st.integers(min_value=1, max_value=10),
     )
     @settings(max_examples=100, deadline=None)
     def test_property_13_deletion_fails_with_multiple_agents(self, connection, num_agents):
@@ -3981,20 +3734,18 @@ class TestDeletionReferentialIntegrityProperty:
             agent_names = [f"agent-{i}" for i in range(num_agents)]
 
             # Mock get_agents_using_connection to return the agent names
-            with patch.object(manager, 'get_agents_using_connection', return_value=agent_names):
+            with patch.object(manager, "get_agents_using_connection", return_value=agent_names):
                 # Attempt to delete the connection
                 delete_result = manager.delete_connection(connection.name)
 
                 # Deletion should fail
-                assert is_err(delete_result), \
-                    f"Deletion should fail when connection is used by {num_agents} agents"
+                assert is_err(delete_result), f"Deletion should fail when connection is used by {num_agents} agents"
 
                 error_msg = unwrap_err(delete_result)
 
                 # Error message should list all agents
                 for agent_name in agent_names:
-                    assert agent_name in error_msg, \
-                        f"Error should list agent '{agent_name}': {error_msg}"
+                    assert agent_name in error_msg, f"Error should list agent '{agent_name}': {error_msg}"
 
                 # Verify connection still exists
                 store_data = manager._load_store()
@@ -4004,19 +3755,17 @@ class TestDeletionReferentialIntegrityProperty:
     @given(
         connection=st.builds(
             DatabaseConnection,
-            name=st.text(
-                alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-                min_size=1,
-                max_size=50
-            ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s),
-            database_type=st.just('sqlite'),
+            name=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=50).filter(
+                lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s
+            ),
+            database_type=st.just("sqlite"),
             file_path=st.text(min_size=1, max_size=200).filter(lambda s: s.strip()),
             host=st.none(),
             port=st.none(),
             database=st.none(),
             service_name=st.none(),
             username=st.none(),
-            password=st.none()
+            password=st.none(),
         )
     )
     @settings(max_examples=100, deadline=None)
@@ -4046,49 +3795,65 @@ class TestDeletionReferentialIntegrityProperty:
             assert len(store_data_before["connections"]) == 1
 
             # Mock get_agents_using_connection to return empty list
-            with patch.object(manager, 'get_agents_using_connection', return_value=[]):
+            with patch.object(manager, "get_agents_using_connection", return_value=[]):
                 # Attempt to delete the connection
                 delete_result = manager.delete_connection(connection.name)
 
                 # Deletion should succeed
-                assert is_ok(delete_result), \
-                    f"Deletion should succeed when connection is not used: {delete_result}"
+                assert is_ok(delete_result), f"Deletion should succeed when connection is not used: {delete_result}"
 
                 # Verify connection was removed
                 store_data_after = manager._load_store()
-                assert len(store_data_after["connections"]) == 0, \
-                    "Connection should be removed from store"
+                assert len(store_data_after["connections"]) == 0, "Connection should be removed from store"
 
                 # Verify connection no longer exists
                 get_result = manager.get_connection(connection.name)
-                assert is_err(get_result), \
-                    "Getting deleted connection should fail"
+                assert is_err(get_result), "Getting deleted connection should fail"
 
     @given(
         connection=st.builds(
             DatabaseConnection,
-            name=st.text(
-                alphabet='abcdefghijklmnopqrstuvwxyz0123456789-',
-                min_size=1,
-                max_size=50
-            ).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s),
-            database_type=st.sampled_from(['oracle', 'postgresql', 'mysql', 'sqlite']),
+            name=st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=50).filter(
+                lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s
+            ),
+            database_type=st.sampled_from(["oracle", "postgresql", "mysql", "sqlite"]),
             host=st.one_of(st.none(), st.text(min_size=1, max_size=100)),
             port=st.one_of(st.none(), st.integers(min_value=1, max_value=65535)),
             database=st.one_of(st.none(), st.text(min_size=1, max_size=50)),
             service_name=st.one_of(st.none(), st.text(min_size=1, max_size=50)),
             username=st.one_of(st.none(), st.text(min_size=1, max_size=50)),
             password=st.one_of(st.none(), st.text(min_size=1, max_size=100)),
-            file_path=st.one_of(st.none(), st.text(min_size=1, max_size=200))
-        ).filter(lambda c:
+            file_path=st.one_of(st.none(), st.text(min_size=1, max_size=200)),
+        ).filter(
+            lambda c:
             # Ensure valid connection based on database type
-            (c.database_type == 'sqlite' and c.file_path is not None and c.file_path.strip()) or
-            (c.database_type == 'oracle' and c.host is not None and c.host.strip() and c.port is not None and
-             c.service_name is not None and c.service_name.strip() and c.username is not None and c.username.strip() and c.password is not None and c.password.strip()) or
-            (c.database_type in ['postgresql', 'mysql'] and c.host is not None and c.host.strip() and c.port is not None and
-             c.database is not None and c.database.strip() and c.username is not None and c.username.strip() and c.password is not None and c.password.strip())
+            (c.database_type == "sqlite" and c.file_path is not None and c.file_path.strip())
+            or (
+                c.database_type == "oracle"
+                and c.host is not None
+                and c.host.strip()
+                and c.port is not None
+                and c.service_name is not None
+                and c.service_name.strip()
+                and c.username is not None
+                and c.username.strip()
+                and c.password is not None
+                and c.password.strip()
+            )
+            or (
+                c.database_type in ["postgresql", "mysql"]
+                and c.host is not None
+                and c.host.strip()
+                and c.port is not None
+                and c.database is not None
+                and c.database.strip()
+                and c.username is not None
+                and c.username.strip()
+                and c.password is not None
+                and c.password.strip()
+            )
         ),
-        has_agents=st.booleans()
+        has_agents=st.booleans(),
     )
     @settings(max_examples=100, deadline=None)
     def test_property_13_deletion_behavior_based_on_usage(self, connection, has_agents):
@@ -4116,14 +3881,13 @@ class TestDeletionReferentialIntegrityProperty:
             agent_names = ["test-agent-1", "test-agent-2"] if has_agents else []
 
             # Mock get_agents_using_connection
-            with patch.object(manager, 'get_agents_using_connection', return_value=agent_names):
+            with patch.object(manager, "get_agents_using_connection", return_value=agent_names):
                 # Attempt to delete the connection
                 delete_result = manager.delete_connection(connection.name)
 
                 if has_agents:
                     # Should fail when agents are using the connection
-                    assert is_err(delete_result), \
-                        "Deletion should fail when connection is in use"
+                    assert is_err(delete_result), "Deletion should fail when connection is in use"
 
                     error_msg = unwrap_err(delete_result)
                     assert connection.name in error_msg
@@ -4134,8 +3898,9 @@ class TestDeletionReferentialIntegrityProperty:
 
                 else:
                     # Should succeed when no agents are using the connection
-                    assert is_ok(delete_result), \
+                    assert is_ok(delete_result), (
                         f"Deletion should succeed when connection is not in use: {delete_result}"
+                    )
 
                     # Verify connection was removed
                     store_data = manager._load_store()

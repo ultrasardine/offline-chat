@@ -19,7 +19,7 @@ class TestSecurePermissionsIntegration:
 
     def test_complete_workflow_with_secure_permissions(self, capsys):
         """Test complete workflow: create store, verify permissions, warn on insecure."""
-        if os.name == 'nt':  # Skip on Windows
+        if os.name == "nt":  # Skip on Windows
             pytest.skip("Permission checks not applicable on Windows")
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -34,13 +34,10 @@ class TestSecurePermissionsIntegration:
             assert permissions == 0o600
 
             # Step 2: Create a connection - should preserve permissions
-            conn = DatabaseConnection(
-                name="test-conn",
-                database_type="sqlite",
-                file_path="/tmp/test.db"
-            )
+            conn = DatabaseConnection(name="test-conn", database_type="sqlite", file_path="/tmp/test.db")
             result = manager.create_connection(conn)
             from offline_chat.database.result import is_ok
+
             assert is_ok(result)
 
             # Verify permissions are still 600
@@ -70,7 +67,7 @@ class TestSecurePermissionsIntegration:
 
     def test_permissions_maintained_across_operations(self):
         """Test that permissions remain secure across multiple operations."""
-        if os.name == 'nt':  # Skip on Windows
+        if os.name == "nt":  # Skip on Windows
             pytest.skip("Permission checks not applicable on Windows")
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -80,11 +77,7 @@ class TestSecurePermissionsIntegration:
 
             # Create multiple connections
             connections = [
-                DatabaseConnection(
-                    name=f"conn-{i}",
-                    database_type="sqlite",
-                    file_path=f"/tmp/test{i}.db"
-                )
+                DatabaseConnection(name=f"conn-{i}", database_type="sqlite", file_path=f"/tmp/test{i}.db")
                 for i in range(5)
             ]
 
@@ -110,7 +103,7 @@ class TestSecurePermissionsIntegration:
 
     def test_warning_message_content(self, capsys):
         """Test that warning message contains helpful information."""
-        if os.name == 'nt':  # Skip on Windows
+        if os.name == "nt":  # Skip on Windows
             pytest.skip("Permission checks not applicable on Windows")
 
         with tempfile.TemporaryDirectory() as tmpdir:

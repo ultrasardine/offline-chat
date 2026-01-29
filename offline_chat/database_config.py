@@ -78,10 +78,7 @@ def create_database_mcp_config(db_type: str, name: str, **kwargs) -> MCPServerCo
     elif db_type == "mysql":
         return _create_mysql_config(name, **kwargs)
     else:
-        raise ValueError(
-            f"Unsupported database type: {db_type}. "
-            f"Supported types: oracle, postgresql, mysql, sqlite"
-        )
+        raise ValueError(f"Unsupported database type: {db_type}. Supported types: oracle, postgresql, mysql, sqlite")
 
 
 def _create_oracle_config(
@@ -144,9 +141,7 @@ def _create_oracle_config(
     else:
         # Use full connection details (third priority)
         if not all([host, service_name, username]) or password is None:
-            raise ValueError(
-                "Oracle full connection requires 'host', 'service_name', 'username', and 'password'"
-            )
+            raise ValueError("Oracle full connection requires 'host', 'service_name', 'username', and 'password'")
         conn_string = f"{username}/{password}@{host}:{port}/{service_name}"
         return MCPServerConfig(
             name=name,
@@ -214,9 +209,7 @@ def _create_postgresql_config(
         ValueError: If required parameters are missing
     """
     if not all([host, database, username]) or password is None:
-        raise ValueError(
-            "PostgreSQL configuration requires 'host', 'database', 'username', and 'password'"
-        )
+        raise ValueError("PostgreSQL configuration requires 'host', 'database', 'username', and 'password'")
 
     return MCPServerConfig(
         name=name,
@@ -263,9 +256,7 @@ def _create_mysql_config(
         ValueError: If required parameters are missing
     """
     if not all([host, database, username]) or password is None:
-        raise ValueError(
-            "MySQL configuration requires 'host', 'database', 'username', and 'password'"
-        )
+        raise ValueError("MySQL configuration requires 'host', 'database', 'username', and 'password'")
 
     return MCPServerConfig(
         name=name,

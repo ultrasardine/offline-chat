@@ -38,10 +38,7 @@ class TestAddGuideline:
                 manager.create_agent(agent)
 
             # Add guideline
-            result = manager.add_guideline(
-                "test-agent",
-                "Always explain your reasoning"
-            )
+            result = manager.add_guideline("test-agent", "Always explain your reasoning")
 
             assert is_ok(result)
 
@@ -74,11 +71,7 @@ class TestAddGuideline:
                 manager.create_agent(agent)
 
             # Add multiple guidelines
-            guidelines = [
-                "Always explain your reasoning",
-                "Be concise and clear",
-                "Provide examples when helpful"
-            ]
+            guidelines = ["Always explain your reasoning", "Be concise and clear", "Provide examples when helpful"]
 
             for guideline in guidelines:
                 result = manager.add_guideline("test-agent", guideline)
@@ -178,7 +171,7 @@ class TestEditGuideline:
                 base_model="llama3:latest",
                 system_prompt="You are a test agent.",
                 temperature=0.7,
-                guidelines=["Original guideline 1", "Original guideline 2"]
+                guidelines=["Original guideline 1", "Original guideline 2"],
             )
 
             with patch("subprocess.run") as mock_run:
@@ -212,7 +205,7 @@ class TestEditGuideline:
                 base_model="llama3:latest",
                 system_prompt="You are a test agent.",
                 temperature=0.7,
-                guidelines=["Guideline 1", "Guideline 2", "Guideline 3"]
+                guidelines=["Guideline 1", "Guideline 2", "Guideline 3"],
             )
 
             with patch("subprocess.run") as mock_run:
@@ -247,7 +240,7 @@ class TestEditGuideline:
                 base_model="llama3:latest",
                 system_prompt="You are a test agent.",
                 temperature=0.7,
-                guidelines=["Guideline 1", "Guideline 2"]
+                guidelines=["Guideline 1", "Guideline 2"],
             )
 
             with patch("subprocess.run") as mock_run:
@@ -282,7 +275,7 @@ class TestEditGuideline:
                 base_model="llama3:latest",
                 system_prompt="You are a test agent.",
                 temperature=0.7,
-                guidelines=["Guideline 1"]
+                guidelines=["Guideline 1"],
             )
 
             with patch("subprocess.run") as mock_run:
@@ -325,7 +318,7 @@ class TestDeleteGuideline:
                 base_model="llama3:latest",
                 system_prompt="You are a test agent.",
                 temperature=0.7,
-                guidelines=["Guideline 1", "Guideline 2", "Guideline 3"]
+                guidelines=["Guideline 1", "Guideline 2", "Guideline 3"],
             )
 
             with patch("subprocess.run") as mock_run:
@@ -359,7 +352,7 @@ class TestDeleteGuideline:
                 base_model="llama3:latest",
                 system_prompt="You are a test agent.",
                 temperature=0.7,
-                guidelines=["First", "Second", "Third", "Fourth"]
+                guidelines=["First", "Second", "Third", "Fourth"],
             )
 
             with patch("subprocess.run") as mock_run:
@@ -391,7 +384,7 @@ class TestDeleteGuideline:
                 base_model="llama3:latest",
                 system_prompt="You are a test agent.",
                 temperature=0.7,
-                guidelines=["Only guideline"]
+                guidelines=["Only guideline"],
             )
 
             with patch("subprocess.run") as mock_run:
@@ -424,7 +417,7 @@ class TestDeleteGuideline:
                 base_model="llama3:latest",
                 system_prompt="You are a test agent.",
                 temperature=0.7,
-                guidelines=["Guideline 1", "Guideline 2"]
+                guidelines=["Guideline 1", "Guideline 2"],
             )
 
             with patch("subprocess.run") as mock_run:
@@ -475,7 +468,7 @@ class TestListGuidelines:
                 base_model="llama3:latest",
                 system_prompt="You are a test agent.",
                 temperature=0.7,
-                guidelines=guidelines
+                guidelines=guidelines,
             )
 
             with patch("subprocess.run") as mock_run:
@@ -608,7 +601,7 @@ class TestGuidelinesEdgeCases:
                 base_model="llama3:latest",
                 system_prompt="You are a test agent.",
                 temperature=0.7,
-                guidelines=["Guideline 1", "Guideline 2"]
+                guidelines=["Guideline 1", "Guideline 2"],
             )
 
             with patch("subprocess.run") as mock_run:
@@ -687,7 +680,7 @@ class TestGuidelinesEdgeCases:
                 base_model="llama3:latest",
                 system_prompt="You are a test agent.",
                 temperature=0.7,
-                guidelines=["First", "Second", "Third"]
+                guidelines=["First", "Second", "Third"],
             )
 
             with patch("subprocess.run") as mock_run:
@@ -796,7 +789,7 @@ class TestGuidelinesEdgeCases:
                 base_model="llama3:latest",
                 system_prompt="You are a test agent.",
                 temperature=0.7,
-                guidelines=["Guideline 1", "Guideline 2"]
+                guidelines=["Guideline 1", "Guideline 2"],
             )
 
             with patch("subprocess.run") as mock_run:

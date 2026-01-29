@@ -96,9 +96,6 @@ class WebSearchTool:
         except SearchTimeoutError:
             return "Search timed out. Please try again or rephrase your query."
         except SearchConnectionError:
-            return (
-                "Web search is currently unavailable. "
-                "Please answer based on your existing knowledge."
-            )
+            return "Web search is currently unavailable. Please answer based on your existing knowledge."
         except Exception as e:
             return f"Search failed: {str(e)}. Please answer based on your existing knowledge."

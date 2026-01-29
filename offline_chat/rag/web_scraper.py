@@ -30,12 +30,7 @@ class WebScraper:
         self.mcp_client = mcp_client
         self._rate_limit_delay = 1.0  # Delay between requests in seconds
 
-    async def scrape_url(
-        self,
-        url: str,
-        max_retries: int = 3,
-        max_length: int = 50000
-    ) -> ScrapedContent:
+    async def scrape_url(self, url: str, max_retries: int = 3, max_length: int = 50000) -> ScrapedContent:
         """
         Scrape content from a URL with exponential backoff retry logic.
 
@@ -58,10 +53,7 @@ class WebScraper:
                 # Calculate backoff delay: 1s, 2s, 4s
                 if attempt > 0:
                     backoff_delay = 2 ** (attempt - 1)
-                    logger.info(
-                        f"Retry attempt {attempt + 1}/{max_retries} for {url} "
-                        f"after {backoff_delay}s delay"
-                    )
+                    logger.info(f"Retry attempt {attempt + 1}/{max_retries} for {url} after {backoff_delay}s delay")
                     await asyncio.sleep(backoff_delay)
 
                 # Call MCP fetch tool
@@ -71,8 +63,8 @@ class WebScraper:
                     {
                         "url": url,
                         "max_length": max_length,
-                        "raw": False  # Get simplified markdown, not raw HTML
-                    }
+                        "raw": False,  # Get simplified markdown, not raw HTML
+                    },
                 )
 
                 # Check if result indicates an error
@@ -80,48 +72,26 @@ class WebScraper:
                     raise RuntimeError(result)
 
                 # Extract metadata from the result
-                metadata = {
-                    "fetch_timestamp": time.time(),
-                    "attempt": attempt + 1,
-                    "content_length": len(result)
-                }
+                metadata = {"fetch_timestamp": time.time(), "attempt": attempt + 1, "content_length": len(result)}
 
-                logger.info(
-                    f"Successfully scraped {url} "
-                    f"({len(result)} chars, attempt {attempt + 1})"
-                )
+                logger.info(f"Successfully scraped {url} ({len(result)} chars, attempt {attempt + 1})")
 
-                return ScrapedContent(
-                    url=url,
-                    text=result,
-                    metadata=metadata,
-                    success=True,
-                    error_message=None
-                )
+                return ScrapedContent(url=url, text=result, metadata=metadata, success=True, error_message=None)
 
             except Exception as e:
                 last_error = e
-                logger.warning(
-                    f"Failed to scrape {url} on attempt {attempt + 1}/{max_retries}: {e}"
-                )
+                logger.warning(f"Failed to scrape {url} on attempt {attempt + 1}/{max_retries}: {e}")
 
         # All retries exhausted
         error_msg = f"Failed to scrape after {max_retries} attempts: {last_error}"
         logger.error(f"Scraping failed for {url}: {error_msg}")
 
         return ScrapedContent(
-            url=url,
-            text="",
-            metadata={"attempts": max_retries},
-            success=False,
-            error_message=error_msg
+            url=url, text="", metadata={"attempts": max_retries}, success=False, error_message=error_msg
         )
 
     async def scrape_urls_batch(
-        self,
-        urls: list[str],
-        max_retries: int = 3,
-        rate_limit_delay: float | None = None
+        self, urls: list[str], max_retries: int = 3, rate_limit_delay: float | None = None
     ) -> list[ScrapedContent]:
         """
         Scrape multiple URLs with rate limiting.
@@ -155,14 +125,11 @@ class WebScraper:
 
             # Log progress
             logger.info(
-                f"Batch progress: {i + 1}/{len(urls)} URLs processed "
-                f"({'success' if result.success else 'failed'})"
+                f"Batch progress: {i + 1}/{len(urls)} URLs processed ({'success' if result.success else 'failed'})"
             )
 
         # Log summary
         successful = sum(1 for r in results if r.success)
-        logger.info(
-            f"Batch scraping complete: {successful}/{len(urls)} URLs successful"
-        )
+        logger.info(f"Batch scraping complete: {successful}/{len(urls)} URLs successful")
 
         return results

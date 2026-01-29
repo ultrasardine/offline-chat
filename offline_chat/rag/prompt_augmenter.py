@@ -25,10 +25,7 @@ IMPORTANT INSTRUCTIONS FOR RESPONDING:
 """
 
     def augment_prompt(
-        self,
-        query: str,
-        context_chunks: list[SearchResult] | list[DocumentChunk],
-        system_prompt: str
+        self, query: str, context_chunks: list[SearchResult] | list[DocumentChunk], system_prompt: str
     ) -> str:
         """
         Create an augmented prompt with context and instructions.
@@ -54,7 +51,7 @@ IMPORTANT INSTRUCTIONS FOR RESPONDING:
                 chunks.append(item)
             else:
                 # Handle any other type by trying to access chunk attribute
-                chunks.append(getattr(item, 'chunk', item))
+                chunks.append(getattr(item, "chunk", item))
 
         # Build the augmented prompt
         prompt_parts = [
@@ -73,21 +70,11 @@ IMPORTANT INSTRUCTIONS FOR RESPONDING:
             prompt_parts.append("-" * 80)
 
         # Add the user query
-        prompt_parts.extend([
-            "",
-            "USER QUERY:",
-            query,
-            "",
-            "YOUR RESPONSE (remember to cite sources):"
-        ])
+        prompt_parts.extend(["", "USER QUERY:", query, "", "YOUR RESPONSE (remember to cite sources):"])
 
         return "\n".join(prompt_parts)
 
-    def format_context_chunk(
-        self,
-        chunk: DocumentChunk,
-        index: int
-    ) -> str:
+    def format_context_chunk(self, chunk: DocumentChunk, index: int) -> str:
         """
         Format a single context chunk with source attribution.
 
@@ -107,13 +94,7 @@ IMPORTANT INSTRUCTIONS FOR RESPONDING:
             source_label = f"Source: {chunk.source_identifier}"
 
         # Format the chunk with clear attribution
-        formatted = [
-            f"[Context {index}]",
-            f"Source Type: {chunk.source_type}",
-            f"{source_label}",
-            "",
-            chunk.text
-        ]
+        formatted = [f"[Context {index}]", f"Source Type: {chunk.source_type}", f"{source_label}", "", chunk.text]
 
         return "\n".join(formatted)
 
@@ -138,7 +119,7 @@ IMPORTANT INSTRUCTIONS FOR RESPONDING:
             "USER QUERY:",
             query,
             "",
-            "YOUR RESPONSE:"
+            "YOUR RESPONSE:",
         ]
 
         return "\n".join(prompt_parts)

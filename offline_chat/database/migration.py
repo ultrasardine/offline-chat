@@ -63,7 +63,7 @@ def detect_inline_configs(agents_dir: Path) -> list[tuple[str, dict[str, Any]]]:
 
             # Load and parse the config
             try:
-                with open(config_path, 'r', encoding='utf-8') as f:
+                with open(config_path, "r", encoding="utf-8") as f:
                     config_data = json.load(f)
 
                 agent_name = config_data.get("name", agent_dir.name)
@@ -72,9 +72,8 @@ def detect_inline_configs(agents_dir: Path) -> list[tuple[str, dict[str, Any]]]:
                 has_database_config = config_data.get("database_config") is not None
 
                 # Check if agent has legacy connection_references (without connection_assignments)
-                has_legacy_references = (
-                    config_data.get("connection_references") and
-                    not config_data.get("connection_assignments")
+                has_legacy_references = config_data.get("connection_references") and not config_data.get(
+                    "connection_assignments"
                 )
 
                 # Add to migration list if either condition is true
@@ -95,10 +94,7 @@ def detect_inline_configs(agents_dir: Path) -> list[tuple[str, dict[str, Any]]]:
 
 
 def migrate_agent(
-    agent_name: str,
-    config_data: dict[str, Any],
-    config_path: Path,
-    db_manager: DatabaseConnectionManager
+    agent_name: str, config_data: dict[str, Any], config_path: Path, db_manager: DatabaseConnectionManager
 ) -> Result[str, str]:
     """Migrate a single agent from inline config to centralized connection.
 
@@ -159,10 +155,7 @@ def migrate_agent(
 
         # Create DatabaseConnection object from inline config
         try:
-            connection = _create_connection_from_inline_config(
-                connection_name,
-                database_config
-            )
+            connection = _create_connection_from_inline_config(connection_name, database_config)
         except ValueError as e:
             return Err(f"Agent '{agent_name}': Invalid database_config: {e}")
 
@@ -176,9 +169,7 @@ def migrate_agent(
 
         # Create connection assignment with read-write access
         assignment = AgentConnectionAssignment(
-            connection_name=connection_name,
-            access_level=AccessLevel.READ_WRITE,
-            allowed_tables=None
+            connection_name=connection_name, access_level=AccessLevel.READ_WRITE, allowed_tables=None
         )
         connection_assignments.append(assignment)
         created_connection_name = connection_name
@@ -200,9 +191,7 @@ def migrate_agent(
 
             # Create assignment with read-write access for backward compatibility
             assignment = AgentConnectionAssignment(
-                connection_name=conn_ref,
-                access_level=AccessLevel.READ_WRITE,
-                allowed_tables=None
+                connection_name=conn_ref, access_level=AccessLevel.READ_WRITE, allowed_tables=None
             )
             connection_assignments.append(assignment)
 
@@ -211,9 +200,7 @@ def migrate_agent(
             created_connection_name = "migrated-references"
 
     # Step 3: Update agent config with connection_assignments
-    config_data["connection_assignments"] = [
-        assignment.to_dict() for assignment in connection_assignments
-    ]
+    config_data["connection_assignments"] = [assignment.to_dict() for assignment in connection_assignments]
 
     # Step 4: Remove deprecated fields
     if "database_config" in config_data:
@@ -223,7 +210,7 @@ def migrate_agent(
 
     # Step 5: Save updated config
     try:
-        with open(config_path, 'w', encoding='utf-8') as f:
+        with open(config_path, "w", encoding="utf-8") as f:
             json.dump(config_data, f, indent=2, ensure_ascii=False)
     except (OSError, PermissionError) as e:
         return Err(f"Agent '{agent_name}': Failed to save updated config: {e}")
@@ -231,10 +218,7 @@ def migrate_agent(
     return Ok(created_connection_name)
 
 
-def _create_connection_from_inline_config(
-    connection_name: str,
-    database_config: dict[str, Any]
-) -> DatabaseConnection:
+def _create_connection_from_inline_config(connection_name: str, database_config: dict[str, Any]) -> DatabaseConnection:
     """Create a DatabaseConnection object from inline database_config.
 
     This helper function converts the old inline database configuration format
@@ -278,7 +262,7 @@ def _create_connection_from_inline_config(
         username=database_config.get("username"),
         password=database_config.get("password"),
         file_path=database_config.get("file_path"),
-        additional_params=database_config.get("additional_params", {})
+        additional_params=database_config.get("additional_params", {}),
     )
 
     return connection

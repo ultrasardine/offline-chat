@@ -10,6 +10,7 @@ from typing import Any, Literal
 @dataclass
 class RAGConfig:
     """RAG-specific configuration for an agent."""
+
     enabled: bool = False
     top_k: int = 5
     min_similarity: float = 0.3
@@ -22,6 +23,7 @@ class RAGConfig:
 @dataclass
 class KnowledgeSource:
     """Represents a knowledge source for RAG."""
+
     source_type: Literal["web", "database"]
     identifier: str  # URL for web, table name for database
     last_indexed: datetime | None = None
@@ -32,6 +34,7 @@ class KnowledgeSource:
 @dataclass
 class DocumentChunk:
     """A chunk of text with metadata."""
+
     text: str
     source_type: Literal["web", "database"]
     source_identifier: str  # URL or table name
@@ -42,6 +45,7 @@ class DocumentChunk:
 @dataclass
 class SearchResult:
     """Result from vector similarity search."""
+
     chunk: DocumentChunk
     similarity_score: float
     rank: int
@@ -50,6 +54,7 @@ class SearchResult:
 @dataclass
 class RetrievalResult:
     """Result of context retrieval."""
+
     chunks: list[SearchResult]
     query: str
     total_results: int
@@ -59,6 +64,7 @@ class RetrievalResult:
 @dataclass
 class SourceCitation:
     """Citation to a knowledge source."""
+
     source_type: Literal["web", "database"]
     identifier: str
     relevance_score: float
@@ -97,6 +103,7 @@ class SourceCitation:
 @dataclass
 class RAGResponse:
     """Response from RAG-enhanced generation."""
+
     content: str
     sources: list[SourceCitation]
     retrieval_result: RetrievalResult
@@ -106,6 +113,7 @@ class RAGResponse:
 @dataclass
 class ScrapedContent:
     """Content scraped from a web URL."""
+
     url: str
     text: str
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -116,6 +124,7 @@ class ScrapedContent:
 @dataclass
 class IngestionResult:
     """Result of knowledge source ingestion."""
+
     source: KnowledgeSource
     success: bool
     chunks_processed: int
@@ -125,6 +134,7 @@ class IngestionResult:
 @dataclass
 class RAGError:
     """Structured error information."""
+
     error_type: Literal["network", "storage", "validation", "generation", "data"]
     message: str  # User-friendly message
     details: str  # Technical details for logging

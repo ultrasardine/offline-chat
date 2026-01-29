@@ -37,6 +37,8 @@ def mock_getpass_globally():
     This fixture patches getpass at the module level where it's imported.
     Tests with explicit @patch decorators will override this default.
     """
-    with patch('offline_chat.database_menu.getpass', return_value='test_password'), \
-         patch('offline_chat.database_config_cli.getpass', return_value='test_password'):
+    with (
+        patch("offline_chat.database_menu.getpass", return_value="test_password"),
+        patch("offline_chat.database_config_cli.getpass", return_value="test_password"),
+    ):
         yield

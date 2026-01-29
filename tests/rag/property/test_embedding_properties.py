@@ -10,11 +10,9 @@ from offline_chat.rag.embedding_generator import EmbeddingGenerator
 from offline_chat.rag.models import DocumentChunk
 
 # Strategy for generating valid text strings
-text_strategy = st.text(
-    alphabet=st.characters(blacklist_categories=("Cs", "Cc")),
-    min_size=1,
-    max_size=200
-).filter(lambda x: x.strip())  # Ensure non-empty after stripping
+text_strategy = st.text(alphabet=st.characters(blacklist_categories=("Cs", "Cc")), min_size=1, max_size=200).filter(
+    lambda x: x.strip()
+)  # Ensure non-empty after stripping
 
 
 # Strategy for generating DocumentChunk objects
@@ -31,7 +29,7 @@ def document_chunk_strategy(draw):
         source_type=source_type,
         source_identifier=source_identifier,
         chunk_index=chunk_index,
-        metadata={"source_identifier": source_identifier}
+        metadata={"source_identifier": source_identifier},
     )
 
 
@@ -70,13 +68,11 @@ class TestEmbeddingProperties:
 
         # Verify each embedding matches
         for i, (batch_emb, individual_emb) in enumerate(zip(batch_embeddings, individual_embeddings)):
-            assert len(batch_emb) == len(individual_emb), \
-                f"Embedding {i}: dimension mismatch"
+            assert len(batch_emb) == len(individual_emb), f"Embedding {i}: dimension mismatch"
 
             # Compare embeddings element-wise with small tolerance for floating point
             for j, (b_val, i_val) in enumerate(zip(batch_emb, individual_emb)):
-                assert abs(b_val - i_val) < 1e-6, \
-                    f"Embedding {i}, element {j}: batch={b_val}, individual={i_val}"
+                assert abs(b_val - i_val) < 1e-6, f"Embedding {i}, element {j}: batch={b_val}, individual={i_val}"
 
     @given(query=text_strategy)
     @settings(max_examples=20, deadline=None)
@@ -99,20 +95,20 @@ class TestEmbeddingProperties:
         embedding = embedding_generator.generate_embedding(query)
 
         # Verify embedding is a list
-        assert isinstance(embedding, list), \
-            f"Embedding should be a list, got {type(embedding)}"
+        assert isinstance(embedding, list), f"Embedding should be a list, got {type(embedding)}"
 
         # Verify embedding has expected dimension
-        assert len(embedding) == expected_dimension, \
+        assert len(embedding) == expected_dimension, (
             f"Embedding dimension mismatch: expected {expected_dimension}, got {len(embedding)}"
+        )
 
         # Verify all elements are floats
-        assert all(isinstance(val, float) for val in embedding), \
-            "All embedding values should be floats"
+        assert all(isinstance(val, float) for val in embedding), "All embedding values should be floats"
 
         # Verify no NaN or infinite values
-        assert all(not (val != val or abs(val) == float('inf')) for val in embedding), \
+        assert all(not (val != val or abs(val) == float("inf")) for val in embedding), (
             "Embedding should not contain NaN or infinite values"
+        )
 
     @given(chunks=st.lists(document_chunk_strategy(), min_size=1, max_size=20))
     @settings(max_examples=20, deadline=None)
@@ -137,16 +133,19 @@ class TestEmbeddingProperties:
         embeddings = embedding_generator.generate_embeddings_batch(texts)
 
         # Verify the count matches exactly
-        assert len(embeddings) == len(chunks), \
+        assert len(embeddings) == len(chunks), (
             f"Embedding count mismatch: expected {len(chunks)} embeddings for {len(chunks)} chunks, got {len(embeddings)}"
+        )
 
         # Verify each embedding has the correct dimension
         expected_dimension = embedding_generator.get_embedding_dimension()
         for i, embedding in enumerate(embeddings):
-            assert len(embedding) == expected_dimension, \
+            assert len(embedding) == expected_dimension, (
                 f"Embedding {i} has incorrect dimension: expected {expected_dimension}, got {len(embedding)}"
+            )
 
         # Verify all embeddings are valid (no NaN or infinite values)
         for i, embedding in enumerate(embeddings):
-            assert all(not (val != val or abs(val) == float('inf')) for val in embedding), \
+            assert all(not (val != val or abs(val) == float("inf")) for val in embedding), (
                 f"Embedding {i} contains NaN or infinite values"
+            )

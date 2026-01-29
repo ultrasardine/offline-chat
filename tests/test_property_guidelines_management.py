@@ -29,26 +29,19 @@ from offline_chat.manager import AgentManager
 # ============================================================================
 
 # Valid agent names (kebab-case)
-valid_agent_names = st.text(
-    alphabet="abcdefghijklmnopqrstuvwxyz0123456789-",
-    min_size=1,
-    max_size=30
-).filter(lambda s: s[0] != '-' and s[-1] != '-' and '--' not in s and s[0] not in '0123456789')
+valid_agent_names = st.text(alphabet="abcdefghijklmnopqrstuvwxyz0123456789-", min_size=1, max_size=30).filter(
+    lambda s: s[0] != "-" and s[-1] != "-" and "--" not in s and s[0] not in "0123456789"
+)
 
 # Valid guideline text (non-empty strings with reasonable content)
 valid_guideline_text = st.text(
     alphabet=st.characters(whitelist_categories=("Ll", "Lu", "Nd"), whitelist_characters=" .,!?-"),
     min_size=5,
-    max_size=100
-).filter(lambda s: s.strip() != '')
+    max_size=100,
+).filter(lambda s: s.strip() != "")
 
 # Lists of guidelines
-guideline_lists = st.lists(
-    valid_guideline_text,
-    min_size=0,
-    max_size=10,
-    unique=True
-)
+guideline_lists = st.lists(valid_guideline_text, min_size=0, max_size=10, unique=True)
 
 # Valid indices (will be constrained based on list size)
 valid_indices = st.integers(min_value=0, max_value=20)
@@ -57,6 +50,7 @@ valid_indices = st.integers(min_value=0, max_value=20)
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
 
 def setup_test_environment():
     """Set up test environment with temporary directories and managers."""
@@ -107,6 +101,7 @@ def create_test_agent(agent_manager, name: str, guidelines=None) -> bool:
 # Property 35: Guideline Addition
 # ============================================================================
 
+
 @given(
     agent_name=valid_agent_names,
     initial_guidelines=guideline_lists,
@@ -114,9 +109,7 @@ def create_test_agent(agent_manager, name: str, guidelines=None) -> bool:
 )
 @settings(deadline=1000, max_examples=100)
 @pytest.mark.property_test
-def test_property_35_guideline_addition(
-    agent_name, initial_guidelines, new_guideline
-):
+def test_property_35_guideline_addition(agent_name, initial_guidelines, new_guideline):
     """Property 35: Guideline Addition
 
     **Validates: Requirements 13.4**
@@ -145,16 +138,19 @@ def test_property_35_guideline_addition(
     assert reloaded_agent is not None, "Agent should exist after guideline addition"
 
     # Verify the guideline was added to the end
-    assert len(reloaded_agent.guidelines) == initial_count + 1, \
+    assert len(reloaded_agent.guidelines) == initial_count + 1, (
         f"Should have {initial_count + 1} guidelines after addition, got {len(reloaded_agent.guidelines)}"
+    )
 
     # Verify the new guideline is at the end
-    assert reloaded_agent.guidelines[-1] == new_guideline, \
+    assert reloaded_agent.guidelines[-1] == new_guideline, (
         f"Last guideline should be '{new_guideline}', got '{reloaded_agent.guidelines[-1]}'"
+    )
 
     # Verify all previous guidelines are preserved in order
-    assert reloaded_agent.guidelines[:-1] == initial_guidelines, \
+    assert reloaded_agent.guidelines[:-1] == initial_guidelines, (
         f"Previous guidelines should be preserved: expected {initial_guidelines}, got {reloaded_agent.guidelines[:-1]}"
+    )
 
 
 @given(
@@ -163,9 +159,7 @@ def test_property_35_guideline_addition(
 )
 @settings(deadline=1000, max_examples=100)
 @pytest.mark.property_test
-def test_property_35_guideline_addition_multiple(
-    agent_name, guidelines_to_add
-):
+def test_property_35_guideline_addition_multiple(agent_name, guidelines_to_add):
     """Property 35: Guideline Addition (Multiple)
 
     **Validates: Requirements 13.4**
@@ -190,16 +184,19 @@ def test_property_35_guideline_addition_multiple(
     assert reloaded_agent is not None, "Agent should exist after guideline additions"
 
     # Verify all guidelines were added in order
-    assert len(reloaded_agent.guidelines) == len(guidelines_to_add), \
+    assert len(reloaded_agent.guidelines) == len(guidelines_to_add), (
         f"Should have {len(guidelines_to_add)} guidelines, got {len(reloaded_agent.guidelines)}"
+    )
 
-    assert reloaded_agent.guidelines == guidelines_to_add, \
+    assert reloaded_agent.guidelines == guidelines_to_add, (
         f"Guidelines should match in order: expected {guidelines_to_add}, got {reloaded_agent.guidelines}"
+    )
 
 
 # ============================================================================
 # Property 36: Guideline Editing
 # ============================================================================
+
 
 @given(
     agent_name=valid_agent_names,
@@ -208,9 +205,7 @@ def test_property_35_guideline_addition_multiple(
 )
 @settings(deadline=1000, max_examples=100)
 @pytest.mark.property_test
-def test_property_36_guideline_editing(
-    agent_name, initial_guidelines, new_text
-):
+def test_property_36_guideline_editing(agent_name, initial_guidelines, new_text):
     """Property 36: Guideline Editing
 
     **Validates: Requirements 13.5**
@@ -242,18 +237,21 @@ def test_property_36_guideline_editing(
     assert reloaded_agent is not None, "Agent should exist after guideline edit"
 
     # Verify the guideline count is unchanged
-    assert len(reloaded_agent.guidelines) == len(initial_guidelines), \
+    assert len(reloaded_agent.guidelines) == len(initial_guidelines), (
         f"Should have {len(initial_guidelines)} guidelines after edit, got {len(reloaded_agent.guidelines)}"
+    )
 
     # Verify the edited guideline has the new text
-    assert reloaded_agent.guidelines[index_to_edit] == new_text, \
+    assert reloaded_agent.guidelines[index_to_edit] == new_text, (
         f"Guideline at index {index_to_edit} should be '{new_text}', got '{reloaded_agent.guidelines[index_to_edit]}'"
+    )
 
     # Verify all other guidelines are unchanged
     for i, guideline in enumerate(initial_guidelines):
         if i != index_to_edit:
-            assert reloaded_agent.guidelines[i] == guideline, \
+            assert reloaded_agent.guidelines[i] == guideline, (
                 f"Guideline at index {i} should be unchanged: expected '{guideline}', got '{reloaded_agent.guidelines[i]}'"
+            )
 
 
 @given(
@@ -264,9 +262,7 @@ def test_property_36_guideline_editing(
 )
 @settings(deadline=1000, max_examples=100)
 @pytest.mark.property_test
-def test_property_36_guideline_editing_all_indices(
-    agent_name, initial_guidelines, new_text, index
-):
+def test_property_36_guideline_editing_all_indices(agent_name, initial_guidelines, new_text, index):
     """Property 36: Guideline Editing (All Indices)
 
     **Validates: Requirements 13.5**
@@ -298,23 +294,27 @@ def test_property_36_guideline_editing_all_indices(
     assert reloaded_agent is not None, "Agent should exist after guideline edit"
 
     # Verify the guideline count is unchanged
-    assert len(reloaded_agent.guidelines) == len(initial_guidelines), \
+    assert len(reloaded_agent.guidelines) == len(initial_guidelines), (
         f"Should have {len(initial_guidelines)} guidelines after edit, got {len(reloaded_agent.guidelines)}"
+    )
 
     # Verify the edited guideline has the new text
-    assert reloaded_agent.guidelines[index] == new_text, \
+    assert reloaded_agent.guidelines[index] == new_text, (
         f"Guideline at index {index} should be '{new_text}', got '{reloaded_agent.guidelines[index]}'"
+    )
 
     # Verify all other guidelines are unchanged
     for i, guideline in enumerate(initial_guidelines):
         if i != index:
-            assert reloaded_agent.guidelines[i] == guideline, \
+            assert reloaded_agent.guidelines[i] == guideline, (
                 f"Guideline at index {i} should be unchanged: expected '{guideline}', got '{reloaded_agent.guidelines[i]}'"
+            )
 
 
 # ============================================================================
 # Property 37: Guideline Deletion
 # ============================================================================
+
 
 @given(
     agent_name=valid_agent_names,
@@ -322,9 +322,7 @@ def test_property_36_guideline_editing_all_indices(
 )
 @settings(deadline=1000, max_examples=100)
 @pytest.mark.property_test
-def test_property_37_guideline_deletion(
-    agent_name, initial_guidelines
-):
+def test_property_37_guideline_deletion(agent_name, initial_guidelines):
     """Property 37: Guideline Deletion
 
     **Validates: Requirements 13.6**
@@ -359,17 +357,20 @@ def test_property_37_guideline_deletion(
     assert reloaded_agent is not None, "Agent should exist after guideline deletion"
 
     # Verify the guideline count decreased by 1
-    assert len(reloaded_agent.guidelines) == len(initial_guidelines) - 1, \
+    assert len(reloaded_agent.guidelines) == len(initial_guidelines) - 1, (
         f"Should have {len(initial_guidelines) - 1} guidelines after deletion, got {len(reloaded_agent.guidelines)}"
+    )
 
     # Verify the deleted guideline is not in the list
-    assert deleted_guideline not in reloaded_agent.guidelines, \
+    assert deleted_guideline not in reloaded_agent.guidelines, (
         f"Deleted guideline '{deleted_guideline}' should not be in the list"
+    )
 
     # Verify the order of remaining guidelines is preserved
-    expected_remaining = initial_guidelines[:index_to_delete] + initial_guidelines[index_to_delete + 1:]
-    assert reloaded_agent.guidelines == expected_remaining, \
+    expected_remaining = initial_guidelines[:index_to_delete] + initial_guidelines[index_to_delete + 1 :]
+    assert reloaded_agent.guidelines == expected_remaining, (
         f"Remaining guidelines should match expected order: expected {expected_remaining}, got {reloaded_agent.guidelines}"
+    )
 
 
 @given(
@@ -379,9 +380,7 @@ def test_property_37_guideline_deletion(
 )
 @settings(deadline=1000, max_examples=100)
 @pytest.mark.property_test
-def test_property_37_guideline_deletion_all_indices(
-    agent_name, initial_guidelines, index
-):
+def test_property_37_guideline_deletion_all_indices(agent_name, initial_guidelines, index):
     """Property 37: Guideline Deletion (All Indices)
 
     **Validates: Requirements 13.6**
@@ -416,17 +415,20 @@ def test_property_37_guideline_deletion_all_indices(
     assert reloaded_agent is not None, "Agent should exist after guideline deletion"
 
     # Verify the guideline count decreased by 1
-    assert len(reloaded_agent.guidelines) == len(initial_guidelines) - 1, \
+    assert len(reloaded_agent.guidelines) == len(initial_guidelines) - 1, (
         f"Should have {len(initial_guidelines) - 1} guidelines after deletion, got {len(reloaded_agent.guidelines)}"
+    )
 
     # Verify the deleted guideline is not in the list
-    assert deleted_guideline not in reloaded_agent.guidelines, \
+    assert deleted_guideline not in reloaded_agent.guidelines, (
         f"Deleted guideline '{deleted_guideline}' should not be in the list"
+    )
 
     # Verify the order of remaining guidelines is preserved
-    expected_remaining = initial_guidelines[:index] + initial_guidelines[index + 1:]
-    assert reloaded_agent.guidelines == expected_remaining, \
+    expected_remaining = initial_guidelines[:index] + initial_guidelines[index + 1 :]
+    assert reloaded_agent.guidelines == expected_remaining, (
         f"Remaining guidelines should match expected order: expected {expected_remaining}, got {reloaded_agent.guidelines}"
+    )
 
 
 @given(
@@ -435,9 +437,7 @@ def test_property_37_guideline_deletion_all_indices(
 )
 @settings(deadline=1000, max_examples=100)
 @pytest.mark.property_test
-def test_property_37_guideline_deletion_all_guidelines(
-    agent_name, initial_guidelines
-):
+def test_property_37_guideline_deletion_all_guidelines(agent_name, initial_guidelines):
     """Property 37: Guideline Deletion (Delete All)
 
     **Validates: Requirements 13.6**
@@ -458,23 +458,24 @@ def test_property_37_guideline_deletion_all_guidelines(
     # Delete all guidelines one by one (always delete index 0)
     for i in range(len(initial_guidelines)):
         result = agent_manager.delete_guideline(agent_name, 0)
-        assert is_ok(result), f"Guideline deletion {i+1} should succeed"
+        assert is_ok(result), f"Guideline deletion {i + 1} should succeed"
 
     # Load the agent from storage
     reloaded_agent = agent_manager.get_agent(agent_name)
     assert reloaded_agent is not None, "Agent should exist after deleting all guidelines"
 
     # Verify all guidelines were deleted
-    assert len(reloaded_agent.guidelines) == 0, \
+    assert len(reloaded_agent.guidelines) == 0, (
         f"Should have 0 guidelines after deleting all, got {len(reloaded_agent.guidelines)}"
+    )
 
-    assert reloaded_agent.guidelines == [], \
-        "Guidelines list should be empty"
+    assert reloaded_agent.guidelines == [], "Guidelines list should be empty"
 
 
 # ============================================================================
 # Property 40: Guideline Listing
 # ============================================================================
+
 
 @given(
     agent_name=valid_agent_names,
@@ -482,9 +483,7 @@ def test_property_37_guideline_deletion_all_guidelines(
 )
 @settings(deadline=1000, max_examples=100)
 @pytest.mark.property_test
-def test_property_40_guideline_listing(
-    agent_name, guidelines
-):
+def test_property_40_guideline_listing(agent_name, guidelines):
     """Property 40: Guideline Listing
 
     **Validates: Requirements 13.7**
@@ -509,17 +508,20 @@ def test_property_40_guideline_listing(
     listed_guidelines = unwrap(result)
 
     # Verify the count matches
-    assert len(listed_guidelines) == len(guidelines), \
+    assert len(listed_guidelines) == len(guidelines), (
         f"Should list {len(guidelines)} guidelines, got {len(listed_guidelines)}"
+    )
 
     # Verify the guidelines match in order
-    assert listed_guidelines == guidelines, \
+    assert listed_guidelines == guidelines, (
         f"Listed guidelines should match in order: expected {guidelines}, got {listed_guidelines}"
+    )
 
     # Verify each guideline is at the correct index
     for i, guideline in enumerate(guidelines):
-        assert listed_guidelines[i] == guideline, \
+        assert listed_guidelines[i] == guideline, (
             f"Guideline at index {i} should be '{guideline}', got '{listed_guidelines[i]}'"
+        )
 
 
 @given(
@@ -529,9 +531,7 @@ def test_property_40_guideline_listing(
 )
 @settings(deadline=1000, max_examples=100)
 @pytest.mark.property_test
-def test_property_40_guideline_listing_after_addition(
-    agent_name, initial_guidelines, new_guideline
-):
+def test_property_40_guideline_listing_after_addition(agent_name, initial_guidelines, new_guideline):
     """Property 40: Guideline Listing (After Addition)
 
     **Validates: Requirements 13.7**
@@ -559,13 +559,15 @@ def test_property_40_guideline_listing_after_addition(
 
     # Verify the count includes the new guideline
     expected_count = len(initial_guidelines) + 1
-    assert len(listed_guidelines) == expected_count, \
+    assert len(listed_guidelines) == expected_count, (
         f"Should list {expected_count} guidelines, got {len(listed_guidelines)}"
+    )
 
     # Verify the guidelines match in order (including the new one at the end)
     expected_guidelines = initial_guidelines + [new_guideline]
-    assert listed_guidelines == expected_guidelines, \
+    assert listed_guidelines == expected_guidelines, (
         f"Listed guidelines should match expected: expected {expected_guidelines}, got {listed_guidelines}"
+    )
 
 
 @given(
@@ -574,9 +576,7 @@ def test_property_40_guideline_listing_after_addition(
 )
 @settings(deadline=1000, max_examples=100)
 @pytest.mark.property_test
-def test_property_40_guideline_listing_after_deletion(
-    agent_name, initial_guidelines
-):
+def test_property_40_guideline_listing_after_deletion(agent_name, initial_guidelines):
     """Property 40: Guideline Listing (After Deletion)
 
     **Validates: Requirements 13.7**
@@ -607,13 +607,15 @@ def test_property_40_guideline_listing_after_deletion(
 
     # Verify the count decreased by 1
     expected_count = len(initial_guidelines) - 1
-    assert len(listed_guidelines) == expected_count, \
+    assert len(listed_guidelines) == expected_count, (
         f"Should list {expected_count} guidelines, got {len(listed_guidelines)}"
+    )
 
     # Verify the guidelines match in order (without the deleted one)
     expected_guidelines = initial_guidelines[1:]
-    assert listed_guidelines == expected_guidelines, \
+    assert listed_guidelines == expected_guidelines, (
         f"Listed guidelines should match expected: expected {expected_guidelines}, got {listed_guidelines}"
+    )
 
 
 @given(
@@ -623,9 +625,7 @@ def test_property_40_guideline_listing_after_deletion(
 )
 @settings(deadline=1000, max_examples=100)
 @pytest.mark.property_test
-def test_property_40_guideline_listing_after_edit(
-    agent_name, initial_guidelines, new_text
-):
+def test_property_40_guideline_listing_after_edit(agent_name, initial_guidelines, new_text):
     """Property 40: Guideline Listing (After Edit)
 
     **Validates: Requirements 13.7**
@@ -655,10 +655,12 @@ def test_property_40_guideline_listing_after_edit(
     listed_guidelines = unwrap(result)
 
     # Verify the count is unchanged
-    assert len(listed_guidelines) == len(initial_guidelines), \
+    assert len(listed_guidelines) == len(initial_guidelines), (
         f"Should list {len(initial_guidelines)} guidelines, got {len(listed_guidelines)}"
+    )
 
     # Verify the guidelines match in order (with the edited one)
     expected_guidelines = [new_text] + initial_guidelines[1:]
-    assert listed_guidelines == expected_guidelines, \
+    assert listed_guidelines == expected_guidelines, (
         f"Listed guidelines should match expected: expected {expected_guidelines}, got {listed_guidelines}"
+    )

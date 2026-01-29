@@ -26,11 +26,7 @@ class AccessLevelValidator:
     DDL_OPERATIONS = {"CREATE", "DROP", "ALTER", "TRUNCATE", "RENAME"}
 
     @staticmethod
-    def validate_query(
-        query: str,
-        access_level: AccessLevel,
-        allowed_tables: List[str]
-    ) -> Result[None, str]:
+    def validate_query(query: str, access_level: AccessLevel, allowed_tables: List[str]) -> Result[None, str]:
         """Validate a query against the assigned access level.
 
         This method parses the query to identify the operation type and table names,
@@ -87,9 +83,7 @@ class AccessLevelValidator:
         if access_level == AccessLevel.READ_ONLY:
             # Only SELECT queries allowed
             if operation not in AccessLevelValidator.READ_OPERATIONS:
-                return Err(
-                    f"Query not allowed with read-only access: {operation} operation is not permitted"
-                )
+                return Err(f"Query not allowed with read-only access: {operation} operation is not permitted")
 
         elif access_level == AccessLevel.READ_WRITE:
             # SELECT, INSERT, UPDATE, DELETE allowed; DDL not allowed
@@ -98,16 +92,12 @@ class AccessLevelValidator:
                     f"Query not allowed with read-write access: {operation} operation is not permitted (DDL operations not allowed)"
                 )
             if operation not in (AccessLevelValidator.READ_OPERATIONS | AccessLevelValidator.WRITE_OPERATIONS):
-                return Err(
-                    f"Query not allowed with read-write access: {operation} operation is not permitted"
-                )
+                return Err(f"Query not allowed with read-write access: {operation} operation is not permitted")
 
         elif access_level == AccessLevel.TABLE_SPECIFIC_READ:
             # Only SELECT queries on allowed tables
             if operation not in AccessLevelValidator.READ_OPERATIONS:
-                return Err(
-                    f"Query not allowed with table-specific-read access: {operation} operation is not permitted"
-                )
+                return Err(f"Query not allowed with table-specific-read access: {operation} operation is not permitted")
             # Check if all tables are in allowed list
             if not allowed_tables:
                 return Err("Table-specific access requires allowed_tables to be specified")
@@ -168,9 +158,9 @@ class AccessLevelValidator:
 
         # Remove SQL comments (-- style and /* */ style)
         # Remove single-line comments
-        query = re.sub(r'--[^\n]*', '', query)
+        query = re.sub(r"--[^\n]*", "", query)
         # Remove multi-line comments
-        query = re.sub(r'/\*.*?\*/', '', query, flags=re.DOTALL)
+        query = re.sub(r"/\*.*?\*/", "", query, flags=re.DOTALL)
 
         # Strip whitespace again after removing comments
         query = query.strip()
@@ -179,7 +169,7 @@ class AccessLevelValidator:
             return ""
 
         # Extract first word (the operation)
-        match = re.match(r'^\s*(\w+)', query, re.IGNORECASE)
+        match = re.match(r"^\s*(\w+)", query, re.IGNORECASE)
         if match:
             operation = match.group(1).upper()
             return operation
@@ -211,8 +201,8 @@ class AccessLevelValidator:
             ['users']
         """
         # Remove SQL comments
-        query = re.sub(r'--[^\n]*', '', query)
-        query = re.sub(r'/\*.*?\*/', '', query, flags=re.DOTALL)
+        query = re.sub(r"--[^\n]*", "", query)
+        query = re.sub(r"/\*.*?\*/", "", query, flags=re.DOTALL)
 
         # Convert to uppercase for pattern matching
         query_upper = query.upper()
@@ -221,57 +211,57 @@ class AccessLevelValidator:
 
         # Pattern 1: FROM clause - matches "FROM table_name" or "FROM schema.table_name"
         # Handles optional alias: "FROM table_name alias" or "FROM table_name AS alias"
-        from_pattern = r'\bFROM\s+([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)?)'
+        from_pattern = r"\bFROM\s+([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)?)"
         from_matches = re.finditer(from_pattern, query_upper)
         for match in from_matches:
             table_name = match.group(1)
             # If schema.table format, extract just the table name
-            if '.' in table_name:
-                table_name = table_name.split('.')[-1]
+            if "." in table_name:
+                table_name = table_name.split(".")[-1]
             # Get the actual case from original query
             start, end = match.span(1)
             actual_table = query[start:end]
-            if '.' in actual_table:
-                actual_table = actual_table.split('.')[-1]
+            if "." in actual_table:
+                actual_table = actual_table.split(".")[-1]
             table_names.append(actual_table.lower())
 
         # Pattern 2: JOIN clause - matches "JOIN table_name" or "JOIN schema.table_name"
-        join_pattern = r'\bJOIN\s+([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)?)'
+        join_pattern = r"\bJOIN\s+([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)?)"
         join_matches = re.finditer(join_pattern, query_upper)
         for match in join_matches:
             table_name = match.group(1)
-            if '.' in table_name:
-                table_name = table_name.split('.')[-1]
+            if "." in table_name:
+                table_name = table_name.split(".")[-1]
             start, end = match.span(1)
             actual_table = query[start:end]
-            if '.' in actual_table:
-                actual_table = actual_table.split('.')[-1]
+            if "." in actual_table:
+                actual_table = actual_table.split(".")[-1]
             table_names.append(actual_table.lower())
 
         # Pattern 3: INTO clause (for INSERT) - matches "INTO table_name"
-        into_pattern = r'\bINTO\s+([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)?)'
+        into_pattern = r"\bINTO\s+([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)?)"
         into_matches = re.finditer(into_pattern, query_upper)
         for match in into_matches:
             table_name = match.group(1)
-            if '.' in table_name:
-                table_name = table_name.split('.')[-1]
+            if "." in table_name:
+                table_name = table_name.split(".")[-1]
             start, end = match.span(1)
             actual_table = query[start:end]
-            if '.' in actual_table:
-                actual_table = actual_table.split('.')[-1]
+            if "." in actual_table:
+                actual_table = actual_table.split(".")[-1]
             table_names.append(actual_table.lower())
 
         # Pattern 4: UPDATE clause - matches "UPDATE table_name"
-        update_pattern = r'\bUPDATE\s+([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)?)'
+        update_pattern = r"\bUPDATE\s+([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)?)"
         update_matches = re.finditer(update_pattern, query_upper)
         for match in update_matches:
             table_name = match.group(1)
-            if '.' in table_name:
-                table_name = table_name.split('.')[-1]
+            if "." in table_name:
+                table_name = table_name.split(".")[-1]
             start, end = match.span(1)
             actual_table = query[start:end]
-            if '.' in actual_table:
-                actual_table = actual_table.split('.')[-1]
+            if "." in actual_table:
+                actual_table = actual_table.split(".")[-1]
             table_names.append(actual_table.lower())
 
         # Remove duplicates while preserving order

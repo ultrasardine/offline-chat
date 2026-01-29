@@ -33,20 +33,13 @@ def temp_workspace(tmp_path):
     store_path = tmp_path / "connections.json"
     agents_dir = tmp_path / "agents"
     agents_dir.mkdir()
-    return {
-        "store_path": store_path,
-        "agents_dir": agents_dir,
-        "tmp_path": tmp_path
-    }
+    return {"store_path": store_path, "agents_dir": agents_dir, "tmp_path": tmp_path}
 
 
 @pytest.fixture
 def db_manager(temp_workspace):
     """Create a DatabaseConnectionManager with temp workspace."""
-    return DatabaseConnectionManager(
-        store_path=temp_workspace["store_path"],
-        agents_dir=temp_workspace["agents_dir"]
-    )
+    return DatabaseConnectionManager(store_path=temp_workspace["store_path"], agents_dir=temp_workspace["agents_dir"])
 
 
 @pytest.fixture
@@ -70,7 +63,7 @@ def setup_test_data(db_manager, agent_manager, temp_workspace):
         port=1521,
         service_name="TESTDB",
         username="testuser",
-        password="testpass"
+        password="testpass",
     )
     postgres_conn = DatabaseConnection(
         name="test-postgres",
@@ -79,7 +72,7 @@ def setup_test_data(db_manager, agent_manager, temp_workspace):
         port=5432,
         database="testdb",
         username="testuser",
-        password="testpass"
+        password="testpass",
     )
 
     db_manager.create_connection(oracle_conn)
@@ -98,28 +91,17 @@ def setup_test_data(db_manager, agent_manager, temp_workspace):
         "web_search_enabled": False,
         "mcp_servers": [],
         "connection_assignments": [
-            {
-                "connection_name": "test-oracle",
-                "access_level": "read-only",
-                "allowed_tables": []
-            }
+            {"connection_name": "test-oracle", "access_level": "read-only", "allowed_tables": []}
         ],
-        "guidelines": [
-            "Always explain your queries",
-            "Never modify production data"
-        ],
+        "guidelines": ["Always explain your queries", "Never modify production data"],
         "created_at": datetime.now().isoformat(),
-        "updated_at": datetime.now().isoformat()
+        "updated_at": datetime.now().isoformat(),
     }
 
     with open(agent_dir / "config.json", "w") as f:
         json.dump(config, f)
 
-    return {
-        "oracle_conn": oracle_conn,
-        "postgres_conn": postgres_conn,
-        "agent_name": "test-agent"
-    }
+    return {"oracle_conn": oracle_conn, "postgres_conn": postgres_conn, "agent_name": "test-agent"}
 
 
 class TestDatabaseMenuNavigationFlows:
@@ -140,7 +122,7 @@ class TestDatabaseMenuNavigationFlows:
             "4",  # Delete connection
             "1",  # Select connection to delete
             "y",  # Confirm deletion
-            "5"   # Back to main menu
+            "5",  # Back to main menu
         ]
 
         with patch("builtins.input", side_effect=inputs):
@@ -165,12 +147,18 @@ class TestDatabaseMenuNavigationFlows:
             "1",  # Create connection
             "test-oracle",  # Duplicate name
             "1",  # Oracle
-            "localhost", "1521", "TESTDB", "user",
+            "localhost",
+            "1521",
+            "TESTDB",
+            "user",
             "3",  # Update connection instead
             "1",  # Select test-oracle
             "newhost",  # New host
-            "", "", "", "n",  # Keep other fields
-            "5"   # Back
+            "",
+            "",
+            "",
+            "n",  # Keep other fields
+            "5",  # Back
         ]
 
         with patch("builtins.input", side_effect=inputs):
@@ -190,10 +178,10 @@ class TestDatabaseMenuNavigationFlows:
         inputs = [
             "99",  # Invalid option
             "abc",  # Invalid option
-            "",    # Empty input
-            "1",   # Valid: Create
-            "",    # Empty name (should fail)
-            "5"    # Back
+            "",  # Empty input
+            "1",  # Valid: Create
+            "",  # Empty name (should fail)
+            "5",  # Back
         ]
 
         with patch("builtins.input", side_effect=inputs):
@@ -215,12 +203,7 @@ class TestAgentUpdateMenuNavigationFlows:
     Full integration tests with agents are covered in test_agent_update_menu.py
     """
 
-    def test_no_agents_available_message(
-        self,
-        agent_manager,
-        db_manager,
-        capsys
-    ):
+    def test_no_agents_available_message(self, agent_manager, db_manager, capsys):
         """Test menu shows appropriate message when no agents exist."""
         with patch("builtins.input", return_value="0"):
             show_update_agent_menu(agent_manager, db_manager)
@@ -269,7 +252,7 @@ class TestInputValidationFlows:
             "Invalid Name",  # Spaces (invalid)
             "4",  # SQLite
             "/tmp/test.db",
-            "5"   # Back
+            "5",  # Back
         ]
 
         with patch("builtins.input", side_effect=inputs):
@@ -290,7 +273,7 @@ class TestInputValidationFlows:
             "2",  # PostgreSQL
             "localhost",
             "invalid",  # Invalid port
-            "5"   # Back
+            "5",  # Back
         ]
 
         with patch("builtins.input", side_effect=inputs):
@@ -311,7 +294,7 @@ class TestInputValidationFlows:
             "localhost",
             "1521",
             "",  # Empty service name (required)
-            "5"   # Back
+            "5",  # Back
         ]
 
         with patch("builtins.input", side_effect=inputs):
@@ -330,17 +313,12 @@ class TestErrorDisplayFlows:
     Validates: Requirements 14.3
     """
 
-    def test_connection_in_use_error_display(
-        self,
-        db_manager,
-        setup_test_data,
-        capsys
-    ):
+    def test_connection_in_use_error_display(self, db_manager, setup_test_data, capsys):
         """Test error display when trying to delete connection in use."""
         inputs = [
             "4",  # Delete connection
             "1",  # Select test-oracle (in use by test-agent)
-            "5"   # Back
+            "5",  # Back
         ]
 
         with patch("builtins.input", side_effect=inputs):
@@ -363,7 +341,7 @@ class TestErrorDisplayFlows:
             "test-conn",
             "4",  # SQLite
             "/nonexistent/path/that/will/fail.db",
-            "5"   # Back
+            "5",  # Back
         ]
 
         with patch("builtins.input", side_effect=inputs):
@@ -382,12 +360,7 @@ class TestConfirmationPromptFlows:
     Validates: Requirements 14.4
     """
 
-    def test_delete_connection_confirmation_yes(
-        self,
-        db_manager,
-        setup_test_data,
-        capsys
-    ):
+    def test_delete_connection_confirmation_yes(self, db_manager, setup_test_data, capsys):
         """Test connection deletion with confirmation accepted."""
         # First remove the connection from the agent
         agent_dir = db_manager.agents_dir / "test-agent"
@@ -402,7 +375,7 @@ class TestConfirmationPromptFlows:
             "4",  # Delete connection
             "1",  # Select test-oracle
             "y",  # Confirm
-            "5"   # Back
+            "5",  # Back
         ]
 
         with patch("builtins.input", side_effect=inputs):
@@ -413,12 +386,7 @@ class TestConfirmationPromptFlows:
         # Should show success (confirmation prompt may not be captured in all cases)
         assert "deleted successfully" in captured.out
 
-    def test_delete_connection_confirmation_no(
-        self,
-        db_manager,
-        setup_test_data,
-        capsys
-    ):
+    def test_delete_connection_confirmation_no(self, db_manager, setup_test_data, capsys):
         """Test connection deletion with confirmation declined."""
         # First remove the connection from the agent
         agent_dir = db_manager.agents_dir / "test-agent"
@@ -433,7 +401,7 @@ class TestConfirmationPromptFlows:
             "4",  # Delete connection
             "1",  # Select test-oracle
             "n",  # Decline
-            "5"   # Back
+            "5",  # Back
         ]
 
         with patch("builtins.input", side_effect=inputs):
@@ -447,6 +415,7 @@ class TestConfirmationPromptFlows:
         # Connection should still exist
         result = db_manager.get_connection("test-oracle")
         from offline_chat.database.result import is_ok
+
         assert is_ok(result)
 
 
@@ -493,11 +462,7 @@ class TestKeyboardInterruptHandling:
         captured = capsys.readouterr()
         assert "Returning to main menu" in captured.out
 
-    def test_guidelines_menu_keyboard_interrupt(
-        self,
-        agent_manager,
-        capsys
-    ):
+    def test_guidelines_menu_keyboard_interrupt(self, agent_manager, capsys):
         """Test keyboard interrupt in guidelines menu."""
         with patch("builtins.input", side_effect=KeyboardInterrupt):
             with patch.object(agent_manager, "list_guidelines", return_value=Ok([])):

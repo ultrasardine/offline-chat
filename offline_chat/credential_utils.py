@@ -72,6 +72,7 @@ def sanitize_config_for_display(config: MCPServerConfig) -> dict[str, Any]:
     # Mask passwords in PostgreSQL connection strings in args
     if "args" in result and isinstance(result["args"], list):
         import re
+
         masked_args = []
         for arg in result["args"]:
             if isinstance(arg, str) and "postgresql://" in arg:
@@ -79,11 +80,7 @@ def sanitize_config_for_display(config: MCPServerConfig) -> dict[str, Any]:
                 # Format: postgresql://user:password@host:port/database
                 # The password can contain @ characters, so we need to match greedily
                 # Match everything from the : after username to the last @ before host
-                masked_arg = re.sub(
-                    r'(postgresql://[^:/@]+:)(.+)(@[^/@]+(?::\d+)?/)',
-                    r'\1****\3',
-                    arg
-                )
+                masked_arg = re.sub(r"(postgresql://[^:/@]+:)(.+)(@[^/@]+(?::\d+)?/)", r"\1****\3", arg)
                 masked_args.append(masked_arg)
             else:
                 masked_args.append(arg)
@@ -94,10 +91,7 @@ def sanitize_config_for_display(config: MCPServerConfig) -> dict[str, Any]:
         masked_env = {}
         for key, value in result["env"].items():
             # Mask common password environment variable names
-            if any(
-                pwd_key in key.upper()
-                for pwd_key in ["PASSWORD", "PASSWD", "PWD", "SECRET", "TOKEN"]
-            ):
+            if any(pwd_key in key.upper() for pwd_key in ["PASSWORD", "PASSWD", "PWD", "SECRET", "TOKEN"]):
                 masked_env[key] = mask_password(value)
             else:
                 masked_env[key] = value
@@ -132,19 +126,13 @@ def sanitize_error_message(error_message: str, config: MCPServerConfig | None = 
         # Add passwords from environment variables
         if config.env:
             for key, value in config.env.items():
-                if any(
-                    pwd_key in key.upper()
-                    for pwd_key in ["PASSWORD", "PASSWD", "PWD", "SECRET", "TOKEN"]
-                ):
+                if any(pwd_key in key.upper() for pwd_key in ["PASSWORD", "PASSWD", "PWD", "SECRET", "TOKEN"]):
                     if value:
                         passwords_to_sanitize.append(value)
 
         # Sort passwords by length (longest first) to avoid partial replacements
         # Also filter out passwords that are too short or are just the mask character
-        passwords_to_sanitize = [
-            pwd for pwd in passwords_to_sanitize
-            if len(pwd) >= 3 and pwd != "****"
-        ]
+        passwords_to_sanitize = [pwd for pwd in passwords_to_sanitize if len(pwd) >= 3 and pwd != "****"]
         passwords_to_sanitize.sort(key=len, reverse=True)
 
         # Replace each password

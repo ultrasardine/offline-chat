@@ -25,15 +25,15 @@ class TestPromptAugmenter:
                 source_type="web",
                 source_identifier="https://example.com/python",
                 chunk_index=0,
-                metadata={}
+                metadata={},
             ),
             DocumentChunk(
                 text="It was created by Guido van Rossum in 1991.",
                 source_type="database",
                 source_identifier="programming_languages",
                 chunk_index=1,
-                metadata={"row_id": 42}
-            )
+                metadata={"row_id": 42},
+            ),
         ]
 
     @pytest.fixture
@@ -41,7 +41,7 @@ class TestPromptAugmenter:
         """Create sample search results."""
         return [
             SearchResult(chunk=sample_chunks[0], similarity_score=0.95, rank=1),
-            SearchResult(chunk=sample_chunks[1], similarity_score=0.87, rank=2)
+            SearchResult(chunk=sample_chunks[1], similarity_score=0.87, rank=2),
         ]
 
     def test_format_context_chunk_web_source(self, augmenter):
@@ -51,7 +51,7 @@ class TestPromptAugmenter:
             source_type="web",
             source_identifier="https://example.com/test",
             chunk_index=0,
-            metadata={}
+            metadata={},
         )
 
         result = augmenter.format_context_chunk(chunk, 1)
@@ -68,7 +68,7 @@ class TestPromptAugmenter:
             source_type="database",
             source_identifier="users_table",
             chunk_index=0,
-            metadata={"row_id": 123}
+            metadata={"row_id": 123},
         )
 
         result = augmenter.format_context_chunk(chunk, 2)
@@ -153,22 +153,18 @@ class TestPromptAugmenter:
                 source_type="web",
                 source_identifier="https://example.com/1",
                 chunk_index=0,
-                metadata={}
+                metadata={},
             ),
             DocumentChunk(
                 text="Second chunk",
                 source_type="web",
                 source_identifier="https://example.com/2",
                 chunk_index=1,
-                metadata={}
+                metadata={},
             ),
             DocumentChunk(
-                text="Third chunk",
-                source_type="database",
-                source_identifier="test_table",
-                chunk_index=2,
-                metadata={}
-            )
+                text="Third chunk", source_type="database", source_identifier="test_table", chunk_index=2, metadata={}
+            ),
         ]
 
         result = augmenter.augment_prompt("Test query", chunks, "System prompt")
@@ -221,7 +217,7 @@ class TestPromptAugmenter:
             source_type="web",
             source_identifier="https://example.com/single",
             chunk_index=0,
-            metadata={}
+            metadata={},
         )
 
         result = augmenter.augment_prompt("Query", [chunk], "System prompt")
@@ -242,7 +238,7 @@ class TestPromptAugmenter:
                 source_type="web" if i % 2 == 0 else "database",
                 source_identifier=f"source_{i}",
                 chunk_index=i,
-                metadata={}
+                metadata={},
             )
             for i in range(10)
         ]
@@ -251,7 +247,7 @@ class TestPromptAugmenter:
 
         # Check that all chunks are present and numbered correctly
         for i in range(10):
-            assert f"[Context {i+1}]" in result
+            assert f"[Context {i + 1}]" in result
             assert f"Content for chunk {i}" in result
             assert f"source_{i}" in result
 
@@ -302,7 +298,7 @@ class TestPromptAugmenter:
             source_type="web",
             source_identifier="https://example.com/special?param=value&other=123",
             chunk_index=0,
-            metadata={"key": "value with spaces"}
+            metadata={"key": "value with spaces"},
         )
 
         result = augmenter.format_context_chunk(chunk, 1)
@@ -318,7 +314,7 @@ class TestPromptAugmenter:
             source_type="database",
             source_identifier="test_table",
             chunk_index=0,
-            metadata={}
+            metadata={},
         )
 
         result = augmenter.format_context_chunk(chunk, 1)
@@ -332,26 +328,14 @@ class TestPromptAugmenter:
         """Test that chunks appear in the augmented prompt in the order provided."""
         chunks = [
             DocumentChunk(
-                text="First chunk",
-                source_type="web",
-                source_identifier="source_1",
-                chunk_index=0,
-                metadata={}
+                text="First chunk", source_type="web", source_identifier="source_1", chunk_index=0, metadata={}
             ),
             DocumentChunk(
-                text="Second chunk",
-                source_type="web",
-                source_identifier="source_2",
-                chunk_index=1,
-                metadata={}
+                text="Second chunk", source_type="web", source_identifier="source_2", chunk_index=1, metadata={}
             ),
             DocumentChunk(
-                text="Third chunk",
-                source_type="web",
-                source_identifier="source_3",
-                chunk_index=2,
-                metadata={}
-            )
+                text="Third chunk", source_type="web", source_identifier="source_3", chunk_index=2, metadata={}
+            ),
         ]
 
         result = augmenter.augment_prompt("Query", chunks, "System")

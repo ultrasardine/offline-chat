@@ -45,14 +45,14 @@ invalid_table_names = st.one_of(
     ),
     st.from_regex(r"[a-z_][a-z0-9_]*", fullmatch=True).filter(
         lambda x: x not in ["table_a", "table_b", "table_c"] and not x.startswith("sqlite_")
-    )
+    ),
 )
 
 
 @given(table_name=invalid_table_names)
 @settings(
     suppress_health_check=[HealthCheck.function_scoped_fixture],
-    deadline=None  # Disable deadline due to database I/O variability
+    deadline=None,  # Disable deadline due to database I/O variability
 )
 @pytest.mark.property_test
 def test_property_database_table_validation(table_name):
@@ -81,11 +81,11 @@ def test_property_database_table_validation(table_name):
 
 @given(
     table_name=st.sampled_from(["table_a", "table_b", "table_c"]),
-    limit=st.one_of(st.none(), st.integers(min_value=0, max_value=100))
+    limit=st.one_of(st.none(), st.integers(min_value=0, max_value=100)),
 )
 @settings(
     suppress_health_check=[HealthCheck.function_scoped_fixture],
-    deadline=None  # Disable deadline due to database I/O variability
+    deadline=None,  # Disable deadline due to database I/O variability
 )
 @pytest.mark.property_test
 def test_property_valid_table_fetching(table_name, limit):
@@ -116,17 +116,18 @@ def test_property_valid_table_fetching(table_name, limit):
 
 @given(
     rows=st.lists(
-        st.fixed_dictionaries({
-            "id": st.integers(min_value=1, max_value=1000),
-            "name": st.text(min_size=1, max_size=50),
-            "value": st.one_of(
-                st.integers(min_value=-9223372036854775808, max_value=9223372036854775807),
-                st.none()
-            )
-        }),
+        st.fixed_dictionaries(
+            {
+                "id": st.integers(min_value=1, max_value=1000),
+                "name": st.text(min_size=1, max_size=50),
+                "value": st.one_of(
+                    st.integers(min_value=-9223372036854775808, max_value=9223372036854775807), st.none()
+                ),
+            }
+        ),
         min_size=1,
         max_size=20,
-        unique_by=lambda x: x["id"]  # Ensure unique IDs
+        unique_by=lambda x: x["id"],  # Ensure unique IDs
     )
 )
 @pytest.mark.property_test
@@ -162,8 +163,7 @@ def test_property_database_row_text_completeness(rows):
         # Insert the generated rows
         for row in rows:
             cursor.execute(
-                "INSERT INTO test_table (id, name, value) VALUES (?, ?, ?)",
-                (row["id"], row["name"], row["value"])
+                "INSERT INTO test_table (id, name, value) VALUES (?, ?, ?)", (row["id"], row["name"], row["value"])
             )
 
         conn.commit()

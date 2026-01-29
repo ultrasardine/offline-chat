@@ -430,11 +430,11 @@ class TestModelfileGeneration:
         modelfile = agent.to_modelfile()
 
         # Newlines should be escaped as \n
-        assert '\\n' in modelfile
-        assert 'Line 1\\nLine 2\\nLine 3' in modelfile
+        assert "\\n" in modelfile
+        assert "Line 1\\nLine 2\\nLine 3" in modelfile
         # Should NOT contain actual newlines in the SYSTEM directive value
-        lines = modelfile.split('\n')
-        system_line = [line for line in lines if line.startswith('SYSTEM')][0]
+        lines = modelfile.split("\n")
+        system_line = [line for line in lines if line.startswith("SYSTEM")][0]
         # The SYSTEM line itself should be a single line
         assert system_line.startswith('SYSTEM "')
         assert system_line.endswith('"')
@@ -452,14 +452,14 @@ class TestModelfileGeneration:
         modelfile = agent.to_modelfile()
 
         # Should escape newlines and quotes
-        assert '\\n' in modelfile
+        assert "\\n" in modelfile
         assert '\\"' in modelfile
         # Should preserve unicode characters
-        assert '❌' in modelfile
-        assert '✓' in modelfile
+        assert "❌" in modelfile
+        assert "✓" in modelfile
         # Should be a valid single-line SYSTEM directive
-        lines = modelfile.split('\n')
-        system_line = [line for line in lines if line.startswith('SYSTEM')][0]
+        lines = modelfile.split("\n")
+        system_line = [line for line in lines if line.startswith("SYSTEM")][0]
         assert system_line.startswith('SYSTEM "')
         assert system_line.endswith('"')
 
@@ -726,15 +726,13 @@ class TestAgentConnectionAssignments:
 
         assignments = [
             AgentConnectionAssignment(
-                connection_name="prod-db",
-                access_level=AccessLevel.READ_ONLY,
-                allowed_tables=None
+                connection_name="prod-db", access_level=AccessLevel.READ_ONLY, allowed_tables=None
             ),
             AgentConnectionAssignment(
                 connection_name="dev-db",
                 access_level=AccessLevel.TABLE_SPECIFIC_READ_WRITE,
-                allowed_tables=["users", "orders"]
-            )
+                allowed_tables=["users", "orders"],
+            ),
         ]
 
         agent = Agent(
@@ -759,9 +757,7 @@ class TestAgentConnectionAssignments:
 
         assignments = [
             AgentConnectionAssignment(
-                connection_name="test-db",
-                access_level=AccessLevel.READ_WRITE,
-                allowed_tables=None
+                connection_name="test-db", access_level=AccessLevel.READ_WRITE, allowed_tables=None
             )
         ]
 
@@ -787,11 +783,7 @@ class TestAgentConnectionAssignments:
 
     def test_agent_with_guidelines(self):
         """Unit test: agent with guidelines."""
-        guidelines = [
-            "Always explain your reasoning",
-            "Be concise and clear",
-            "Verify facts before responding"
-        ]
+        guidelines = ["Always explain your reasoning", "Be concise and clear", "Verify facts before responding"]
 
         agent = Agent(
             name="careful-agent",
@@ -828,11 +820,7 @@ class TestAgentConnectionAssignments:
 
     def test_get_full_system_prompt_with_guidelines(self):
         """Unit test: get_full_system_prompt includes guidelines."""
-        guidelines = [
-            "Be helpful",
-            "Be accurate",
-            "Be concise"
-        ]
+        guidelines = ["Be helpful", "Be accurate", "Be concise"]
 
         agent = Agent(
             name="test-agent",
@@ -951,11 +939,7 @@ class TestAgentConnectionAssignments:
         from offline_chat.database.connection_assignment import AgentConnectionAssignment
 
         assignments = [
-            AgentConnectionAssignment(
-                connection_name="new-db",
-                access_level=AccessLevel.READ_ONLY,
-                allowed_tables=None
-            )
+            AgentConnectionAssignment(connection_name="new-db", access_level=AccessLevel.READ_ONLY, allowed_tables=None)
         ]
 
         agent = Agent(
@@ -983,11 +967,9 @@ class TestAgentConnectionAssignments:
 def valid_guidelines_strategy():
     """Generate valid guideline lists (non-empty strings without newlines)."""
     return st.lists(
-        st.text(
-            alphabet=st.characters(blacklist_characters="\n\r\t"),
-            min_size=1,
-            max_size=200
-        ).map(lambda s: s.strip()).filter(lambda s: s),
+        st.text(alphabet=st.characters(blacklist_characters="\n\r\t"), min_size=1, max_size=200)
+        .map(lambda s: s.strip())
+        .filter(lambda s: s),
         min_size=0,
         max_size=10,
     )
@@ -1050,9 +1032,7 @@ class TestAgentGuidelinesProperties:
             assert restored_guideline == original, f"Guideline at index {i} differs"
 
     @settings(max_examples=100)
-    @given(
-        agent=valid_agent_with_guidelines_strategy().filter(lambda a: len(a.guidelines) > 0)
-    )
+    @given(agent=valid_agent_with_guidelines_strategy().filter(lambda a: len(a.guidelines) > 0))
     def test_property_38_guidelines_in_system_prompt(self, agent: Agent):
         """Property 38: Guidelines in System Prompt.
 
@@ -1092,9 +1072,7 @@ class TestAgentGuidelinesProperties:
             assert guidelines_lines[i] == expected_line, f"Guideline at index {i} differs"
 
     @settings(max_examples=100)
-    @given(
-        agent=valid_agent_with_guidelines_strategy().filter(lambda a: len(a.guidelines) == 0)
-    )
+    @given(agent=valid_agent_with_guidelines_strategy().filter(lambda a: len(a.guidelines) == 0))
     def test_property_39_empty_guidelines_handling(self, agent: Agent):
         """Property 39: Empty Guidelines Handling.
 
@@ -1116,10 +1094,7 @@ class TestAgentGuidelinesProperties:
         assert len(full_prompt) == len(agent.system_prompt)
 
     @settings(max_examples=100)
-    @given(
-        base_agent=valid_agent_strategy(),
-        guidelines=valid_guidelines_strategy().filter(lambda g: len(g) > 0)
-    )
+    @given(base_agent=valid_agent_strategy(), guidelines=valid_guidelines_strategy().filter(lambda g: len(g) > 0))
     def test_property_34_guidelines_order_preservation(self, base_agent: Agent, guidelines: list[str]):
         """Property 34: Guidelines Storage - Order Preservation.
 
@@ -1152,10 +1127,8 @@ class TestAgentGuidelinesProperties:
     @given(
         agent=valid_agent_with_guidelines_strategy(),
         additional_guidelines=st.lists(
-            st.text(min_size=1, max_size=100).filter(lambda s: s.strip()),
-            min_size=1,
-            max_size=5
-        )
+            st.text(min_size=1, max_size=100).filter(lambda s: s.strip()), min_size=1, max_size=5
+        ),
     )
     def test_property_34_guidelines_accumulation(self, agent: Agent, additional_guidelines: list[str]):
         """Property 34: Guidelines Storage - Accumulation.

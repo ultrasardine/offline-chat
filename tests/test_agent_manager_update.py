@@ -49,14 +49,10 @@ def db_manager(temp_dirs):
 
     # Create test connections
     conn1 = DatabaseConnection(
-        name="test-sqlite-1",
-        database_type="sqlite",
-        file_path=str(temp_dirs["connections_file"].parent / "test1.db")
+        name="test-sqlite-1", database_type="sqlite", file_path=str(temp_dirs["connections_file"].parent / "test1.db")
     )
     conn2 = DatabaseConnection(
-        name="test-sqlite-2",
-        database_type="sqlite",
-        file_path=str(temp_dirs["connections_file"].parent / "test2.db")
+        name="test-sqlite-2", database_type="sqlite", file_path=str(temp_dirs["connections_file"].parent / "test2.db")
     )
 
     manager.create_connection(conn1)
@@ -107,10 +103,7 @@ class TestUpdateAgentBasicFields:
         """Test updating the system prompt."""
         new_prompt = "You are an updated test agent with new instructions."
 
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"system_prompt": new_prompt}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"system_prompt": new_prompt})
 
         assert is_ok(result)
         updated_agent = unwrap(result)
@@ -124,10 +117,7 @@ class TestUpdateAgentBasicFields:
         """Test updating the temperature."""
         new_temp = 0.3
 
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"temperature": new_temp}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"temperature": new_temp})
 
         assert is_ok(result)
         updated_agent = unwrap(result)
@@ -141,10 +131,7 @@ class TestUpdateAgentBasicFields:
         """Test updating the language."""
         new_language = "Spanish"
 
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"language": new_language}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"language": new_language})
 
         assert is_ok(result)
         updated_agent = unwrap(result)
@@ -156,10 +143,7 @@ class TestUpdateAgentBasicFields:
 
     def test_update_web_search_enabled(self, agent_manager, test_agent):
         """Test updating web search enabled flag."""
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"web_search_enabled": True}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"web_search_enabled": True})
 
         assert is_ok(result)
         updated_agent = unwrap(result)
@@ -178,10 +162,7 @@ class TestUpdateAgentBasicFields:
             "web_search_enabled": True,
         }
 
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates=updates
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates=updates)
 
         assert is_ok(result)
         updated_agent = unwrap(result)
@@ -205,10 +186,7 @@ class TestUpdateAgentGuidelines:
         """Test updating guidelines list."""
         new_guidelines = ["Always verify facts", "Provide sources", "Be thorough"]
 
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"guidelines": new_guidelines}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"guidelines": new_guidelines})
 
         assert is_ok(result)
         updated_agent = unwrap(result)
@@ -220,10 +198,7 @@ class TestUpdateAgentGuidelines:
 
     def test_update_guidelines_empty_list(self, agent_manager, test_agent):
         """Test updating guidelines to empty list."""
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"guidelines": []}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"guidelines": []})
 
         assert is_ok(result)
         updated_agent = unwrap(result)
@@ -235,10 +210,7 @@ class TestUpdateAgentGuidelines:
 
     def test_update_guidelines_single_item(self, agent_manager, test_agent):
         """Test updating guidelines with single item."""
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"guidelines": ["Only guideline"]}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"guidelines": ["Only guideline"]})
 
         assert is_ok(result)
         updated_agent = unwrap(result)
@@ -252,21 +224,14 @@ class TestUpdateAgentConnectionAssignments:
         """Test updating connection assignments."""
         assignments = [
             AgentConnectionAssignment(
-                connection_name="test-sqlite-1",
-                access_level=AccessLevel.READ_ONLY,
-                allowed_tables=None
+                connection_name="test-sqlite-1", access_level=AccessLevel.READ_ONLY, allowed_tables=None
             ),
             AgentConnectionAssignment(
-                connection_name="test-sqlite-2",
-                access_level=AccessLevel.READ_WRITE,
-                allowed_tables=None
+                connection_name="test-sqlite-2", access_level=AccessLevel.READ_WRITE, allowed_tables=None
             ),
         ]
 
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"connection_assignments": assignments}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"connection_assignments": assignments})
 
         assert is_ok(result)
         updated_agent = unwrap(result)
@@ -280,10 +245,7 @@ class TestUpdateAgentConnectionAssignments:
 
     def test_update_connection_assignments_empty(self, agent_manager, test_agent):
         """Test updating connection assignments to empty list."""
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"connection_assignments": []}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"connection_assignments": []})
 
         assert is_ok(result)
         updated_agent = unwrap(result)
@@ -300,18 +262,10 @@ class TestUpdateAgentMCPServers:
     def test_update_mcp_servers(self, agent_manager, test_agent):
         """Test updating MCP servers list."""
         mcp_servers = [
-            MCPServerConfig(
-                name="test-server",
-                command="test-command",
-                args=["arg1", "arg2"],
-                env={"KEY": "value"}
-            )
+            MCPServerConfig(name="test-server", command="test-command", args=["arg1", "arg2"], env={"KEY": "value"})
         ]
 
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"mcp_servers": mcp_servers}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"mcp_servers": mcp_servers})
 
         assert is_ok(result)
         updated_agent = unwrap(result)
@@ -325,10 +279,7 @@ class TestUpdateAgentMCPServers:
 
     def test_update_mcp_servers_empty(self, agent_manager, test_agent):
         """Test updating MCP servers to empty list."""
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"mcp_servers": []}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"mcp_servers": []})
 
         assert is_ok(result)
         updated_agent = unwrap(result)
@@ -340,10 +291,7 @@ class TestUpdateAgentValidation:
 
     def test_update_nonexistent_agent(self, agent_manager):
         """Test updating a nonexistent agent fails."""
-        result = agent_manager.update_agent(
-            agent_name="nonexistent-agent",
-            updates={"temperature": 0.5}
-        )
+        result = agent_manager.update_agent(agent_name="nonexistent-agent", updates={"temperature": 0.5})
 
         assert is_err(result)
         error = unwrap_err(result)
@@ -351,10 +299,7 @@ class TestUpdateAgentValidation:
 
     def test_update_invalid_field(self, agent_manager, test_agent):
         """Test updating an invalid field fails."""
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"invalid_field": "value"}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"invalid_field": "value"})
 
         assert is_err(result)
         error = unwrap_err(result)
@@ -363,10 +308,7 @@ class TestUpdateAgentValidation:
 
     def test_update_temperature_out_of_range_high(self, agent_manager, test_agent):
         """Test updating temperature above 1.0 fails."""
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"temperature": 1.5}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"temperature": 1.5})
 
         assert is_err(result)
         error = unwrap_err(result)
@@ -375,10 +317,7 @@ class TestUpdateAgentValidation:
 
     def test_update_temperature_out_of_range_low(self, agent_manager, test_agent):
         """Test updating temperature below 0.0 fails."""
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"temperature": -0.1}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"temperature": -0.1})
 
         assert is_err(result)
         error = unwrap_err(result)
@@ -387,10 +326,7 @@ class TestUpdateAgentValidation:
 
     def test_update_temperature_wrong_type(self, agent_manager, test_agent):
         """Test updating temperature with wrong type fails."""
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"temperature": "not a number"}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"temperature": "not a number"})
 
         assert is_err(result)
         error = unwrap_err(result)
@@ -399,10 +335,7 @@ class TestUpdateAgentValidation:
 
     def test_update_system_prompt_wrong_type(self, agent_manager, test_agent):
         """Test updating system_prompt with wrong type fails."""
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"system_prompt": 123}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"system_prompt": 123})
 
         assert is_err(result)
         error = unwrap_err(result)
@@ -411,10 +344,7 @@ class TestUpdateAgentValidation:
 
     def test_update_language_wrong_type(self, agent_manager, test_agent):
         """Test updating language with wrong type fails."""
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"language": 123}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"language": 123})
 
         assert is_err(result)
         error = unwrap_err(result)
@@ -423,10 +353,7 @@ class TestUpdateAgentValidation:
 
     def test_update_web_search_enabled_wrong_type(self, agent_manager, test_agent):
         """Test updating web_search_enabled with wrong type fails."""
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"web_search_enabled": "yes"}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"web_search_enabled": "yes"})
 
         assert is_err(result)
         error = unwrap_err(result)
@@ -435,10 +362,7 @@ class TestUpdateAgentValidation:
 
     def test_update_guidelines_wrong_type(self, agent_manager, test_agent):
         """Test updating guidelines with wrong type fails."""
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"guidelines": "not a list"}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"guidelines": "not a list"})
 
         assert is_err(result)
         error = unwrap_err(result)
@@ -448,8 +372,7 @@ class TestUpdateAgentValidation:
     def test_update_guidelines_non_string_items(self, agent_manager, test_agent):
         """Test updating guidelines with non-string items fails."""
         result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"guidelines": ["valid", 123, "also valid"]}
+            agent_name="test-agent", updates={"guidelines": ["valid", 123, "also valid"]}
         )
 
         assert is_err(result)
@@ -459,10 +382,7 @@ class TestUpdateAgentValidation:
 
     def test_update_connection_assignments_wrong_type(self, agent_manager, test_agent):
         """Test updating connection_assignments with wrong type fails."""
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"connection_assignments": "not a list"}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"connection_assignments": "not a list"})
 
         assert is_err(result)
         error = unwrap_err(result)
@@ -472,8 +392,7 @@ class TestUpdateAgentValidation:
     def test_update_connection_assignments_wrong_item_type(self, agent_manager, test_agent):
         """Test updating connection_assignments with wrong item type fails."""
         result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"connection_assignments": ["not an assignment"]}
+            agent_name="test-agent", updates={"connection_assignments": ["not an assignment"]}
         )
 
         assert is_err(result)
@@ -483,10 +402,7 @@ class TestUpdateAgentValidation:
 
     def test_update_mcp_servers_wrong_type(self, agent_manager, test_agent):
         """Test updating mcp_servers with wrong type fails."""
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"mcp_servers": "not a list"}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"mcp_servers": "not a list"})
 
         assert is_err(result)
         error = unwrap_err(result)
@@ -499,10 +415,7 @@ class TestUpdateAgentEdgeCases:
 
     def test_update_with_empty_dict(self, agent_manager, test_agent):
         """Test updating with empty dict succeeds (no-op)."""
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={})
 
         assert is_ok(result)
         updated_agent = unwrap(result)
@@ -512,10 +425,7 @@ class TestUpdateAgentEdgeCases:
 
     def test_update_temperature_boundary_zero(self, agent_manager, test_agent):
         """Test updating temperature to 0.0 succeeds."""
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"temperature": 0.0}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"temperature": 0.0})
 
         assert is_ok(result)
         updated_agent = unwrap(result)
@@ -523,10 +433,7 @@ class TestUpdateAgentEdgeCases:
 
     def test_update_temperature_boundary_one(self, agent_manager, test_agent):
         """Test updating temperature to 1.0 succeeds."""
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"temperature": 1.0}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"temperature": 1.0})
 
         assert is_ok(result)
         updated_agent = unwrap(result)
@@ -534,10 +441,7 @@ class TestUpdateAgentEdgeCases:
 
     def test_update_temperature_as_int(self, agent_manager, test_agent):
         """Test updating temperature with int value succeeds."""
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"temperature": 1}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"temperature": 1})
 
         assert is_ok(result)
         updated_agent = unwrap(result)
@@ -549,10 +453,7 @@ class TestUpdateAgentEdgeCases:
         original_prompt = test_agent.system_prompt
         original_language = test_agent.language
 
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"temperature": 0.5}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"temperature": 0.5})
 
         assert is_ok(result)
         updated_agent = unwrap(result)
@@ -564,10 +465,7 @@ class TestUpdateAgentEdgeCases:
         """Test updating to the same value succeeds."""
         original_temp = test_agent.temperature
 
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"temperature": original_temp}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"temperature": original_temp})
 
         assert is_ok(result)
         updated_agent = unwrap(result)
@@ -577,10 +475,7 @@ class TestUpdateAgentEdgeCases:
         """Test updating with very long system prompt succeeds."""
         long_prompt = "A" * 10000
 
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"system_prompt": long_prompt}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"system_prompt": long_prompt})
 
         assert is_ok(result)
         updated_agent = unwrap(result)
@@ -594,10 +489,7 @@ class TestUpdateAgentEdgeCases:
         """Test updating with many guidelines succeeds."""
         many_guidelines = [f"Guideline {i}" for i in range(100)]
 
-        result = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"guidelines": many_guidelines}
-        )
+        result = agent_manager.update_agent(agent_name="test-agent", updates={"guidelines": many_guidelines})
 
         assert is_ok(result)
         updated_agent = unwrap(result)
@@ -611,24 +503,15 @@ class TestUpdateAgentPersistence:
     def test_multiple_updates_persist(self, agent_manager, test_agent):
         """Test that multiple sequential updates persist correctly."""
         # First update
-        result1 = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"temperature": 0.3}
-        )
+        result1 = agent_manager.update_agent(agent_name="test-agent", updates={"temperature": 0.3})
         assert is_ok(result1)
 
         # Second update
-        result2 = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"language": "French"}
-        )
+        result2 = agent_manager.update_agent(agent_name="test-agent", updates={"language": "French"})
         assert is_ok(result2)
 
         # Third update
-        result3 = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"guidelines": ["New guideline"]}
-        )
+        result3 = agent_manager.update_agent(agent_name="test-agent", updates={"guidelines": ["New guideline"]})
         assert is_ok(result3)
 
         # Verify all updates persisted
@@ -640,17 +523,11 @@ class TestUpdateAgentPersistence:
     def test_update_overwrites_previous(self, agent_manager, test_agent):
         """Test that updates overwrite previous values."""
         # First update
-        result1 = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"guidelines": ["First", "Second"]}
-        )
+        result1 = agent_manager.update_agent(agent_name="test-agent", updates={"guidelines": ["First", "Second"]})
         assert is_ok(result1)
 
         # Second update overwrites
-        result2 = agent_manager.update_agent(
-            agent_name="test-agent",
-            updates={"guidelines": ["Third"]}
-        )
+        result2 = agent_manager.update_agent(agent_name="test-agent", updates={"guidelines": ["Third"]})
         assert is_ok(result2)
 
         # Verify only latest update persisted

@@ -37,7 +37,7 @@ class TestJSONStructureValidation:
             store_path = Path(tmpdir) / "connections.json"
 
             # Create file with invalid JSON syntax
-            with open(store_path, 'w') as f:
+            with open(store_path, "w") as f:
                 f.write("{ invalid json }")
 
             manager = DatabaseConnectionManager(store_path)
@@ -54,10 +54,8 @@ class TestJSONStructureValidation:
             store_path = Path(tmpdir) / "connections.json"
 
             # Create JSON without version field
-            data = {
-                "connections": []
-            }
-            with open(store_path, 'w') as f:
+            data = {"connections": []}
+            with open(store_path, "w") as f:
                 json.dump(data, f)
 
             manager = DatabaseConnectionManager(store_path)
@@ -73,10 +71,8 @@ class TestJSONStructureValidation:
             store_path = Path(tmpdir) / "connections.json"
 
             # Create JSON without connections field
-            data = {
-                "version": "1.0"
-            }
-            with open(store_path, 'w') as f:
+            data = {"version": "1.0"}
+            with open(store_path, "w") as f:
                 json.dump(data, f)
 
             manager = DatabaseConnectionManager(store_path)
@@ -92,11 +88,8 @@ class TestJSONStructureValidation:
             store_path = Path(tmpdir) / "connections.json"
 
             # Create JSON with connections as non-array
-            data = {
-                "version": "1.0",
-                "connections": "not an array"
-            }
-            with open(store_path, 'w') as f:
+            data = {"version": "1.0", "connections": "not an array"}
+            with open(store_path, "w") as f:
                 json.dump(data, f)
 
             manager = DatabaseConnectionManager(store_path)
@@ -112,11 +105,8 @@ class TestJSONStructureValidation:
             store_path = Path(tmpdir) / "connections.json"
 
             # Create JSON with connection as non-object
-            data = {
-                "version": "1.0",
-                "connections": ["not an object"]
-            }
-            with open(store_path, 'w') as f:
+            data = {"version": "1.0", "connections": ["not an object"]}
+            with open(store_path, "w") as f:
                 json.dump(data, f)
 
             manager = DatabaseConnectionManager(store_path)
@@ -133,15 +123,8 @@ class TestJSONStructureValidation:
             store_path = Path(tmpdir) / "connections.json"
 
             # Create connection without name
-            data = {
-                "version": "1.0",
-                "connections": [
-                    {
-                        "database_type": "postgresql"
-                    }
-                ]
-            }
-            with open(store_path, 'w') as f:
+            data = {"version": "1.0", "connections": [{"database_type": "postgresql"}]}
+            with open(store_path, "w") as f:
                 json.dump(data, f)
 
             manager = DatabaseConnectionManager(store_path)
@@ -158,15 +141,8 @@ class TestJSONStructureValidation:
             store_path = Path(tmpdir) / "connections.json"
 
             # Create connection without database_type
-            data = {
-                "version": "1.0",
-                "connections": [
-                    {
-                        "name": "test-conn"
-                    }
-                ]
-            }
-            with open(store_path, 'w') as f:
+            data = {"version": "1.0", "connections": [{"name": "test-conn"}]}
+            with open(store_path, "w") as f:
                 json.dump(data, f)
 
             manager = DatabaseConnectionManager(store_path)
@@ -183,16 +159,8 @@ class TestJSONStructureValidation:
             store_path = Path(tmpdir) / "connections.json"
 
             # Create connection with non-string name
-            data = {
-                "version": "1.0",
-                "connections": [
-                    {
-                        "name": 123,
-                        "database_type": "postgresql"
-                    }
-                ]
-            }
-            with open(store_path, 'w') as f:
+            data = {"version": "1.0", "connections": [{"name": 123, "database_type": "postgresql"}]}
+            with open(store_path, "w") as f:
                 json.dump(data, f)
 
             manager = DatabaseConnectionManager(store_path)
@@ -209,16 +177,8 @@ class TestJSONStructureValidation:
             store_path = Path(tmpdir) / "connections.json"
 
             # Create connection with non-string database_type
-            data = {
-                "version": "1.0",
-                "connections": [
-                    {
-                        "name": "test-conn",
-                        "database_type": 123
-                    }
-                ]
-            }
-            with open(store_path, 'w') as f:
+            data = {"version": "1.0", "connections": [{"name": "test-conn", "database_type": 123}]}
+            with open(store_path, "w") as f:
                 json.dump(data, f)
 
             manager = DatabaseConnectionManager(store_path)
@@ -236,7 +196,7 @@ class TestJSONStructureValidation:
 
             # Create JSON with array at top level
             data = ["not", "an", "object"]
-            with open(store_path, 'w') as f:
+            with open(store_path, "w") as f:
                 json.dump(data, f)
 
             manager = DatabaseConnectionManager(store_path)
@@ -249,12 +209,14 @@ class TestJSONStructureValidation:
     @settings(max_examples=50)
     @given(
         connections=st.lists(
-            st.fixed_dictionaries({
-                "name": st.text(min_size=1, max_size=20),
-                "database_type": st.sampled_from(["oracle", "postgresql", "mysql", "sqlite"])
-            }),
+            st.fixed_dictionaries(
+                {
+                    "name": st.text(min_size=1, max_size=20),
+                    "database_type": st.sampled_from(["oracle", "postgresql", "mysql", "sqlite"]),
+                }
+            ),
             min_size=0,
-            max_size=5
+            max_size=5,
         )
     )
     def test_valid_structure_loads_successfully(self, connections):
@@ -269,11 +231,8 @@ class TestJSONStructureValidation:
             store_path = Path(tmpdir) / "connections.json"
 
             # Create valid JSON structure
-            data = {
-                "version": "1.0",
-                "connections": connections
-            }
-            with open(store_path, 'w') as f:
+            data = {"version": "1.0", "connections": connections}
+            with open(store_path, "w") as f:
                 json.dump(data, f)
 
             manager = DatabaseConnectionManager(store_path)
@@ -294,17 +253,14 @@ class TestJSONStructureValidation:
             data = {
                 "version": "1.0",
                 "connections": [
-                    {
-                        "name": "valid-conn",
-                        "database_type": "postgresql"
-                    },
+                    {"name": "valid-conn", "database_type": "postgresql"},
                     {
                         "name": "invalid-conn"
                         # Missing database_type
-                    }
-                ]
+                    },
+                ],
             }
-            with open(store_path, 'w') as f:
+            with open(store_path, "w") as f:
                 json.dump(data, f)
 
             manager = DatabaseConnectionManager(store_path)
@@ -321,7 +277,7 @@ class TestJSONStructureValidation:
             store_path = Path(tmpdir) / "connections.json"
 
             # Create malformed JSON
-            with open(store_path, 'w') as f:
+            with open(store_path, "w") as f:
                 f.write("{ invalid }")
 
             manager = DatabaseConnectionManager(store_path)
@@ -329,11 +285,7 @@ class TestJSONStructureValidation:
             from offline_chat.database.connection import DatabaseConnection
             from offline_chat.database.result import is_err, unwrap_err
 
-            conn = DatabaseConnection(
-                name="test-conn",
-                database_type="sqlite",
-                file_path="/tmp/test.db"
-            )
+            conn = DatabaseConnection(name="test-conn", database_type="sqlite", file_path="/tmp/test.db")
 
             result = manager.create_connection(conn)
 
@@ -347,7 +299,7 @@ class TestJSONStructureValidation:
             store_path = Path(tmpdir) / "connections.json"
 
             # Create malformed JSON
-            with open(store_path, 'w') as f:
+            with open(store_path, "w") as f:
                 f.write("{ invalid }")
 
             manager = DatabaseConnectionManager(store_path)
@@ -366,7 +318,7 @@ class TestJSONStructureValidation:
             store_path = Path(tmpdir) / "connections.json"
 
             # Create malformed JSON
-            with open(store_path, 'w') as f:
+            with open(store_path, "w") as f:
                 f.write("{ invalid }")
 
             manager = DatabaseConnectionManager(store_path)
@@ -388,7 +340,7 @@ class TestJSONStructureValidation:
             store_path = Path(tmpdir) / "connections.json"
 
             # Create malformed JSON
-            with open(store_path, 'w') as f:
+            with open(store_path, "w") as f:
                 f.write("{ invalid }")
 
             manager = DatabaseConnectionManager(store_path)
@@ -410,7 +362,7 @@ class TestJSONStructureValidation:
             store_path = Path(tmpdir) / "connections.json"
 
             # Create malformed JSON
-            with open(store_path, 'w') as f:
+            with open(store_path, "w") as f:
                 f.write("{ invalid }")
 
             manager = DatabaseConnectionManager(store_path)
@@ -426,7 +378,7 @@ class TestJSONStructureValidation:
             store_path = Path(tmpdir) / "connections.json"
 
             # Create JSON with syntax error
-            with open(store_path, 'w') as f:
+            with open(store_path, "w") as f:
                 f.write('{\n  "version": "1.0",\n  "connections": [\n    invalid\n  ]\n}')
 
             manager = DatabaseConnectionManager(store_path)

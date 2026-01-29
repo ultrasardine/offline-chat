@@ -63,9 +63,7 @@ class TestRAGConfig:
         config1 = RAGConfig()
         config2 = RAGConfig()
 
-        config1.knowledge_sources.append(
-            KnowledgeSource(source_type="web", identifier="https://example.com")
-        )
+        config1.knowledge_sources.append(KnowledgeSource(source_type="web", identifier="https://example.com"))
 
         # config2 should have an empty list, not share config1's list
         assert len(config1.knowledge_sources) == 1
@@ -201,10 +199,7 @@ class TestKnowledgeSource:
 
     def test_web_source_creation(self):
         """Test creating a web knowledge source."""
-        source = KnowledgeSource(
-            source_type="web",
-            identifier="https://example.com/docs"
-        )
+        source = KnowledgeSource(source_type="web", identifier="https://example.com/docs")
 
         assert source.source_type == "web"
         assert source.identifier == "https://example.com/docs"
@@ -214,10 +209,7 @@ class TestKnowledgeSource:
 
     def test_database_source_creation(self):
         """Test creating a database knowledge source."""
-        source = KnowledgeSource(
-            source_type="database",
-            identifier="products"
-        )
+        source = KnowledgeSource(source_type="database", identifier="products")
 
         assert source.source_type == "database"
         assert source.identifier == "products"

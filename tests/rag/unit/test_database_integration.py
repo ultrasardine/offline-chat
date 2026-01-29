@@ -39,7 +39,7 @@ def temp_db():
             ("Alice", "alice@example.com", 30),
             ("Bob", "bob@example.com", 25),
             ("Charlie", None, 35),
-        ]
+        ],
     )
 
     # Create an empty table
