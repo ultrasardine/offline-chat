@@ -1,0 +1,18 @@
+[project]
+name = "oracle-mcp-server"
+version = "0.1.0"
+description = "Custom Oracle MCP Server using python-oracledb"
+authors = [{name = "Offline Chat", email = ""}]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=1.0.0",
+    "oracledb>=2.0.0",
+]
+
+[project.scripts]
+oracle-mcp-server = "server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

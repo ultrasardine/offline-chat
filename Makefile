@@ -5,7 +5,7 @@
 # Usage: make <target>
 # Run 'make help' to see all available targets
 
-.PHONY: help install install-dev run test test-verbose test-coverage test-pbt lint lint-fix format format-check clean clean-all check all bump bump-minor bump-major changelog agents models history agent-info examples connections migrate rag-status rag-sources verify-rag demo clean-data dev
+.PHONY: help install install-dev install-oracle run test test-verbose test-coverage test-pbt lint lint-fix format format-check clean clean-all check all bump bump-minor bump-major changelog agents models history agent-info examples connections migrate rag-status rag-sources verify-rag demo clean-data dev
 
 .DEFAULT_GOAL := help
 
@@ -19,7 +19,7 @@ help: ## Display this help message with all available targets
 	@echo "================================"
 	@echo ""
 	@echo "Installation:"
-	@grep -E '^(install|install-dev):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^(install|install-dev|install-oracle):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Running:"
 	@grep -E '^(run):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -58,6 +58,10 @@ install: ## Install project dependencies using uv
 
 install-dev: ## Install project with dev dependencies (testing, linting)
 	uv sync --all-extras
+
+install-oracle: ## Install with Oracle database support
+	uv sync --extra oracle
+	cd oracle_mcp_server && uv pip install -e .
 
 # ============================================================================
 # Running

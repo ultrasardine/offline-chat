@@ -121,7 +121,8 @@ def _show_agent_update_options(
         print("  2. Update database connections")
         print("  3. Manage guidelines")
         print("  4. Configure RAG capabilities")
-        print("  5. Back to agent selection")
+        print("  5. Toggle web search")
+        print("  6. Back to agent selection")
         print()
 
         try:
@@ -136,6 +137,8 @@ def _show_agent_update_options(
             elif choice == "4":
                 configure_rag_flow(agent_manager, agent_name)
             elif choice == "5":
+                toggle_web_search_flow(agent_manager, agent_name)
+            elif choice == "6":
                 break
             else:
                 print("\nInvalid option. Please try again.")
@@ -857,3 +860,77 @@ def _disable_rag(agent_manager: AgentManager, agent_name: str) -> None:
 
     except KeyboardInterrupt:
         print("\n\nRAG disable cancelled.")
+
+
+def toggle_web_search_flow(agent_manager: AgentManager, agent_name: str) -> None:
+    """Interactive flow for toggling web search on/off for an agent.
+
+    This function allows enabling or disabling web search capabilities
+    for an existing agent.
+
+    Args:
+        agent_manager: AgentManager instance
+        agent_name: Name of the agent to configure
+    """
+    print("\n" + "=" * 40)
+    print(f"Toggle Web Search: {agent_name}")
+    print("=" * 40)
+
+    # Get agent
+    agent = agent_manager.get_agent(agent_name)
+    if agent is None:
+        print(f"\nError: Agent '{agent_name}' not found.")
+        return
+
+    # Show current status
+    current_status = "Enabled" if agent.web_search_enabled else "Disabled"
+    print(f"\nCurrent Status: {current_status}")
+
+    if agent.web_search_enabled:
+        print("\nWeb search is currently enabled. This allows the agent to:")
+        print("  - Search the web for current information")
+        print("  - Fetch content from URLs")
+        print("  - Access up-to-date data beyond its training")
+        print("\nDisable web search?")
+    else:
+        print("\nWeb search is currently disabled.")
+        print("\nEnabling web search will allow the agent to:")
+        print("  - Search the web for current information")
+        print("  - Fetch content from URLs")
+        print("  - Access up-to-date data beyond its training")
+        print("\nNote: Requires a model with tool calling support (e.g., qwen2.5:latest)")
+        print("\nEnable web search?")
+
+    try:
+        confirm = input("(y/N): ").strip().lower()
+
+        if confirm != "y":
+            print("\nWeb search toggle cancelled.")
+            return
+
+        # Toggle the setting
+        new_value = not agent.web_search_enabled
+        action = "Enabling" if new_value else "Disabling"
+
+        print(f"\n{action} web search...", end=" ", flush=True)
+        result = agent_manager.update_agent(agent_name, {"web_search_enabled": new_value})
+
+        if is_ok(result):
+            print("Done!")
+            status = "enabled" if new_value else "disabled"
+            print(f"\n✓ Web search {status} successfully for '{agent_name}'.")
+
+            if new_value:
+                print("\nThe agent can now search the web and fetch URLs during conversations.")
+                print("Try asking questions like:")
+                print("  - 'What's the latest news about Python?'")
+                print("  - 'Search for information about quantum computing'")
+            else:
+                print("\nThe agent will no longer have access to web search tools.")
+        else:
+            print("Failed!")
+            error = unwrap_err(result)
+            print(f"\nError: {error}")
+
+    except KeyboardInterrupt:
+        print("\n\nWeb search toggle cancelled.")

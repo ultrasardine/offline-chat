@@ -125,7 +125,23 @@ class MCPClient:
             return True
 
         except Exception as e:
-            logger.error(f"Failed to connect to MCP server '{self.config.name}': {e}")
+            error_msg = str(e)
+
+            # Check if this is a SQLcl-related error for Oracle databases
+            if self.config.database_type == "oracle" and (
+                "No such file or directory: 'sql'" in error_msg or "[Errno 2]" in error_msg
+            ):
+                from offline_chat.sqlcl_validator import get_installation_instructions
+
+                platform_name, instructions = get_installation_instructions()
+                logger.error(
+                    f"Failed to connect to MCP server '{self.config.name}': SQLcl is not installed.\n"
+                    f"\nOracle database connections require SQLcl (SQL Developer Command Line).\n"
+                    f"{instructions}"
+                )
+            else:
+                logger.error(f"Failed to connect to MCP server '{self.config.name}': {e}")
+
             # Clean up on failure
             if self._exit_stack:
                 await self._exit_stack.aclose()

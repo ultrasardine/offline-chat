@@ -36,6 +36,91 @@ A terminal-based chatbot application that uses local Ollama models. Create perso
 - [Ollama](https://ollama.ai/) installed and running locally
 - [uv](https://docs.astral.sh/uv/) package manager
 
+## Plugins
+
+Offline Chat supports optional plugins for extended functionality. Plugins are separate packages that can be installed independently.
+
+### Available Plugins
+
+#### Oracle Database MCP Server
+
+**Package**: `offline-chat-oracle-mcp`  
+**Location**: `plugins/offline-chat-oracle-mcp/`
+
+Provides Oracle Database connectivity via a custom MCP server using `python-oracledb`.
+
+**Installation**:
+```bash
+# From the plugins directory
+uv pip install -e plugins/offline-chat-oracle-mcp
+
+# Or from git (when published)
+uv pip install git+https://github.com/yourusername/offline-chat-oracle-mcp
+```
+
+**Features**:
+- Persistent database connections
+- User-friendly error messages
+- Auto-connect on session start
+- Read-only query validation
+- CSV-formatted results
+
+**Usage**:
+After installation, add to your MCP presets (`~/.offline-chat/mcp_presets.json`):
+```json
+{
+  "servers": [
+    {
+      "name": "oracle-db",
+      "command": "python",
+      "args": ["-m", "oracle_mcp_server"],
+      "env": {},
+      "disabled": false,
+      "database_type": "oracle",
+      "description": "Oracle Database integration"
+    }
+  ]
+}
+```
+
+Then configure your agent with database connection details and the plugin will handle the rest.
+
+**Requirements**:
+- Python 3.10+
+- `oracledb` package (installed automatically)
+- Oracle database access
+
+See `plugins/offline-chat-oracle-mcp/README.md` for detailed documentation.
+
+### Creating Custom Plugins
+
+You can create your own MCP server plugins following this structure:
+
+```
+plugins/your-plugin-name/
+├── your_mcp_server/
+│   ├── __init__.py
+│   ├── __main__.py      # Entry point for python -m
+│   └── server.py        # MCP server implementation
+├── pyproject.toml       # Package configuration
+└── README.md           # Plugin documentation
+```
+
+**Key requirements**:
+1. Must be runnable as a Python module: `python -m your_mcp_server`
+2. Must implement the MCP protocol using the `mcp` package
+3. Should provide clear tool descriptions and error messages
+4. Include installation instructions and usage examples
+
+## Requirements (Legacy)
+
+- **For Oracle database connections (Option 2 - SQLcl)**: [SQLcl](https://www.oracle.com/database/sqldeveloper/technologies/sqlcl/) (SQL Developer Command Line)
+  - macOS: `brew install sqlcl`
+  - Linux: `brew install sqlcl` or download from Oracle
+  - Windows: Download from Oracle website
+  - Requires Java 11 or higher
+  - **Note**: SQLcl MCP server has connection persistence issues. Use the custom Oracle MCP plugin instead.
+
 ## Installation
 
 ### From Source
@@ -50,12 +135,20 @@ make install
 
 # Or with dev dependencies (testing, linting)
 make install-dev
+
+# Install optional plugins
+uv pip install -e plugins/offline-chat-oracle-mcp  # Oracle database support
 ```
 
 ### As a Library
 
 ```bash
+# Basic installation
 uv add git+https://github.com/ultrasardine/offline-chat.git
+
+# With optional plugins
+uv add git+https://github.com/ultrasardine/offline-chat.git
+uv pip install git+https://github.com/yourusername/offline-chat-oracle-mcp  # Oracle support
 ```
 
 ## Quick Start
@@ -218,7 +311,8 @@ Update Options for: german-tutor
   2. Update database connections
   3. Manage guidelines
   4. Configure RAG capabilities
-  5. Back to agent selection
+  5. Toggle web search
+  6. Back to agent selection
 
 Select option: 
 ```
@@ -318,6 +412,72 @@ For agents with RAG already enabled, you can:
 - **Embedding Model**: Sentence transformer model for generating embeddings
 
 See the [RAG section](#rag-retrieval-augmented-generation) for more details on RAG capabilities and knowledge source management.
+
+#### Toggling Web Search
+
+Select option `5` to enable or disable web search capabilities for an agent:
+
+```
+Toggle Web Search: german-tutor
+========================================
+
+Current Status: Disabled
+
+Web search is currently disabled.
+
+Enabling web search will allow the agent to:
+  - Search the web for current information
+  - Fetch content from URLs
+  - Access up-to-date data beyond its training
+
+Note: Requires a model with tool calling support (e.g., qwen2.5:latest)
+
+Enable web search?
+(y/N): y
+
+Enabling web search... Done!
+
+✓ Web search enabled successfully for 'german-tutor'.
+
+The agent can now search the web and fetch URLs during conversations.
+Try asking questions like:
+  - 'What's the latest news about Python?'
+  - 'Search for information about quantum computing'
+```
+
+For agents with web search already enabled:
+
+```
+Toggle Web Search: research-assistant
+========================================
+
+Current Status: Enabled
+
+Web search is currently enabled. This allows the agent to:
+  - Search the web for current information
+  - Fetch content from URLs
+  - Access up-to-date data beyond its training
+
+Disable web search?
+(y/N): y
+
+Disabling web search... Done!
+
+✓ Web search disabled successfully for 'research-assistant'.
+
+The agent will no longer have access to web search tools.
+```
+
+**When to use web search**:
+- Research agents that need current information
+- Agents that answer questions about recent events
+- Assistants that need to verify facts or find documentation
+
+**Requirements**:
+- A model with tool calling support (recommended: `qwen2.5:latest`)
+- Internet connection for the agent to access web resources
+
+**Note**: You can also toggle web search programmatically using `manager.update_agent(agent_name, {"web_search_enabled": True})`.
 
 ### Viewing Agent Information
 
@@ -1505,6 +1665,7 @@ Here are some commonly used MCP servers:
 
 | Server | Command | Description |
 |--------|---------|-------------|
+| [oracle-db](oracle_mcp_server/README.md) | `python -m oracle_mcp_server` | Oracle Database integration (custom MCP server) |
 | [mcp-server-fetch](https://github.com/modelcontextprotocol/servers/tree/main/src/fetch) | `uvx mcp-server-fetch` | Fetch and extract content from URLs |
 | [server-filesystem](https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem) | `npx -y @modelcontextprotocol/server-filesystem /path` | Read/write files in specified directories |
 | [server-github](https://github.com/modelcontextprotocol/servers/tree/main/src/github) | `npx -y @modelcontextprotocol/server-github` | GitHub API integration |
@@ -1513,7 +1674,14 @@ Here are some commonly used MCP servers:
 
 ### Managing MCP Presets
 
-You can add custom MCP server presets that appear in the selection list when creating agents:
+The system includes several built-in MCP server presets that are always available:
+- **oracle-db**: Oracle Database integration using the custom MCP server
+- **fetch**: Fetch and extract content from URLs
+- **filesystem**: Read/write files in specified directories
+- **github**: GitHub API integration
+- **memory**: Persistent memory/knowledge graph
+
+You can also add custom MCP server presets that appear in the selection list when creating agents:
 
 ```python
 from offline_chat import (
@@ -1590,7 +1758,7 @@ agent = Agent(
 
 ## Database Access
 
-Agents can connect to databases (Oracle, PostgreSQL, MySQL, SQLite) through MCP servers to query data, discover schemas, and analyze information during conversations. **Oracle Database is the primary supported database**, accessed through Oracle SQLcl's built-in MCP server.
+Agents can connect to databases (Oracle, PostgreSQL, MySQL, SQLite) through MCP servers to query data, discover schemas, and analyze information during conversations. **Oracle Database is supported through a custom MCP server** that provides reliable, persistent connections.
 
 > **Quick Start**: Want to try database access right away? See the [Sample Database Guide](SAMPLE_DATABASE_GUIDE.md) for a ready-to-use SQLite database with company sales data and step-by-step setup instructions.
 
@@ -1598,25 +1766,110 @@ Agents can connect to databases (Oracle, PostgreSQL, MySQL, SQLite) through MCP 
 
 | Database | MCP Server | Primary Support |
 |----------|------------|-----------------|
-| **Oracle** | Oracle SQLcl (built-in) | ✅ Primary |
+| **Oracle** | Custom Oracle MCP Server (recommended) | ✅ Primary |
+| **Oracle** | Oracle SQLcl (built-in, has limitations) | ⚠️ Limited |
 | PostgreSQL | `@modelcontextprotocol/server-postgres` | ✅ Supported |
 | MySQL | `mysql-mcp-server` | ✅ Supported |
 | SQLite | `mcp-server-sqlite-npx` | ✅ Supported |
 
 ### Oracle Database Setup
 
-Oracle Database is accessed through [Oracle SQLcl](https://www.oracle.com/database/sqldeveloper/technologies/sqlcl/), which includes a built-in MCP server.
+Oracle Database can be accessed through two MCP server options:
 
-#### Prerequisites
+1. **Custom Oracle MCP Server** (Recommended) - Reliable, persistent connections using `python-oracledb`
+2. **Oracle SQLcl MCP Server** - Oracle's built-in MCP server (has connection limitations)
+
+#### Option 1: Custom Oracle MCP Server (Recommended)
+
+The custom Oracle MCP server provides reliable database connections without the limitations of SQLcl's MCP mode.
+
+**Prerequisites:**
+- Python 3.10+
+- `oracledb` library (installed automatically with offline-chat)
+
+**Installation:**
+```bash
+cd oracle_mcp_server
+uv pip install -e .
+```
+
+**Features:**
+- ✅ Persistent database connections
+- ✅ Direct connection without named connection setup
+- ✅ Clear error messages
+- ✅ CSV-formatted query results
+- ✅ Schema discovery tools
+
+**Configuration:**
+
+The custom server is available as a built-in preset named `oracle-db`. It's configured automatically when you create an agent with Oracle database access through the CLI. You can also configure it manually:
+
+```python
+from offline_chat import Agent, AgentManager
+
+manager = AgentManager()
+
+# Option 1: Use the built-in preset (recommended)
+from offline_chat.mcp_presets import get_preset
+
+oracle_config = get_preset("oracle-db")
+
+# Option 2: Manual configuration
+oracle_config = {
+    "name": "oracle_db",
+    "command": "python",
+    "args": ["-m", "oracle_mcp_server"],
+    "env": {},
+    "disabled": False,
+    "database_type": "oracle"
+}
+
+agent = Agent(
+    name="data-analyst",
+    display_name="Data Analyst",
+    base_model="qwen2.5:latest",
+    system_prompt="You are a data analyst who can query Oracle databases.",
+    temperature=0.7,
+    mcp_servers=[oracle_config]
+)
+manager.create_agent(agent)
+```
+
+**Usage:**
+
+The agent will use the `connect` tool to establish a connection before running queries:
+
+```python
+# In chat, the agent will automatically:
+# 1. Call connect tool with credentials
+# 2. Run queries using run-sql tool
+# 3. Return results in CSV format
+```
+
+See [oracle_mcp_server/README.md](oracle_mcp_server/README.md) for detailed documentation.
+
+#### Option 2: Oracle SQLcl MCP Server
+
+Oracle SQLcl includes a built-in MCP server, but it has a known limitation where connections don't persist in MCP mode. See [ORACLE_MCP_LIMITATION.md](ORACLE_MCP_LIMITATION.md) for details.
+
+**Prerequisites:**
 
 1. **Install Oracle SQLcl**:
+   - macOS: `brew install sqlcl` (recommended - automatically detected)
    - Download from [Oracle SQLcl Downloads](https://www.oracle.com/database/sqldeveloper/technologies/sqlcl/download/)
-   - Add `sql` command to your PATH
+   - Add `sql` command to your PATH (if not using Homebrew)
 
 2. **Verify Installation**:
    ```bash
    sql -version
    ```
+
+**Note**: When configuring Oracle database access with SQLcl, the system automatically:
+1. Checks if SQLcl is installed (detects Homebrew installations on macOS even if not in PATH)
+2. **Creates a named connection in SQLcl automatically** - no manual setup required!
+3. Provides platform-specific installation instructions if SQLcl is not found
+
+The named connection is created programmatically when you configure the database, so you can start using it immediately.
 
 #### Creating an Agent with Oracle Database Access
 
@@ -1728,21 +1981,133 @@ agent = Agent(
 manager.create_agent(agent)
 ```
 
+#### SQLcl Named Connection Management
+
+Oracle SQLcl requires pre-configured named connections for its MCP server. The system automatically creates these when you configure Oracle connections through the CLI, but you can also manage them programmatically.
+
+**Automatic Creation:**
+
+When you create an Oracle connection through the CLI or centralized connection manager, the system automatically creates a corresponding SQLcl named connection if SQLcl is installed.
+
+**Programmatic Management:**
+
+```python
+from offline_chat.sqlcl_connection_manager import (
+    create_sqlcl_named_connection,
+    delete_sqlcl_named_connection,
+    list_sqlcl_named_connections
+)
+
+# Create a SQLcl named connection
+success = create_sqlcl_named_connection(
+    connection_name="prod_db",
+    username="app_user",
+    password="secret",
+    host="db.example.com",
+    port=1521,
+    service_name="PRODDB"
+)
+
+if success:
+    print("SQLcl named connection created successfully")
+else:
+    print("Failed to create SQLcl named connection - check logs")
+
+# List all SQLcl named connections
+connections = list_sqlcl_named_connections()
+print(f"Available SQLcl connections: {', '.join(connections)}")
+
+# Delete a SQLcl named connection
+if delete_sqlcl_named_connection("prod_db"):
+    print("Connection deleted successfully")
+```
+
+**Troubleshooting:**
+
+If SQLcl named connection creation fails:
+1. Verify SQLcl is installed: `sql -version`
+2. Check that SQLcl is in your PATH
+3. Verify database connectivity manually: `sql username/password@host:port/service`
+4. Check logs for detailed error messages
+
+**Connection Storage:**
+
+SQLcl stores named connections in `~/.dbtools/connections/` as JSON files. The connection manager handles this automatically, but you can verify connections exist:
+
+```bash
+ls ~/.dbtools/connections/
+```
+
 #### Oracle-Specific Features
 
-**Audit Logging**:
-- All queries are logged in the `DBTOOLS$MCP_LOG` table
-- Tracks query text, execution time, and session information
-- Useful for compliance and debugging
+**Custom Oracle MCP Server:**
+- **Persistent Connections**: Connection stays active across multiple queries
+- **Auto-Connect**: Database connection is automatically established when chat session starts
+- **Direct Connect**: No manual connection setup required - agents can immediately use database tools
+- **CSV Output**: Query results formatted as CSV for easy parsing
+- **Schema Discovery**: Query database metadata with `schema-information` tool
+- **Connection Management**: Explicit connect/disconnect lifecycle (handled automatically)
+- **Available Tools**:
+  - `connect`: Establish database connection (called automatically on session start)
+  - `disconnect`: Close database connection (called automatically on session end)
+  - `run-sql`: Execute SQL queries (ready to use immediately)
+  - `schema-information`: Get database schema information (ready to use immediately)
+  - `list-connections`: List active connections
 
-**Session Tracking**:
-- Queries appear in `V$SESSION` with identifiable session info
-- Monitor active database sessions from agents
+**Note**: When using Oracle databases, agents receive special instructions indicating the connection is already established and ready to use. Unlike other database types that require manual connection steps, Oracle agents can immediately execute queries without calling `connect` or `list-connections` first.
 
-**Available Tools**:
-- `run-sql`: Execute SQL queries (read-only by default)
-- `list-connections`: List available SQLcl connections
-- Additional Oracle-specific tools for Data Pump, Data Guard, AWR, etc.
+**SQLcl MCP Server (if using Option 2):**
+- **Connection Verification**: Automatically verifies connections when starting chat sessions
+- **Known Limitations**: Connection strings in command-line arguments may not maintain active connections (see [ORACLE_MCP_LIMITATION.md](ORACLE_MCP_LIMITATION.md))
+- **Audit Logging**: Queries logged in `DBTOOLS$MCP_LOG` table (if configured)
+- **Session Tracking**: Queries appear in `V$SESSION` with identifiable session info
+- **Available Tools**: `run-sql`, `list-connections`, Data Pump, Data Guard, AWR, etc.
+
+#### Testing Oracle Connectivity
+
+A utility script is provided to test Oracle database connectivity and schema inspection:
+
+```bash
+# Check Oracle database schema and connectivity
+uv run python check_oracle_schema.py
+```
+
+This script:
+- Starts a session with the `database-analyst` agent
+- Connects to the configured Oracle database
+- Lists available tables using the `schema-information` tool
+- Queries `ALL_TABLES` to show accessible tables
+- Displays results for verification
+
+**Use this script to:**
+- Verify Oracle MCP server is working correctly
+- Check database connectivity and credentials
+- Inspect available schemas and tables
+- Troubleshoot connection issues
+
+**Example output:**
+```
+Starting session...
+============================================================
+Checking available tables...
+============================================================
+
+Tables in current schema:
+OWNER,TABLE_NAME
+EOS_PRT,PROCESSES
+EOS_PRT,USERS
+...
+
+============================================================
+Checking accessible tables via ALL_TABLES...
+============================================================
+
+Accessible tables (first 20):
+OWNER,TABLE_NAME
+EOS_PRT,PROCESSES
+EOS_PRT,USERS
+...
+```
 
 ### PostgreSQL Database Setup
 
@@ -1898,7 +2263,12 @@ sqlite_config = create_database_mcp_config(
 
 ### Using Database Tools in Chat
 
-Once an agent has database access configured, it can use database tools during conversations:
+Once an agent has database access configured, it can use database tools during conversations.
+
+**Important**: The connection behavior differs between database types:
+
+- **Oracle databases**: Connection is automatically established when the chat session starts. Agents can immediately use `run-sql` and `schema-information` tools without calling `connect` first.
+- **Other databases** (PostgreSQL, MySQL, SQLite): Agents must first call `list-connections` to see available connections, then call `connect` with a connection name before executing queries.
 
 ```python
 import asyncio
@@ -2849,17 +3219,44 @@ Agent: Customer A's buying patterns show...
 
 #### Oracle-Specific Issues
 
-**"SQLcl not found"**:
-```bash
-# Install SQLcl
-# Download from: https://www.oracle.com/database/sqldeveloper/technologies/sqlcl/download/
+**"Oracle connection verification failed"**:
+- The system automatically verifies Oracle connections when starting a chat session
+- If verification fails, you'll see a warning in the logs but the session will continue
+- This is a known limitation of Oracle SQLcl MCP server where connection strings in command-line arguments may not maintain an active connection
 
-# Add to PATH (macOS/Linux)
+**Workaround**:
+1. Check the logs for detailed error messages
+2. Verify SQLcl is installed and accessible: `sql -version`
+3. Test the connection manually:
+   ```bash
+   sql username/password@host:port/service
+   ```
+4. If manual connection works but automatic verification fails, the connection may still work during actual queries
+5. Monitor the `DBTOOLS$MCP_LOG` table to verify queries are being executed
+
+**"SQLcl not found"**:
+
+The system automatically detects if SQLcl is not installed and provides platform-specific installation instructions. On macOS, the system checks both your PATH and common Homebrew installation locations. If you see this error, follow the instructions provided, or manually install:
+
+```bash
+# macOS (using Homebrew - recommended)
+brew install sqlcl
+
+# Or download manually from:
+# https://www.oracle.com/database/sqldeveloper/technologies/sqlcl/download/
+
+# Add to PATH (macOS/Linux) - not needed if installed via Homebrew
 export PATH=$PATH:/path/to/sqlcl/bin
 
 # Verify installation
 sql -version
 ```
+
+**Note**: On macOS, Homebrew installations are automatically detected even if not in your PATH. The system checks:
+- `/opt/homebrew/Caskroom/sqlcl/*/sqlcl/bin/sql` (Apple Silicon)
+- `/usr/local/Caskroom/sqlcl/*/sqlcl/bin/sql` (Intel Mac)
+
+For detailed installation instructions for your platform, the system will display them automatically when SQLcl is not detected.
 
 **"TNS: could not resolve the connect identifier"**:
 - TNS alias not found in `tnsnames.ora`
@@ -3559,6 +3956,9 @@ make test-coverage
 
 # Verify RAG infrastructure setup (for RAG development)
 uv run python verify_rag_setup.py
+
+# Check Oracle database schema and connectivity (for Oracle development)
+uv run python check_oracle_schema.py
 ```
 
 #### Test Structure
@@ -3624,6 +4024,7 @@ offline-chat/
 │   ├── database_config_cli.py # Database configuration CLI
 │   ├── connection_validator.py # Database connection validation
 │   ├── credential_utils.py    # Credential masking utilities
+│   ├── sqlcl_validator.py     # SQLcl installation validation
 │   ├── query_validator.py     # SQL query safety validation
 │   ├── query_result.py        # Query result formatting
 │   ├── tools.py               # Web search tools

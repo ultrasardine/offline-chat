@@ -180,6 +180,63 @@ class ChatSession:
             )
             self._rag_orchestrator = None
 
+    async def _auto_connect_databases(self) -> None:
+        """Automatically establish database connections for servers that require it.
+
+        For custom Oracle MCP server, calls the 'connect' tool with connection credentials
+        from the agent configuration. This establishes a persistent database connection
+        that will be maintained throughout the session.
+
+        For other database types, this method can be extended to handle their specific
+        connection requirements.
+        """
+        if not self._mcp_manager or not self._database_connections:
+            return
+
+        for server_name, db_type in self._database_connections.items():
+            if db_type == "oracle":
+                try:
+                    logger.info(f"Auto-connecting to Oracle database '{server_name}'")
+
+                    # Get connection details from agent config
+                    connection_config = None
+                    for mcp_config in self.agent.mcp_servers:
+                        if mcp_config.name == server_name:
+                            connection_config = mcp_config
+                            break
+
+                    if not connection_config:
+                        logger.warning(f"No MCP config found for server '{server_name}'")
+                        continue
+
+                    # Check if this is the custom Oracle MCP server (has 'connect' tool)
+                    if "connect" in self._mcp_manager.tool_registry:
+                        # Call the connect tool with credentials from config
+                        connect_args = {
+                            "username": connection_config.database_user,
+                            "password": connection_config.database_password,
+                            "host": connection_config.database_host,
+                            "port": connection_config.database_port,
+                            "service_name": connection_config.database_name,
+                        }
+
+                        logger.debug(f"Calling 'connect' tool for '{server_name}'")
+                        result = await self._mcp_manager.call_tool("connect", connect_args)
+
+                        if "Error" in result or "Failed" in result:
+                            logger.error(f"Failed to connect to Oracle database '{server_name}': {result}")
+                        else:
+                            logger.info(f"Successfully connected to Oracle database '{server_name}': {result}")
+                    else:
+                        logger.warning(
+                            f"Oracle server '{server_name}' does not have 'connect' tool. "
+                            f"This may be the SQLcl MCP server which has connection limitations."
+                        )
+
+                except Exception as e:
+                    logger.error(f"Failed to auto-connect to Oracle database '{server_name}': {e}")
+                    # Don't fail the entire session, just log the error
+
     async def start_async(self, agent_name: str) -> bool:
         """Start a chat session with async MCP server connections.
 
@@ -225,6 +282,10 @@ class ChatSession:
                                 f"(type: {config.database_type}). "
                                 f"Continuing session without this database."
                             )
+
+                # Auto-connect to Oracle databases that require explicit connection
+                # Test if connection is active and log results
+                await self._auto_connect_databases()
 
                 # Log Oracle-specific connection info for audit purposes
                 for server_name, db_type in self._database_connections.items():
@@ -298,6 +359,12 @@ class ChatSession:
         tool_names = [t["function"]["name"] for t in tools]
         tool_list = ", ".join(tool_names)
 
+        # Check if database tools are available
+        has_db_tools = any(
+            name in ["run-sql", "run-sql-async", "run-sqlcl", "query_database", "schema-information"]
+            for name in tool_names
+        )
+
         tool_instructions = (
             f"\n\n=== AVAILABLE TOOLS ===\n"
             f"{tool_list}\n\n"
@@ -306,8 +373,49 @@ class ChatSession:
             "2. After calling a tool, wait for results before responding\n"
             "3. When you get results, answer directly without explaining the process\n"
             "4. NEVER say: 'Let me', 'I'll call', 'Using tool', 'I will query'\n"
-            "5. NEVER write SQL or JSON in your response\n\n"
-            "Remember: You are an analyst having a conversation. The tools work invisibly. "
+            "5. NEVER write SQL or JSON in your response\n"
+        )
+
+        # Add database-specific instructions if database tools are available
+        if has_db_tools:
+            # Check if this is Oracle with auto-connect
+            has_oracle = any(
+                db_type == "oracle" 
+                for db_type in self._database_connections.values()
+            ) if self._database_connections else False
+            
+            if has_oracle:
+                tool_instructions += (
+                    "\n=== DATABASE CONNECTION ===\n"
+                    "✓ Database connection is ALREADY ESTABLISHED and ready to use\n"
+                    "✓ You can immediately use 'run-sql' and 'schema-information' tools\n"
+                    "✓ DO NOT call 'connect' or 'list-connections' - connection is active\n"
+                    "\n"
+                    "When using database tools:\n"
+                    "- Use 'schema-information' to discover available tables and columns\n"
+                    "- Use 'run-sql' with parameter 'sql' containing valid SQL\n"
+                    "- Write proper SQL syntax: SELECT, FROM, WHERE, JOIN, etc.\n"
+                    "- Example: {\"sql\": \"SELECT column FROM table WHERE condition\"}\n"
+                )
+            else:
+                tool_instructions += (
+                    "\n=== DATABASE TOOL USAGE ===\n"
+                    "IMPORTANT: Before running any queries, you MUST establish a database connection:\n"
+                    "1. First, call 'list-connections' to see available database connections\n"
+                    "2. Then, call 'connect' with the connection name to establish a connection\n"
+                    "3. Only after connecting, you can run queries with 'run-sql'\n"
+                    "\n"
+                    "When using database tools:\n"
+                    "- Use 'schema-information' to discover available tables and columns\n"
+                    "- Use 'run-sql' with parameter 'sql' containing valid SQL (e.g., {\"sql\": \"SELECT * FROM table_name\"})\n"
+                    "- Write proper SQL syntax: SELECT, FROM, WHERE, JOIN, etc.\n"
+                    "- Do NOT use brackets around SQL queries\n"
+                    "- Do NOT use 'sqlcl' parameter - use 'sql' parameter\n"
+                    "- Example: {\"sql\": \"SELECT DISTINCT column_name FROM table_name WHERE condition\"}\n"
+                )
+
+        tool_instructions += (
+            "\n\nRemember: You are an analyst having a conversation. The tools work invisibly. "
             "Just think about what data you need, and answer based on the results you receive."
         )
 
@@ -338,6 +446,32 @@ class ChatSession:
 
         return f"Unknown tool: {name}"
 
+    def _find_sql_tool_name(self) -> str | None:
+        """Find the name of the SQL execution tool in the MCP registry.
+
+        Searches for common SQL tool names in the registered MCP tools.
+        This is used when the model outputs JSON tool calls as text instead
+        of using proper tool calling.
+
+        Returns:
+            The name of the SQL tool if found, None otherwise.
+        """
+        if not self._mcp_manager:
+            return None
+
+        sql_tool_names = ["run-sql", "run_sql", "query_database", "execute_query", "run_query"]
+        
+        for tool_name in self._mcp_manager.tool_registry:
+            # Check exact match
+            if tool_name in sql_tool_names:
+                return tool_name
+            # Check if tool name ends with a SQL tool name (for namespaced tools)
+            for sql_name in sql_tool_names:
+                if tool_name.endswith(f"_{sql_name.replace('-', '_')}") or tool_name.endswith(f"-{sql_name}"):
+                    return tool_name
+        
+        return None
+
     async def _execute_tool_async(self, name: str, arguments: dict[str, Any]) -> str:
         """Execute tool, routing to MCP or built-in handlers.
 
@@ -360,15 +494,26 @@ class ChatSession:
         if self._on_tool_call:
             self._on_tool_call(name)
 
+        # Debug logging
+        logger.debug(f"_execute_tool_async called with tool='{name}', args={arguments}")
+        logger.debug(f"MCP manager exists: {self._mcp_manager is not None}")
+        if self._mcp_manager:
+            logger.debug(f"Tool registry: {list(self._mcp_manager.tool_registry.keys())}")
+            logger.debug(f"Tool '{name}' in registry: {name in self._mcp_manager.tool_registry}")
+
         # Check MCP tools first
         if self._mcp_manager and name in self._mcp_manager.tool_registry:
             server_name = self._mcp_manager.tool_registry[name]
+            logger.debug(f"Tool '{name}' mapped to server '{server_name}'")
 
             # Validate database queries against access level
             if server_name in self._database_connections:
+                logger.debug(f"Server '{server_name}' is a database connection, validating query")
                 validation_error = self._validate_database_query(name, arguments, server_name)
                 if validation_error:
+                    logger.info(f"Query validation failed: {validation_error}")
                     return validation_error
+                logger.debug("Query validation passed")
 
             # Log database operations for audit purposes
             if server_name in self._database_connections:
@@ -380,7 +525,9 @@ class ChatSession:
                     logger.debug(f"Oracle query will be logged in DBTOOLS$MCP_LOG table for database '{server_name}'")
 
             try:
+                logger.debug(f"Calling MCP tool '{name}' with arguments: {arguments}")
                 result = await self._mcp_manager.call_tool(name, arguments)
+                logger.debug(f"Tool '{name}' returned result (length: {len(result) if result else 0})")
 
                 # Log completion of database operations
                 if server_name in self._database_connections:
@@ -394,14 +541,15 @@ class ChatSession:
 
                 # Log the error for debugging
                 if server_name in self._database_connections:
-                    logger.warning(f"Database tool '{name}' failed on '{server_name}': {error_msg}")
+                    logger.error(f"Database tool '{name}' failed on '{server_name}': {error_msg}", exc_info=True)
                 else:
-                    logger.warning(f"Tool '{name}' failed: {error_msg}")
+                    logger.error(f"Tool '{name}' failed: {error_msg}", exc_info=True)
 
                 # Return a formatted error message to the agent
                 return f"Error executing tool '{name}': {error_msg}"
 
         # Fall back to built-in tools
+        logger.debug(f"Tool '{name}' not found in MCP registry, trying built-in tools")
         return self._execute_tool(name, arguments)
 
     def _validate_database_query(self, tool_name: str, arguments: dict[str, Any], server_name: str) -> str | None:
@@ -692,18 +840,53 @@ class ChatSession:
 
                 message = response.get("message", {})
                 tool_calls = message.get("tool_calls", []) or []  # Handle None
+                response_content = message.get("content", "")
 
                 # Debug: Check if response is complete
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(
                         f"Iteration {iteration}: done={response.get('done')}, "
-                        f"content_len={len(message.get('content', ''))}, "
+                        f"content_len={len(response_content)}, "
                         f"tool_calls={len(tool_calls)}"
                     )
 
+                # Check if model output JSON tool call as text instead of proper tool call
+                # This happens with some models that don't fully support tool calling
+                if not tool_calls and response_content:
+                    extracted_tool_name, extracted_args = self._extract_json_tool_call(response_content)
+                    if extracted_args:
+                        # Determine the tool name to use
+                        tool_name_to_use = extracted_tool_name
+                        if not tool_name_to_use and "sql" in extracted_args:
+                            # SQL-only format, find the SQL tool
+                            tool_name_to_use = self._find_sql_tool_name()
+                        
+                        # Check if the tool exists in MCP registry
+                        if tool_name_to_use and self._mcp_manager and tool_name_to_use in self._mcp_manager.tool_registry:
+                            logger.info(f"Detected JSON tool call in text, executing {tool_name_to_use}")
+                            # Add assistant message to conversation
+                            messages.append({"role": "assistant", "content": response_content})
+                            
+                            # Execute the tool (need to run async in sync context)
+                            try:
+                                loop = asyncio.get_event_loop()
+                            except RuntimeError:
+                                loop = asyncio.new_event_loop()
+                                asyncio.set_event_loop(loop)
+                            result = loop.run_until_complete(self._execute_tool_async(tool_name_to_use, extracted_args))
+                            
+                            # Add tool result to messages
+                            messages.append({
+                                "role": "tool",
+                                "tool_name": tool_name_to_use,
+                                "content": result if result else "No results returned",
+                            })
+                            
+                            # Continue the loop to get the final response
+                            continue
+
                 if not tool_calls:
                     # No tool calls - this is the final response
-                    response_content = message.get("content", "")
 
                     # Response is complete - yield and save to history
                     if response_content:
@@ -967,15 +1150,46 @@ class ChatSession:
 
                 message = response.get("message", {})
                 tool_calls = message.get("tool_calls", []) or []  # Handle None
+                response_content = message.get("content", "")
 
                 # Debug logging
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(
                         f"Iteration {iteration}: tool_calls={len(tool_calls)}, "
-                        f"content_len={len(message.get('content', ''))}"
+                        f"content_len={len(response_content)}"
                     )
-                    if not tool_calls and message.get("content"):
-                        logger.debug(f"No tool calls. Content preview: {message.get('content')[:100]}...")
+                    if not tool_calls and response_content:
+                        logger.debug(f"No tool calls. Content preview: {response_content[:100]}...")
+
+                # Check if model output JSON tool call as text instead of proper tool call
+                # This happens with some models that don't fully support tool calling
+                if not tool_calls and response_content:
+                    extracted_tool_name, extracted_args = self._extract_json_tool_call(response_content)
+                    if extracted_args:
+                        # Determine the tool name to use
+                        tool_name_to_use = extracted_tool_name
+                        if not tool_name_to_use and "sql" in extracted_args:
+                            # SQL-only format, find the SQL tool
+                            tool_name_to_use = self._find_sql_tool_name()
+                        
+                        # Check if the tool exists in MCP registry
+                        if tool_name_to_use and self._mcp_manager and tool_name_to_use in self._mcp_manager.tool_registry:
+                            logger.info(f"Detected JSON tool call in text, executing {tool_name_to_use}")
+                            # Add assistant message to conversation
+                            messages.append({"role": "assistant", "content": response_content})
+                            
+                            # Execute the tool
+                            result = await self._execute_tool_async(tool_name_to_use, extracted_args)
+                            
+                            # Add tool result to messages
+                            messages.append({
+                                "role": "tool",
+                                "tool_name": tool_name_to_use,
+                                "content": result if result else "No results returned",
+                            })
+                            
+                            # Continue the loop to get the final response
+                            continue
 
                 if not tool_calls:
                     # No tool calls - collect the final response
@@ -1065,6 +1279,56 @@ class ChatSession:
                 raise OllamaConnectionError()
             raise
 
+    def _extract_json_tool_call(self, content: str) -> tuple[str | None, dict[str, Any] | None]:
+        """Extract a JSON tool call from model response content.
+
+        Some models output JSON like {"sql": "SELECT ..."} or 
+        {"name": "tool_name", "arguments": {...}} as text instead of
+        using proper tool calling. This method extracts such JSON so it can be
+        executed as a tool call.
+
+        Args:
+            content: The response content to check.
+
+        Returns:
+            Tuple of (tool_name, arguments) if found, (None, None) otherwise.
+            For SQL-only format, tool_name will be None and caller should find appropriate SQL tool.
+        """
+        import json
+        import re
+
+        # Pattern to match JSON code blocks: ```json {...} ```
+        json_block_pattern = r"```(?:json)?\s*(\{[^`]+\})\s*```"
+
+        # Pattern to match standalone JSON objects with sql key
+        standalone_sql_pattern = r'\{\s*["\']sql["\']\s*:\s*["\']([^"\']+)["\']\s*\}'
+
+        # Try to find JSON in code block first
+        match = re.search(json_block_pattern, content, re.DOTALL | re.IGNORECASE)
+        if match:
+            try:
+                json_str = match.group(1).strip()
+                parsed = json.loads(json_str)
+                if isinstance(parsed, dict):
+                    # Check for {"name": "tool", "arguments": {...}} format
+                    if "name" in parsed and "arguments" in parsed:
+                        tool_name = parsed["name"]
+                        arguments = parsed["arguments"]
+                        if isinstance(arguments, dict):
+                            return (tool_name, arguments)
+                    # Check for {"sql": "..."} format
+                    elif "sql" in parsed:
+                        return (None, parsed)
+            except json.JSONDecodeError:
+                pass
+
+        # Try standalone SQL JSON pattern
+        match = re.search(standalone_sql_pattern, content)
+        if match:
+            return (None, {"sql": match.group(1)})
+
+        return (None, None)
+
     def _filter_json_tool_calls(self, content: str) -> str:
         """Filter out JSON tool call syntax and SQL code blocks from model responses.
 
@@ -1089,6 +1353,10 @@ class ChatSession:
         # Matches: ```sql ... ``` or ```SQL ... ```
         sql_block_pattern = r"```[sS][qQ][lL]\s*\n.*?\n```"
 
+        # Pattern to match JSON code blocks with sql key
+        # Matches: ```json {"sql": "..."} ```
+        json_sql_block_pattern = r"```(?:json)?\s*\{[^`]*[\"']sql[\"'][^`]*\}\s*```"
+
         # Patterns for phrases that indicate the model is about to output JSON or execute a tool
         json_intro_patterns = [
             r"Here is the JSON object for the function call:?\s*$",
@@ -1105,10 +1373,15 @@ class ChatSession:
             r"To find out .+, I\'ll run (?:a|the) query .+:?\s*$",
             r"Here\'s the query:?\s*$",
             r"This will give us .+\.?\s*$",
+            r"To determine .+, you can run the following query:?\s*$",
+            r"you can run the following query:?\s*$",
         ]
 
-        # Remove SQL code blocks first
-        filtered = re.sub(sql_block_pattern, "", content, flags=re.DOTALL)
+        # Remove JSON code blocks with sql key first
+        filtered = re.sub(json_sql_block_pattern, "", content, flags=re.DOTALL | re.IGNORECASE)
+
+        # Remove SQL code blocks
+        filtered = re.sub(sql_block_pattern, "", filtered, flags=re.DOTALL)
 
         # Remove JSON tool calls
         filtered = re.sub(json_pattern, "", filtered)

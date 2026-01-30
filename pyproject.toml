@@ -43,6 +43,9 @@ dev = [
     "ruff>=0.8.0",
     "commitizen>=4.0.0",
 ]
+oracle = [
+    "oracledb>=2.0.0",
+]
 
 [build-system]
 requires = ["hatchling"]

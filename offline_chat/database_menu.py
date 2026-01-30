@@ -149,7 +149,34 @@ def create_connection_flow(manager: DatabaseConnectionManager) -> None:
 
         if is_ok(result):
             print("Done!")
-            print(f"\n✓ Connection '{name}' created successfully.")
+            
+            # For Oracle connections, also create SQLcl named connection
+            if connection.database_type == "oracle":
+                print("Setting up SQLcl named connection...", end=" ", flush=True)
+                from offline_chat.sqlcl_connection_manager import create_sqlcl_named_connection
+                
+                sqlcl_success = create_sqlcl_named_connection(
+                    connection_name=connection.name,
+                    username=connection.username,
+                    password=connection.password,
+                    host=connection.host,
+                    port=connection.port,
+                    service_name=connection.service_name,
+                )
+                
+                if sqlcl_success:
+                    print("Done!")
+                    print(f"\n✓ Connection '{name}' created successfully.")
+                    print("✓ SQLcl named connection configured automatically.")
+                else:
+                    print("Failed!")
+                    print(f"\n⚠️  Connection '{name}' created, but SQLcl named connection setup failed.")
+                    print("You may need to create the named connection manually using:")
+                    print(f"  sql /nolog")
+                    print(f"  conn {connection.username}/password@{connection.host}:{connection.port}/{connection.service_name}")
+                    print(f"  save {connection.name}")
+            else:
+                print(f"\n✓ Connection '{name}' created successfully.")
         else:
             print("Failed!")
             error = unwrap_err(result)
@@ -395,6 +422,18 @@ def delete_connection_flow(manager: DatabaseConnectionManager) -> None:
 
     if is_ok(result):
         print("Done!")
+        
+        # For Oracle connections, also delete SQLcl named connection
+        if connection.database_type == "oracle":
+            print("Cleaning up SQLcl named connection...", end=" ", flush=True)
+            from offline_chat.sqlcl_connection_manager import delete_sqlcl_named_connection
+            
+            sqlcl_deleted = delete_sqlcl_named_connection(connection.name)
+            if sqlcl_deleted:
+                print("Done!")
+            else:
+                print("(not found)")
+        
         print(f"\n✓ Connection '{connection.name}' deleted successfully.")
     else:
         print("Failed!")
@@ -492,9 +531,26 @@ def _configure_oracle_connection(name: str) -> Optional[DatabaseConnection]:
     Returns:
         DatabaseConnection object or None if cancelled
     """
+    from offline_chat.sqlcl_validator import is_sqlcl_installed, get_installation_instructions
+
     print("\n--- Oracle Database Configuration ---")
 
-    host = input("Host [localhost]: ").strip() or "localhost"
+    # Check if SQLcl is installed
+    if not is_sqlcl_installed():
+        print("\n⚠️  Warning: SQLcl is not installed")
+        print("\nOracle database connections require SQLcl (SQL Developer Command Line).")
+        print("You can continue creating the connection, but it won't work until SQLcl is installed.\n")
+
+        platform_name, instructions = get_installation_instructions()
+        print(f"Installation instructions for {platform_name}:")
+        print(instructions)
+
+        continue_anyway = input("\nContinue creating connection anyway? (y/N): ").strip().lower()
+        if continue_anyway != "y":
+            print("\nConnection creation cancelled.")
+            return None
+
+    host = input("\nHost [localhost]: ").strip() or "localhost"
 
     port_input = input("Port [1521]: ").strip()
     try:
