@@ -1,3 +1,9 @@
+## [1.0.2](https://github.com/ultrasardine/offline-chat/compare/v1.0.1...v1.0.2) (2026-01-30)
+
+### Bug Fixes
+
+* handle models that output JSON tool calls as text ([b2c0767](https://github.com/ultrasardine/offline-chat/commit/b2c07674d2d8b05accf8d51b139cbfbf01d15218))
+
 ## [1.0.1](https://github.com/ultrasardine/offline-chat/compare/v1.0.0...v1.0.1) (2026-01-29)
 
 ### Bug Fixes
